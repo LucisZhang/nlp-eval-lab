@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(//Users/hsiangkuochang/Library/CloudStorage/OneDrive-个人/**)",
+      "Write(//Users/hsiangkuochang/Library/CloudStorage/OneDrive-个人/**)",
+      "Read(./.env)",
+      "Bash(rm -rf:*)"
+    ]
+  }
+}
