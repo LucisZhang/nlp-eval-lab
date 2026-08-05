@@ -1,0 +1,102 @@
+# taxonomy_map.yaml — harmonizes historical CFPB `Product` values into stable
+# routing classes (UPGRADE_PLAN.md §5). Frozen alongside the snapshot: any
+# change to this file invalidates all downstream splits and results.
+#
+# Era boundaries observed in the frozen snapshot:
+#   B1 = 2017-04 (old -> mid taxonomy revision)
+#   B2 = 2023-08 (mid -> new; the 2023-04 credit-reporting consolidation,
+#        announced 2023-04, observed in data at 2023-08)
+#
+# Design rule: every class must be trainable pre-2022 AND present post-2023,
+# or it breaks the temporal drift protocol. 9 classes satisfy this; a 10th
+# (splitting prepaid from credit card) would be poisoned by the unsplittable
+# 2017-2023 "Credit card or prepaid card" merged label, and an 11th would
+# require an era-exclusive class.
+version: 1
+classes:
+  credit_reporting:
+    products:
+      - "Credit reporting"
+      - "Credit reporting, credit repair services, or other personal consumer reports"
+      - "Credit reporting or other personal consumer reports"
+      - "Debt or credit management"
+    notes: >
+      The three credit-reporting names are one concept renamed at B1 and B2.
+      "Debt or credit management" (2023+ carve-out: credit repair, debt
+      settlement, counseling) folds here for TRAIN continuity: the 2017-2023
+      label explicitly included "credit repair services", so pre-2023 models
+      learned these narratives as credit reporting. Alternative considered
+      and rejected: debt_collection (TRAIN never saw these as third-party
+      collection). Known impurity: post-2023 debt-settlement/counseling
+      complaints sit here rather than in debt_collection. This mapping is the
+      flagship label-drift exhibit.
+  debt_collection:
+    products:
+      - "Debt collection"
+    notes: >
+      Single stable label across 2015-2026; no era crossing. Deliberately
+      does NOT absorb "Debt or credit management" (see credit_reporting).
+  mortgage:
+    products:
+      - "Mortgage"
+    notes: Single stable label across 2015-2026; no era crossing.
+  card:
+    products:
+      - "Credit card"
+      - "Credit card or prepaid card"
+      - "Prepaid card"
+    notes: >
+      The 2017-2023 merged label "Credit card or prepaid card" (108k rows) is
+      unsplittable at Product level, so all card-like instruments collapse
+      together; keeping prepaid separate would give the same narratives
+      different labels in different eras. Crosses B1 (merge) and B2
+      (split-back). Known impurity: stored-value prepaid products mixed with
+      revolving credit.
+  deposit_account:
+    products:
+      - "Bank account or service"
+      - "Checking or savings account"
+    notes: >
+      Predecessor/successor rename at B1. Known impurity: the pre-2017 label
+      was slightly broader than checking/savings.
+  money_service:
+    products:
+      - "Money transfers"
+      - "Virtual currency"
+      - "Money transfer, virtual currency, or money service"
+    notes: >
+      The post-2017 label explicitly enumerates both old labels, so this is a
+      documented merge. Crosses B1.
+  student_loan:
+    products:
+      - "Student loan"
+    notes: Single stable label across 2015-2026; no era crossing.
+  vehicle_loan:
+    products:
+      - "Vehicle loan or lease"
+      - "Consumer Loan"
+    notes: >
+      At B1 the old "Consumer Loan" parent split into vehicle and
+      payday/personal successors. "Consumer Loan" (2015-2017, 9,458 rows)
+      folds here on majority-composition grounds (auto dominates CFPB
+      consumer-installment volume). Known impurity: early-TRAIN vehicle_loan
+      contains some personal installment loans. Sensitivity alternative
+      (mapping it to payday_personal_loan) may be run as a separate
+      experiment, never as an in-place edit.
+  payday_personal_loan:
+    products:
+      - "Payday loan"
+      - "Payday loan, title loan, or personal loan"
+      - "Payday loan, title loan, personal loan, or advance loan"
+    notes: >
+      One successor chain renamed at both B1 and B2 (B2 adds "advance
+      loan"). Kept separate from vehicle_loan because payday/title and auto
+      lending carry very different triage cost profiles.
+dropped_products:
+  - product: "Other financial service"
+    reason: >
+      Pre-2017-only residual grab-bag (money orders, check cashing, debt
+      settlement, foreclosure relief; 292 rows, 0.008% of corpus) with no
+      coherent stable successor. Extinct before every test split, so
+      dropping costs no test coverage; folding it anywhere would inject
+      heterogeneous noise. Only product dropped.
