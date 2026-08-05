@@ -349,8 +349,15 @@ def build_record(
     n_resamples: int = N_RESAMPLES,
     seed: int = BOOTSTRAP_SEED,
     supersedes_run_id: str | None = None,
+    extra: dict | None = None,
 ) -> dict:
-    """Assemble a fully-provenanced result record. `run_id` = sha256(config+git+ts)."""
+    """Assemble a fully-provenanced result record. `run_id` = sha256(config+git+ts).
+
+    `extra` is the runner's own provenance block (e.g. Tier B checkpoint sha, fitted
+    temperature, hardware, truncation rate). It is persisted verbatim under the record's
+    ``extra`` key when non-empty; local runners that supply nothing (Tier A) leave the
+    key absent so their record schema is unchanged.
+    """
     if timestamp_utc is None:
         timestamp_utc = datetime.now(UTC).isoformat()
     if git_sha is None:
@@ -376,6 +383,8 @@ def build_record(
     }
     if supersedes_run_id is not None:
         record["supersedes_run_id"] = supersedes_run_id
+    if extra:
+        record["extra"] = extra
     return record
 
 
@@ -422,6 +431,7 @@ def run(config_path, results_path=DEFAULT_RESULTS_PATH, *, append: bool = True) 
         result.dataset,
         wall,
         result.cost_usd,
+        extra=result.extra,
     )
     if append:
         append_record(results_path, record)

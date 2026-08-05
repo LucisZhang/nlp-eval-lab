@@ -206,6 +206,29 @@ def test_build_record_supersedes_optional():
     assert rec["supersedes_run_id"] == "old"
 
 
+def test_build_record_persists_nonempty_extra():
+    # Runner provenance (Tier B checkpoint sha / fitted T / hardware) must survive.
+    rec = harness.build_record(
+        "c.yaml", "h", {}, {"split": "cal"}, 0.0, None,
+        git_sha="g", timestamp_utc="t",
+        extra={"temperature": 1.5, "checkpoint_sha256": "abc", "run_type": "smoke-dryrun"},
+    )
+    assert rec["extra"]["temperature"] == 1.5
+    assert rec["extra"]["run_type"] == "smoke-dryrun"
+
+
+def test_build_record_omits_empty_extra():
+    # Tier A supplies no extra -> record schema stays unchanged (no `extra` key).
+    rec_empty = harness.build_record(
+        "c.yaml", "h", {}, {"split": "cal"}, 0.0, None, git_sha="g", timestamp_utc="t", extra={}
+    )
+    rec_none = harness.build_record(
+        "c.yaml", "h", {}, {"split": "cal"}, 0.0, None, git_sha="g", timestamp_utc="t"
+    )
+    assert "extra" not in rec_empty
+    assert "extra" not in rec_none
+
+
 # ---------------------------------------------------------------------------
 # End-to-end: register a dummy runner, run() through a tmp config.
 # ---------------------------------------------------------------------------
@@ -221,6 +244,28 @@ def _dummy_runner(config: dict) -> harness.RunnerResult:
         dataset={"split": config["data"]["split"], "split_sha256": "x", "input_sha256": "y"},
         cost_usd=None,
     )
+
+
+@harness.register_runner("dummy_extra")
+def _dummy_extra_runner(config: dict) -> harness.RunnerResult:
+    y_true, y_pred, probs = _fixture(n=40, seed=3)
+    return harness.RunnerResult(
+        y_true=np.array(y_true), y_pred=np.array(y_pred), probs=probs,
+        class_labels=LABELS,
+        dataset={"split": config["data"]["split"], "split_sha256": "x", "input_sha256": "y"},
+        cost_usd=None,
+        extra={"temperature": 2.0, "run_type": "smoke-dryrun"},
+    )
+
+
+def test_run_persists_runner_extra(tmp_path):
+    cfg = tmp_path / "run.yaml"
+    cfg.write_text("model:\n  runner: dummy_extra\n  name: d\ndata:\n  split: cal\n")
+    results = tmp_path / "runs.jsonl"
+    record = harness.run(cfg, results)
+    on_disk = json.loads(results.read_text().splitlines()[0])
+    assert on_disk["extra"] == {"temperature": 2.0, "run_type": "smoke-dryrun"}
+    assert record["extra"]["run_type"] == "smoke-dryrun"
 
 
 def test_run_end_to_end(tmp_path):

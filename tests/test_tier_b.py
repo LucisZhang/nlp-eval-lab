@@ -102,6 +102,22 @@ def test_resolve_max_seq_length_prefers_training_meta():
     assert tier_b.resolve_max_seq_length({}, {}) == tier_b._DEFAULT_MAX_SEQ_LEN
 
 
+def test_subsample_eval_is_seeded_sized_and_noop():
+    texts = [f"t{i}" for i in range(100)]
+    labels = np.array([f"c{i % 3}" for i in range(100)], dtype=object)
+
+    t1, l1 = tier_b.subsample_eval(texts, labels, 10, 20260805)
+    t2, l2 = tier_b.subsample_eval(texts, labels, 10, 20260805)
+    assert len(t1) == 10
+    assert t1 == t2 and np.array_equal(l1, l2)          # deterministic for a fixed seed
+    assert set(t1).issubset(set(texts))                  # a real subset of the split
+
+    # cap None or >= n is a no-op returning the full split unchanged (real configs).
+    tf, lf = tier_b.subsample_eval(texts, labels, None, 1)
+    assert tf is texts and lf is labels
+    assert len(tier_b.subsample_eval(texts, labels, 999, 1)[0]) == 100
+
+
 def test_checkpoint_dir_requires_path():
     with pytest.raises(ValueError, match="model.checkpoint"):
         tier_b.checkpoint_dir({"model": {}})

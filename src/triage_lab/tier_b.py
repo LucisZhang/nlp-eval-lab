@@ -153,6 +153,21 @@ def _verify_integrity(split: str, path: Path, splits_stats_path: Path) -> None:
         )
 
 
+def subsample_eval(texts, labels, cap: int | None, seed: int):
+    """Seeded in-memory subsample of an already-loaded eval split (frozen file untouched).
+
+    `cap=None` (all shipped/real configs) is a no-op that returns the full split; a small
+    `cap` (plumbing dry-runs) takes a deterministic seeded subset, re-sorted so row order
+    stays stable. The full frozen parquet's sha256 is still verified upstream — only the
+    in-memory view is thinned, never the file on disk.
+    """
+    n = len(texts)
+    if cap is None or cap >= n:
+        return texts, labels
+    idx = np.sort(np.random.default_rng(seed).permutation(n)[:cap])
+    return [texts[i] for i in idx], labels[idx]
+
+
 # ---------------------------------------------------------------------------
 # Batched inference -> logits
 # ---------------------------------------------------------------------------
@@ -213,7 +228,10 @@ def tier_b_runner(config: dict) -> RunnerResult:
     id2label = model.config.id2label
     class_labels = [id2label[i] for i in range(num_labels)]
 
+    eval_rows_cap = data.get("eval_rows_cap")
+    seed = int(config.get("seed", 20260805))
     x_eval, y_eval = load_split_frame(eval_path, text_col, label_col, order_col)
+    x_eval, y_eval = subsample_eval(x_eval, y_eval, eval_rows_cap, seed)
     eval_logits = _infer_logits(model, tokenizer, x_eval, max_len, batch_size, device)
 
     temperature = 1.0
@@ -244,6 +262,9 @@ def tier_b_runner(config: dict) -> RunnerResult:
         "truncation_rate": meta.get("truncation_rate"),
         "base_model": meta.get("base_model"),
         "seed": meta.get("seed", config.get("seed")),
+        "eval_rows_cap": eval_rows_cap,
+        "eval_sample_size": len(y_eval),
+        "run_type": config.get("run_type", "standard"),
     }
     return RunnerResult(
         y_true=np.asarray(y_eval, dtype=object),
