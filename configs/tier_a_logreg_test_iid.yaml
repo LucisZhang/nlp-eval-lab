@@ -1,0 +1,36 @@
+# Tier A FINAL reported point (LogReg): word + char_wb, isotonic-calibrated on
+# CAL, evaluated ONCE on TEST-IID. Features/params match the winning CAL rung
+# (tier_a_logreg_wordchar_cal); the deltas vs that rung are the reporting
+# switches: calibration none -> isotonic and split cal -> test_iid. Fit on
+# TRAIN, calibrate on CAL, evaluate on TEST-IID (no TEST-* data touches
+# training or calibration).
+model:
+  runner: tier_a
+  name: tier_a_logreg_test_iid
+  family: logreg          # logreg | complement_nb
+  params:
+    C: 1.0                # inverse L2 strength
+    max_iter: 200         # SAGA cap; kept modest so a 300k-doc fit is laptop-tractable
+    tol: 1.0e-3           # SAGA stopping tol; loosened from 1e-4 for the same reason
+data:
+  split: test_iid
+  train_split: train
+  cal_split: cal          # isotonic calibration is fit here, disjoint from test_iid
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+features:
+  word:
+    enabled: true
+    ngram_range: [1, 2]
+    min_df: 5
+    max_features: 150000
+    sublinear_tf: true
+  char:
+    enabled: true
+    ngram_range: [3, 5]
+    min_df: 5
+    max_features: 150000
+    sublinear_tf: true
+calibration: isotonic     # none | isotonic
+seed: 20260805

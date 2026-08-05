@@ -66,6 +66,18 @@ BOOTSTRAP_METHOD = "percentile"
 
 RUNNERS: dict[str, Callable[[dict], RunnerResult]] = {}
 
+# Runner modules imported on demand so their registration side effects fire
+# without the harness hard-depending on tier-specific libraries at import time.
+_OPTIONAL_RUNNER_MODULES = ("triage_lab.tier_a",)
+
+
+def _load_optional_runners() -> None:
+    """Import known runner modules so their `@register_runner` decorators run."""
+    import importlib
+
+    for module in _OPTIONAL_RUNNER_MODULES:
+        importlib.import_module(module)
+
 
 @dataclass(frozen=True)
 class RunnerResult:
@@ -377,6 +389,8 @@ def run(config_path, results_path=DEFAULT_RESULTS_PATH) -> dict:
     cfg_hash = config_sha256(config_path)
     runner_name = config["model"]["runner"]
     if runner_name not in RUNNERS:
+        _load_optional_runners()
+    if runner_name not in RUNNERS:
         raise ValueError(f"unknown runner {runner_name!r}; registered: {sorted(RUNNERS)}")
     runner = RUNNERS[runner_name]
 
@@ -414,4 +428,13 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # Delegate to the canonically-imported module. `python -m triage_lab.harness`
+    # runs this file as `__main__`, but runner registration goes through
+    # `from triage_lab.harness import register_runner` (see tier_a.py), which loads
+    # a SECOND module object under the real name `triage_lab.harness` with its own
+    # RUNNERS dict. Calling this file's `main()` would read the (empty) __main__
+    # registry. Re-importing and calling the canonical `main` guarantees the run()
+    # path reads the same RUNNERS that decorators populate.
+    from triage_lab.harness import main as _canonical_main
+
+    sys.exit(_canonical_main())

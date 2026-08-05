@@ -1,0 +1,33 @@
+# Tier A ladder, rung 3: rung 2 with the model family swapped to Complement NB
+# (the UPGRADE_PLAN.md §4.2 secondary point). Single delta vs
+# tier_a_logreg_wordchar_cal: model.family logreg -> complement_nb (and its
+# params block, which is model-specific). Same features, split, and seed so the
+# paired CAL delta isolates the model family.
+model:
+  runner: tier_a
+  name: tier_a_cnb_wordchar_cal
+  family: complement_nb   # logreg | complement_nb
+  params:
+    alpha: 0.3            # Laplace/Lidstone smoothing
+    norm: false           # ComplementNB weight-normalization off (sklearn default)
+data:
+  split: cal
+  train_split: train
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+features:
+  word:
+    enabled: true
+    ngram_range: [1, 2]
+    min_df: 5             # drop hapax/near-hapax word n-grams
+    max_features: 150000  # caps the problem width for tractability
+    sublinear_tf: true
+  char:
+    enabled: true
+    ngram_range: [3, 5]
+    min_df: 5
+    max_features: 150000  # caps char_wb vocabulary explosion
+    sublinear_tf: true
+calibration: none         # none | isotonic
+seed: 20260805

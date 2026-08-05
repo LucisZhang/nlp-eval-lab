@@ -1,0 +1,33 @@
+# Tier A FINAL reported point (Complement NB): word + char_wb, isotonic-
+# calibrated on CAL, evaluated ONCE on TEST-IID. Single delta vs
+# tier_a_logreg_test_iid: model.family logreg -> complement_nb (+ its params).
+# Fit on TRAIN, calibrate on CAL, evaluate on TEST-IID.
+model:
+  runner: tier_a
+  name: tier_a_cnb_test_iid
+  family: complement_nb   # logreg | complement_nb
+  params:
+    alpha: 0.3            # Laplace/Lidstone smoothing
+    norm: false           # ComplementNB weight-normalization off (sklearn default)
+data:
+  split: test_iid
+  train_split: train
+  cal_split: cal          # isotonic calibration is fit here, disjoint from test_iid
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+features:
+  word:
+    enabled: true
+    ngram_range: [1, 2]
+    min_df: 5
+    max_features: 150000
+    sublinear_tf: true
+  char:
+    enabled: true
+    ngram_range: [3, 5]
+    min_df: 5
+    max_features: 150000
+    sublinear_tf: true
+calibration: isotonic     # none | isotonic
+seed: 20260805
