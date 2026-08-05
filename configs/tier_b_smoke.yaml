@@ -1,0 +1,33 @@
+# Tier B SMOKE — end-to-end pipeline proof, NOT a reported model.
+#
+# Tiny DistilBERT run: ~2k seeded-subsample TRAIN rows, 1 epoch, seq 128. Purpose is to
+# exercise export -> train -> harness-eval -> ONNX-parity locally on MPS/CPU in a few
+# minutes; the resulting metrics are garbage by construction. Eval is on CAL (never
+# TEST-*), and the harness run for this config MUST use --no-append (its record never
+# enters results/runs.jsonl). Checkpoint + kit live under the gitignored data/ tree.
+model:
+  runner: tier_b
+  name: tier_b_smoke
+  base: distilbert-base-uncased
+  checkpoint: data/checkpoints/tier_b_smoke
+training:
+  epochs: 1
+  learning_rate: 5.0e-5
+  per_device_batch_size: 16
+  grad_accum: 1
+  max_seq_length: 128
+  warmup_ratio: 0.06
+  weight_decay: 0.01
+  logging_steps: 10
+  train_rows_cap: 2000        # seeded subsample -> still covers all 9 classes
+data:
+  split: cal
+  train_split: train
+  cal_split: cal
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+inference:
+  batch_size: 64
+calibration: temperature
+seed: 20260805

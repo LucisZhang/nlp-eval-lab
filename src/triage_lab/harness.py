@@ -68,15 +68,25 @@ RUNNERS: dict[str, Callable[[dict], RunnerResult]] = {}
 
 # Runner modules imported on demand so their registration side effects fire
 # without the harness hard-depending on tier-specific libraries at import time.
-_OPTIONAL_RUNNER_MODULES = ("triage_lab.tier_a",)
+# tier_b pulls in torch/transformers (the optional `tierb` dep group); a light CI
+# env without that group must still resolve tier_a, so import failures are skipped.
+_OPTIONAL_RUNNER_MODULES = ("triage_lab.tier_a", "triage_lab.tier_b")
 
 
 def _load_optional_runners() -> None:
-    """Import known runner modules so their `@register_runner` decorators run."""
+    """Import known runner modules so their `@register_runner` decorators run.
+
+    Missing optional dependencies (e.g. torch for tier_b) are tolerated: the module is
+    skipped so the other tiers stay usable. A truly-unknown runner still fails loud in
+    `run()` when the registry lookup misses.
+    """
     import importlib
 
     for module in _OPTIONAL_RUNNER_MODULES:
-        importlib.import_module(module)
+        try:
+            importlib.import_module(module)
+        except ImportError:
+            continue
 
 
 @dataclass(frozen=True)
@@ -382,8 +392,12 @@ def append_record(results_path, record: dict) -> None:
 # End-to-end run
 # ---------------------------------------------------------------------------
 
-def run(config_path, results_path=DEFAULT_RESULTS_PATH) -> dict:
-    """Resolve the runner from config, time it, evaluate + CI, append the record."""
+def run(config_path, results_path=DEFAULT_RESULTS_PATH, *, append: bool = True) -> dict:
+    """Resolve the runner from config, time it, evaluate + CI, (optionally) append.
+
+    `append=False` (CLI `--no-append`) returns the built record without writing it —
+    used for smoke/pipeline proofs that must never touch the append-only results log.
+    """
     config_path = Path(config_path)
     config = load_config(config_path)
     cfg_hash = config_sha256(config_path)
@@ -409,7 +423,8 @@ def run(config_path, results_path=DEFAULT_RESULTS_PATH) -> dict:
         wall,
         result.cost_usd,
     )
-    append_record(results_path, record)
+    if append:
+        append_record(results_path, record)
     return record
 
 
@@ -417,9 +432,18 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m triage_lab.harness")
     parser.add_argument("config", type=Path, help="path to the run config YAML")
     parser.add_argument("--results", type=Path, default=DEFAULT_RESULTS_PATH)
+    parser.add_argument(
+        "--no-append",
+        action="store_true",
+        help="do not write to the results log; print the record JSON to stdout instead "
+        "(for smoke/pipeline proofs)",
+    )
     args = parser.parse_args(argv)
 
-    record = run(args.config, args.results)
+    record = run(args.config, args.results, append=not args.no_append)
+    if args.no_append:
+        print(json.dumps(record, sort_keys=True, indent=2))
+        return 0
     print(f"run_id={record['run_id'][:16]} split={record['dataset']['split']}")
     for name in ("macro_f1", "balanced_accuracy", "ece", "brier", "aurc"):
         m = record["metrics"][name]

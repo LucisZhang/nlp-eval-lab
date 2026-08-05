@@ -1,0 +1,42 @@
+# Tier B1 — ModernBERT-base fine-tune, headline accuracy model, SEED A.
+#
+# Frozen Tier-B seed list (see docs/TIER_B_RUNBOOK.md): a=20260805, b=20260806,
+# c=20260807 — the Phase-0 base seed (20260805) and its two successors. Once
+# written these never change; seed variance across s{a,b,c} is the B1 exhibit.
+#
+# Hyperparameters: published ModernBERT fine-tune recipe — lr 5e-5, 3 epochs,
+# effective batch 32 (16 x grad_accum 2), warmup 6%, weight_decay 0.01. max_seq_length
+# 256 truncates the long narrative tail (front-loaded product signal + the int8/browser
+# deployment story favor short sequences); the realized truncation rate is measured on
+# TRAIN by the training script and stored in training_meta.json.
+#
+# ONE config = ONE run record. This config's eval side (data.split=test_iid,
+# calibration=temperature fit on CAL) is the FINAL reported point for seed A; iterate
+# nothing on TEST-IID. Training reads the `training` block; the harness reads
+# model.checkpoint + data.split + calibration + inference.
+model:
+  runner: tier_b
+  name: tier_b1_modernbert_sa
+  base: answerdotai/ModernBERT-base       # 149M, Apache-2.0 (training)
+  checkpoint: data/checkpoints/tier_b1_sa # download target for the trained dir (eval)
+training:
+  epochs: 3
+  learning_rate: 5.0e-5
+  per_device_batch_size: 16   # T4 16GB fp16-safe; drop to 8 + grad_accum 4 if OOM
+  grad_accum: 2               # effective batch 32
+  max_seq_length: 256
+  warmup_ratio: 0.06
+  weight_decay: 0.01
+  logging_steps: 50
+  train_rows_cap: null        # full ~300k TRAIN
+data:
+  split: test_iid
+  train_split: train
+  cal_split: cal              # temperature scaling is fit here, disjoint from test_iid
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+inference:
+  batch_size: 64
+calibration: temperature      # temperature | none
+seed: 20260805

@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data
 
 setup:
 	uv sync --frozen
@@ -41,3 +41,8 @@ tier-a:
 	uv run python -m triage_lab.harness configs/tier_a_cnb_wordchar_cal.yaml
 	uv run python -m triage_lab.harness configs/tier_a_logreg_test_iid.yaml
 	uv run python -m triage_lab.harness configs/tier_a_cnb_test_iid.yaml
+
+# Tier B training kit: materialize the TRAIN + CAL parquets + provenance manifest the
+# cloud GPU box needs (see docs/TIER_B_RUNBOOK.md). Deterministic, byte-identical.
+tier-b-data:
+	uv run python scripts/export_tier_b_data.py
