@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Triage Router Lab — three-tier complaint-triage evaluation with a routing-policy centerpiece"
 requires-python = ">=3.12"
 dependencies = [
+    "datasketch>=2.0.0",
     "duckdb>=1.0",
+    "numpy>=2.5.1",
     "pyyaml>=6.0",
 ]
 
