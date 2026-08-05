@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits
 
 setup:
 	uv sync --frozen
@@ -25,6 +25,9 @@ taxonomy: ingest
 dedup: taxonomy
 	uv run python -m triage_lab.dedup
 
-data: snapshot ingest taxonomy dedup
-	@echo "ERROR: 'make data' incomplete — remaining Phase 0 steps (temporal splits, datasheet) not implemented yet." >&2
+splits: dedup
+	uv run python -m triage_lab.splits
+
+data: snapshot ingest taxonomy dedup splits
+	@echo "ERROR: 'make data' incomplete — remaining Phase 0 step (datasheet) not implemented yet." >&2
 	@exit 1
