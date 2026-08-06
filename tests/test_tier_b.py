@@ -214,6 +214,88 @@ def test_tokenize_chunked_matches_whole_pass():
     assert max(len(r) for r in ids_rows) <= 16                 # truncation honored
 
 
+# ---------------------------------------------------------------------------
+# Preemptible/resumable supervision logic (scripts/train_tier_b.py), GPU-free
+# ---------------------------------------------------------------------------
+
+def _ckpt(dirpath, step, *, weights=True, state=True):
+    d = dirpath / f"checkpoint-{step}"
+    d.mkdir(parents=True)
+    if state:
+        (d / "trainer_state.json").write_text("{}")
+    if weights:
+        (d / "model.safetensors").write_bytes(b"w")
+    return d
+
+
+def test_pid_liveness():
+    import os
+
+    train = _load_script("train_tier_b")
+    assert train._pid_alive(os.getpid()) is True
+    assert train._pid_alive(2_000_000_000) is False   # not a live pid
+    assert train._pid_alive(-1) is False
+
+
+def test_lock_blocks_live_duplicate_and_reaps_stale(tmp_path):
+    import json
+    import os
+
+    train = _load_script("train_tier_b")
+
+    # A live, non-us pid (init/pid 1) holding the lock -> refuse.
+    (tmp_path / train.LOCK_FILENAME).write_text(json.dumps({"pid": 1}))
+    with pytest.raises(RuntimeError, match="already owns"):
+        train.acquire_lock(tmp_path)
+
+    # A dead pid -> stale lock reaped, we take ownership.
+    (tmp_path / train.LOCK_FILENAME).write_text(json.dumps({"pid": 2_000_000_000}))
+    lock = train.acquire_lock(tmp_path)
+    assert json.loads(lock.read_text())["pid"] == os.getpid()
+
+    train.release_lock(lock)
+    assert not lock.exists()
+
+
+def test_is_complete_checkpoint(tmp_path):
+    train = _load_script("train_tier_b")
+    assert train.is_complete_checkpoint(_ckpt(tmp_path, 10)) is True
+    assert train.is_complete_checkpoint(_ckpt(tmp_path, 20, weights=False)) is False
+    assert train.is_complete_checkpoint(_ckpt(tmp_path, 30, state=False)) is False
+    assert train.is_complete_checkpoint(tmp_path / "not-a-checkpoint") is False
+
+
+def test_resolve_resume_picks_latest_complete_and_fails_on_corrupt_only(tmp_path):
+    train = _load_script("train_tier_b")
+    td = tmp_path / "hf_trainer"
+    td.mkdir()
+
+    assert train.resolve_resume(td) is None            # nothing on disk -> fresh start
+
+    _ckpt(td, 20)                                       # complete
+    _ckpt(td, 40, weights=False)                        # incomplete (crash mid-save)
+    assert train.resolve_resume(td) == td / "checkpoint-20"   # latest COMPLETE, not the newer broken one
+
+    # Only-corrupt checkpoints must never silently restart from step 0.
+    bad = tmp_path / "bad"
+    (bad).mkdir()
+    _ckpt(bad, 10, weights=False)
+    with pytest.raises(RuntimeError, match="Refusing to silently restart"):
+        train.resolve_resume(bad)
+
+
+def test_write_status_is_atomic_and_schema(tmp_path):
+    import json
+
+    train = _load_script("train_tier_b")
+    status = {"config_path": "c.yaml", "pid": 123, "current_step": 5, "exit_status": "running"}
+    train.write_status(tmp_path, status)
+    on_disk = json.loads((tmp_path / train.STATUS_FILENAME).read_text())
+    assert on_disk == status
+    # No tmp turds left behind by the rename.
+    assert not list(tmp_path.glob(f".{train.STATUS_FILENAME}.tmp*"))
+
+
 def test_verify_manifest_requires_manifest(tmp_path):
     train = _load_script("train_tier_b")
     with pytest.raises(FileNotFoundError, match="manifest"):

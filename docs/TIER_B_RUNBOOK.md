@@ -91,6 +91,66 @@ If ModernBERT OOMs on a T4: lower `per_device_batch_size` to 8 and raise `grad_a
 re-export is a new config identity; prefer a bigger GPU if you want the shipped configs
 verbatim.
 
+### 4a. Shared Jupyter A6000 — detached, preemptible, resumable runs
+
+On a shared box the run must **survive the terminal/kernel dying** and be **stoppable**
+so you free the GPU without losing progress. Training saves a full resumable checkpoint
+every `training.save_steps` steps (500 by default; ~19/epoch on the A6000's ~9.4k
+steps/epoch) and auto-resumes from the latest complete one.
+
+**Start (detached, survives terminal/kernel death):**
+
+```bash
+cd <bundle dir>            # where you untarred tier_b_colab_bundle.tar.gz
+mkdir -p logs ckpt
+setsid nohup python -u train_tier_b.py \
+    --config tier_b1_modernbert_sa.yaml --data-dir tier_b_kit --out ckpt/tier_b1_sa \
+    > logs/tier_b1_sa.log 2>&1 < /dev/null &
+disown
+```
+
+`setsid` puts it in its own session (no controlling terminal), `nohup` ignores SIGHUP,
+`</dev/null` + `&` + `disown` fully detach it — closing the terminal or restarting the
+Jupyter kernel does not kill it. (macOS has no `setsid`; there use `nohup … & disown`.)
+
+**Check status** (atomic JSON, safe to read any time):
+
+```bash
+cat ckpt/tier_b1_sa/status.json     # current_step, total_steps, latest_complete_checkpoint,
+                                    # last_eval_metrics, exit_status, resume_command
+tail -f logs/tier_b1_sa.log         # live progress
+```
+
+**Request a graceful stop** (frees the GPU at the next step boundary, after writing a
+checkpoint — never mid-write):
+
+```bash
+touch ckpt/tier_b1_sa/STOP_REQUESTED
+# process saves a checkpoint, sets status.exit_status="stopped", exits with code 42
+```
+
+**Resume** — delete the sentinel and rerun the *exact same* command; it auto-resumes from
+the latest complete checkpoint (never restarts from step 0 while resumable state exists):
+
+```bash
+rm -f ckpt/tier_b1_sa/STOP_REQUESTED
+setsid nohup python -u train_tier_b.py \
+    --config tier_b1_modernbert_sa.yaml --data-dir tier_b_kit --out ckpt/tier_b1_sa \
+    > logs/tier_b1_sa.log 2>&1 < /dev/null &
+disown
+```
+
+**Exit codes:** `0` completed · `42` stopped (resumable) · `2` refused (another live run
+holds the lock, or all on-disk checkpoints are corrupt — it fails loud, never silently
+restarts). A second concurrent launch to the same `--out` is rejected by the pid lock.
+
+**On successful completion:** `model.safetensors` + `training_meta.json` land at the
+`--out` root (what the eval harness loads); the intermediate `hf_trainer/checkpoint-*`
+dirs are deleted (shared-disk hygiene). On a stop/crash they are retained for resume.
+
+Optional flags: `--save-steps N` overrides the checkpoint interval; `--cpu` forces
+deterministic CPU (used only for the resume-equivalence proof, never for real runs).
+
 ## 5. Download checkpoints back and place them (local)
 
 Download each `ckpt/tier_b1_sa` … into the repo under `data/checkpoints/` at the paths

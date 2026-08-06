@@ -34,9 +34,12 @@ import argparse
 import gc
 import hashlib
 import json
+import os
 import platform
+import shutil
 import sys
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 import yaml
@@ -44,6 +47,21 @@ import yaml
 CHUNK_SIZE = 1024 * 1024
 TOKENIZE_CHUNK_SIZE = 5000  # tokenize TRAIN/CAL in ~5k-row chunks to bound CPU RAM
 KEY_LIBS = ("torch", "transformers", "accelerate", "tokenizers", "safetensors", "numpy")
+
+# Preemptible/resumable supervision artifacts (all under the run's --out dir).
+STOP_FILENAME = "STOP_REQUESTED"     # sentinel: touch to request a graceful stop
+LOCK_FILENAME = "train.lock"         # pid-liveness lock preventing duplicate runs
+STATUS_FILENAME = "status.json"      # atomic machine-readable run status
+TRAINER_SUBDIR = "hf_trainer"        # HF Trainer output_dir (holds checkpoint-* dirs)
+DEFAULT_SAVE_STEPS = 500             # A6000 ~9.4k steps/epoch -> ~19 checkpoints/epoch
+DEFAULT_SAVE_TOTAL_LIMIT = 3
+EXIT_COMPLETED = 0
+EXIT_STOPPED = 42                    # distinct: graceful sentinel stop, resumable
+EXIT_ERROR = 2                       # lock held / all checkpoints corrupt / bad config
+
+
+def _now() -> str:
+    return datetime.now(UTC).isoformat()
 
 
 # ---------------------------------------------------------------------------
@@ -208,13 +226,140 @@ def arrays_sha256(ids_rows, mask_rows) -> str:
     return h.hexdigest()
 
 
-def train(config: dict, data_dir: Path, out_dir: Path) -> dict:
+# ---------------------------------------------------------------------------
+# Duplicate-run prevention: pid-liveness lockfile (§5)
+# ---------------------------------------------------------------------------
+
+def _pid_alive(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True  # exists but owned by another user
+    return True
+
+
+def acquire_lock(out_dir: Path) -> Path:
+    """Take an exclusive pid lock on `out_dir`; reap a stale one; refuse a live duplicate."""
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    lock = out_dir / LOCK_FILENAME
+    if lock.exists():
+        try:
+            other = int(json.loads(lock.read_text()).get("pid", -1))
+        except (ValueError, OSError):
+            other = -1
+        if other != os.getpid() and _pid_alive(other):
+            raise RuntimeError(
+                f"another training process (pid {other}) already owns {out_dir}. "
+                f"Refusing to start a duplicate run. If you are certain that pid is dead, "
+                f"delete {lock} and retry."
+            )
+        print(f"[lock] reaping stale lock (dead pid {other}) at {lock}", flush=True)
+    lock.write_text(json.dumps({"pid": os.getpid(), "host": platform.node(), "acquired": _now()}))
+    return lock
+
+
+def release_lock(lock: Path) -> None:
+    """Remove the lock iff we own it (pid match); tolerate races/absence."""
+    try:
+        if Path(lock).exists() and int(json.loads(Path(lock).read_text()).get("pid", -1)) == os.getpid():
+            Path(lock).unlink()
+    except (OSError, ValueError):
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Atomic machine-readable status file (§6)
+# ---------------------------------------------------------------------------
+
+def write_status(out_dir: Path, status: dict) -> None:
+    """Write status.json atomically (tmp file + os.replace, never a partial read)."""
+    out_dir = Path(out_dir)
+    path = out_dir / STATUS_FILENAME
+    tmp = out_dir / f".{STATUS_FILENAME}.tmp.{os.getpid()}"
+    tmp.write_text(json.dumps(status, sort_keys=True, indent=2) + "\n")
+    os.replace(tmp, path)  # atomic on POSIX
+
+
+# ---------------------------------------------------------------------------
+# Checkpoint completeness + resume resolution (§1, §2)
+# ---------------------------------------------------------------------------
+
+def is_complete_checkpoint(ckpt: Path) -> bool:
+    """A checkpoint is resumable only if trainer_state.json AND a weights file are present.
+
+    Guards against a dir left half-written by a hard kill (SIGKILL mid-save) and against
+    HF's transient in-progress dirs (`tmp-checkpoint-*`, which we never match as complete).
+    """
+    ckpt = Path(ckpt)
+    if not ckpt.is_dir() or not ckpt.name.startswith("checkpoint-"):
+        return False
+    if not (ckpt / "trainer_state.json").exists():
+        return False
+    return (ckpt / "model.safetensors").exists() or (ckpt / "pytorch_model.bin").exists()
+
+
+def list_checkpoints(trainer_dir: Path) -> list[tuple[int, Path]]:
+    """All `checkpoint-<int>` dirs under `trainer_dir`, sorted ascending by step."""
+    trainer_dir = Path(trainer_dir)
+    if not trainer_dir.is_dir():
+        return []
+    found = []
+    for d in trainer_dir.glob("checkpoint-*"):
+        suffix = d.name[len("checkpoint-"):]
+        if d.is_dir() and suffix.isdigit():
+            found.append((int(suffix), d))
+    return sorted(found)
+
+
+def resolve_resume(trainer_dir: Path) -> Path | None:
+    """Latest COMPLETE checkpoint to resume from, or None for a fresh start.
+
+    If checkpoint dirs exist but none are complete, raise — never silently restart from
+    step 0 when resumable intent is on disk (§2).
+    """
+    ckpts = list_checkpoints(trainer_dir)
+    if not ckpts:
+        return None
+    complete = [d for _, d in ckpts if is_complete_checkpoint(d)]
+    if complete:
+        return complete[-1]
+    names = ", ".join(d.name for _, d in ckpts)
+    raise RuntimeError(
+        f"found checkpoint dirs [{names}] under {trainer_dir} but NONE are complete "
+        f"(missing trainer_state.json/weights). Refusing to silently restart from step 0. "
+        f"Inspect and remove the corrupt checkpoint dir(s), or move {trainer_dir} aside, "
+        f"then rerun the same command to resume from an earlier complete checkpoint."
+    )
+
+
+def cleanup_checkpoints(trainer_dir: Path) -> list[str]:
+    """On success, drop intermediate checkpoint-* dirs (shared disk hygiene, §4).
+
+    The authoritative final model lives at the --out root (model.safetensors), so the
+    periodic checkpoints are pure resume scaffolding and are safe to remove once training
+    completes normally. Kept on stop/failure so a resume is always possible.
+    """
+    removed = []
+    for _, d in list_checkpoints(trainer_dir):
+        shutil.rmtree(d, ignore_errors=True)
+        removed.append(d.name)
+    return removed
+
+
+def train(config: dict, data_dir: Path, out_dir: Path, *, config_path: Path | None = None,
+          save_steps: int | None = None, use_cpu: bool = False) -> dict:
     import numpy as np
     import torch
     from transformers import (
         AutoModelForSequenceClassification,
         AutoTokenizer,
         Trainer,
+        TrainerCallback,
         TrainingArguments,
         set_seed,
     )
@@ -222,7 +367,58 @@ def train(config: dict, data_dir: Path, out_dir: Path) -> dict:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # Deterministic path for the resume-equivalence proof (§7). Real runs never pass
+    # --cpu, so the precision-selection policy is untouched.
+    if use_cpu:
+        torch.use_deterministic_algorithms(True)
+
     manifest = verify_manifest(data_dir)
+
+    # §5 duplicate-run prevention + §6 status file. Everything below runs under the lock;
+    # `finally` releases it even on stop/exception.
+    lock = acquire_lock(out_dir)
+    stop_file = out_dir / STOP_FILENAME
+    trainer_dir = out_dir / TRAINER_SUBDIR
+    status = {
+        "config_path": str(config_path) if config_path else None,
+        "config_sha256": sha256_file(config_path) if config_path else None,
+        "pid": os.getpid(),
+        "host": platform.node(),
+        "start_time": _now(),
+        "out_dir": str(out_dir),
+        "current_step": 0,
+        "total_steps": None,
+        "latest_complete_checkpoint": None,
+        "last_eval_metrics": None,
+        "stop_reason": None,
+        "exit_status": "running",
+        "resume_command": _resume_command(config_path, data_dir, out_dir),
+    }
+
+    def _flush_status():
+        write_status(out_dir, status)
+
+    _flush_status()
+    try:
+        return _train_locked(
+            config, data_dir, out_dir, manifest, config_path, save_steps, use_cpu,
+            stop_file, trainer_dir, status, _flush_status,
+            np, torch, AutoModelForSequenceClassification, AutoTokenizer,
+            Trainer, TrainerCallback, TrainingArguments, set_seed,
+        )
+    finally:
+        release_lock(lock)
+
+
+def _resume_command(config_path, data_dir, out_dir) -> str:
+    cfg = Path(config_path).name if config_path else "<config>.yaml"
+    return f"python -u train_tier_b.py --config {cfg} --data-dir {data_dir} --out {out_dir}"
+
+
+def _train_locked(config, data_dir, out_dir, manifest, config_path, save_steps_override,
+                  use_cpu, stop_file, trainer_dir, status, _flush_status,
+                  np, torch, AutoModelForSequenceClassification, AutoTokenizer,
+                  Trainer, TrainerCallback, TrainingArguments, set_seed) -> dict:
 
     model_cfg = config["model"]
     tr = config["training"]
@@ -310,9 +506,11 @@ def train(config: dict, data_dir: Path, out_dir: Path) -> dict:
     bf16, fp16 = _select_precision()
     per_device = int(tr["per_device_batch_size"])
     grad_accum = int(tr.get("grad_accum", 1))
+    save_steps = int(save_steps_override or tr.get("save_steps", DEFAULT_SAVE_STEPS))
+    save_total_limit = int(tr.get("save_total_limit", DEFAULT_SAVE_TOTAL_LIMIT))
 
     args = TrainingArguments(
-        output_dir=str(out_dir / "hf_trainer"),
+        output_dir=str(trainer_dir),
         num_train_epochs=float(tr["epochs"]),
         per_device_train_batch_size=per_device,
         per_device_eval_batch_size=int(config.get("inference", {}).get("batch_size", 64)),
@@ -323,11 +521,14 @@ def train(config: dict, data_dir: Path, out_dir: Path) -> dict:
         logging_strategy="steps",
         logging_steps=int(tr.get("logging_steps", 50)),
         eval_strategy="epoch",
-        save_strategy="no",
+        save_strategy="steps",           # §1 periodic full resumable checkpoints
+        save_steps=save_steps,
+        save_total_limit=save_total_limit,
         seed=seed,
         data_seed=seed,
         bf16=bf16,
         fp16=fp16,
+        use_cpu=use_cpu,                 # §7 proof only; real runs pass use_cpu=False
         report_to=[],
         dataloader_num_workers=0,
     )
@@ -341,19 +542,91 @@ def train(config: dict, data_dir: Path, out_dir: Path) -> dict:
         compute_metrics=compute_metrics,
     )
 
+    # §3 graceful preemption + §6 status updates, driven from Trainer callbacks.
+    class SupervisorCallback(TrainerCallback):
+        def on_train_begin(self, a, state, control, **kw):
+            status["total_steps"] = int(state.max_steps)
+            status["current_step"] = int(state.global_step)
+            _flush_status()
+            return control
+
+        def on_step_end(self, a, state, control, **kw):
+            # Cooperative stop at a step boundary: request a checkpoint THEN stop, so a full
+            # checkpoint is always flushed before exit (never a mid-write kill).
+            if stop_file.exists():
+                control.should_save = True
+                control.should_training_stop = True
+                status["stop_reason"] = "sentinel"
+            return control
+
+        def on_epoch_end(self, a, state, control, **kw):
+            # When we break the loop early to stop, DefaultFlowCallback (eval_strategy=epoch)
+            # would fire a full CAL eval before exit. Skip it on a sentinel stop so the exit is
+            # quick and the saved checkpoint is the last action. (This callback runs after the
+            # default one, so this override wins.)
+            if stop_file.exists():
+                control.should_evaluate = False
+            return control
+
+        def on_save(self, a, state, control, **kw):
+            ck = Path(a.output_dir) / f"checkpoint-{int(state.global_step)}"
+            status["current_step"] = int(state.global_step)
+            if is_complete_checkpoint(ck):
+                status["latest_complete_checkpoint"] = str(ck)
+            _flush_status()
+            return control
+
+        def on_evaluate(self, a, state, control, metrics=None, **kw):
+            if metrics:
+                status["last_eval_metrics"] = {
+                    k: float(v) for k, v in metrics.items() if isinstance(v, (int, float))
+                }
+            status["current_step"] = int(state.global_step)
+            _flush_status()
+            return control
+
+    trainer.add_callback(SupervisorCallback())
+
+    # §2 auto-resume from the latest COMPLETE checkpoint (raises if only corrupt ones exist).
+    resume = resolve_resume(trainer_dir)
+    if resume is not None:
+        print(f"[resume] resuming from {resume}", flush=True)
+
     t0 = time.perf_counter()
-    trainer.train()
+    trainer.train(resume_from_checkpoint=resume)
     wall = time.perf_counter() - t0
 
-    # Persist the checkpoint (safetensors + config with id2label) + tokenizer.
-    trainer.save_model(str(out_dir))
-    tokenizer.save_pretrained(str(out_dir))
+    stopped = stop_file.exists()
 
-    # Training curve artifact: one JSON object per Trainer log entry.
+    # Training-curve artifact (partial on stop, full on completion).
     with open(out_dir / "training_log.jsonl", "w", encoding="utf-8") as f:
         f.writelines(
             json.dumps(entry, sort_keys=True) + "\n" for entry in trainer.state.log_history
         )
+
+    if stopped:
+        # A checkpoint was written at the stop boundary; leave all checkpoints in place so
+        # rerunning the exact same command resumes. Do NOT write the root model / meta —
+        # the run is unfinished and the harness must not pick up a partial model.
+        latest = resolve_resume(trainer_dir)
+        status["current_step"] = int(trainer.state.global_step)
+        status["stop_reason"] = status.get("stop_reason") or "sentinel"
+        status["exit_status"] = "stopped"
+        status["latest_complete_checkpoint"] = str(latest) if latest else None
+        _flush_status()
+        print(f"[stop] graceful stop at step {trainer.state.global_step}; "
+              f"latest complete checkpoint {status['latest_complete_checkpoint']}", flush=True)
+        return {
+            "run_status": "stopped",
+            "base_model": base,
+            "seed": seed,
+            "current_step": int(trainer.state.global_step),
+            "latest_complete_checkpoint": status["latest_complete_checkpoint"],
+        }
+
+    # ---- normal completion: authoritative model + meta at the --out root ----
+    trainer.save_model(str(out_dir))
+    tokenizer.save_pretrained(str(out_dir))
 
     lib_versions = {}
     for lib in KEY_LIBS:
@@ -368,6 +641,7 @@ def train(config: dict, data_dir: Path, out_dir: Path) -> dict:
         else ("mps" if torch.backends.mps.is_available() else "cpu")
     )
     meta = {
+        "run_status": "completed",
         "base_model": base,
         "seed": seed,
         "max_seq_length": max_len,
@@ -390,6 +664,15 @@ def train(config: dict, data_dir: Path, out_dir: Path) -> dict:
         "final_eval": trainer.state.log_history[-1] if trainer.state.log_history else {},
     }
     (out_dir / "training_meta.json").write_text(json.dumps(meta, sort_keys=True, indent=2) + "\n")
+
+    # §4 shared-disk hygiene: the periodic checkpoints are pure resume scaffolding now that
+    # the final model is at the root, so drop them on success.
+    removed = cleanup_checkpoints(trainer_dir)
+    status["current_step"] = int(trainer.state.global_step)
+    status["stop_reason"] = "completed"
+    status["exit_status"] = "completed"
+    status["removed_checkpoints"] = removed
+    _flush_status()
     return meta
 
 
@@ -398,17 +681,34 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--config", type=Path, required=True)
     p.add_argument("--data-dir", type=Path, required=True)
     p.add_argument("--out", type=Path, required=True)
+    p.add_argument("--save-steps", type=int, default=None,
+                   help="override checkpoint interval (else config training.save_steps or 500)")
+    p.add_argument("--cpu", action="store_true",
+                   help="force CPU + deterministic algorithms (resume-equivalence proof only)")
     args = p.parse_args(argv)
 
     cfg = load_config(args.config)
-    meta = train(cfg, args.data_dir, args.out)
+    try:
+        meta = train(cfg, args.data_dir, args.out, config_path=args.config,
+                     save_steps=args.save_steps, use_cpu=args.cpu)
+    except RuntimeError as e:
+        # Lock held by a live run, or all checkpoints corrupt: fail loud, never restart.
+        print(f"ERROR: {e}", file=sys.stderr)
+        return EXIT_ERROR
+
+    if meta.get("run_status") == "stopped":
+        print(f"STOPPED at step {meta['current_step']} "
+              f"(latest checkpoint {meta['latest_complete_checkpoint']}).")
+        print("Resume by rerunning the exact same command.")
+        return EXIT_STOPPED
+
     print(f"trained {meta['base_model']} seed={meta['seed']} -> {args.out}")
     print(f"  hardware={meta['hardware']} precision={meta['precision']} "
           f"wall={meta['wall_clock_seconds']:.1f}s trunc={meta['truncation_rate']:.3f}")
     fe = meta["final_eval"]
     if "eval_macro_f1" in fe:
         print(f"  final CAL macro_f1={fe['eval_macro_f1']:.4f} accuracy={fe.get('eval_accuracy'):.4f}")
-    return 0
+    return EXIT_COMPLETED
 
 
 if __name__ == "__main__":

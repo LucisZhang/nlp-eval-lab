@@ -19,6 +19,7 @@ training:
   warmup_ratio: 0.06
   weight_decay: 0.01
   logging_steps: 10
+  save_steps: 20          # small interval so the smoke run produces several checkpoints
   train_rows_cap: 2000        # seeded subsample -> still covers all 9 classes
 data:
   split: cal

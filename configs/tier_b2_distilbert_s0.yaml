@@ -24,6 +24,7 @@ training:
   warmup_ratio: 0.06
   weight_decay: 0.01
   logging_steps: 50
+  save_steps: 500         # periodic resumable checkpoints (A6000 ~9.4k steps/epoch)
   train_rows_cap: null        # full ~300k TRAIN
 data:
   split: test_iid
