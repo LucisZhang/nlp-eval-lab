@@ -70,7 +70,14 @@ RUNNERS: dict[str, Callable[[dict], RunnerResult]] = {}
 # without the harness hard-depending on tier-specific libraries at import time.
 # tier_b pulls in torch/transformers (the optional `tierb` dep group); a light CI
 # env without that group must still resolve tier_a, so import failures are skipped.
-_OPTIONAL_RUNNER_MODULES = ("triage_lab.tier_a", "triage_lab.tier_b")
+# tier_c keeps its `openai` import lazy (inside the runner), so its module import
+# always succeeds and registers even in a light env — it only needs the `tierc`
+# group + OPENROUTER_API_KEY when actually invoked.
+_OPTIONAL_RUNNER_MODULES = (
+    "triage_lab.tier_a",
+    "triage_lab.tier_b",
+    "triage_lab.tier_c",
+)
 
 
 def _load_optional_runners() -> None:

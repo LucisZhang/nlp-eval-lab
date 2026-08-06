@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke
 
 setup:
 	uv sync --frozen
@@ -72,3 +72,11 @@ tier-c-prompt:
 # any byte difference (TRAIN split or selection logic drift).
 tier-c-exemplars-verify:
 	uv run python -m triage_lab.tier_c_prompt --verify-exemplars
+
+# Tier C SMOKE + cost gate: 25 CAL rows through Claude Haiku 4.5 via OpenRouter (few-shot
+# first, then zero-shot). Makes LIVE calls and spends real (tiny) money — needs the `tierc`
+# dep group + OPENROUTER_API_KEY in .env. --no-append: these garbage-at-n=25 records never
+# enter results/runs.jsonl; the raw per-call receipts land under results/tier_c_raw/.
+tier-c-smoke:
+	uv run --extra tierc python -m triage_lab.harness configs/tier_c_haiku_smoke_fewshot_cal.yaml
+	uv run --extra tierc python -m triage_lab.harness configs/tier_c_haiku_smoke_zeroshot_cal.yaml

@@ -101,3 +101,37 @@ reported runs. Every portfolio-bound number carries its reproduction command
   (per STATUS.md §b): smoke run on a tiny subsample → real per-call token cost → stop for
   cost approval before any full run.
 - **Repro:** `make tier-c-prompt && make tier-c-exemplars-verify && uv run pytest -q tests/test_tier_c_prompt.py`
+
+## 2026-08-06 — Phase 3 step 2: Tier C smoke run + measured per-call cost (cost-approval gate)
+
+- **Artifacts:** OpenRouter runner `src/triage_lab/tier_c.py` (registered as `tier_c`; lazy
+  `openai` import, optional dep group `tierc`), smoke configs
+  `configs/tier_c_haiku_smoke_{fewshot,zeroshot}_cal.yaml` (25 CAL rows, seeded
+  `eval_rows_cap`, only delta = `prompt.num_exemplars` 9 vs 0), tests `tests/test_tier_c.py`
+  (25, network-free), Makefile target `tier-c-smoke`, per-call receipts under
+  `results/tier_c_raw/`.
+- **Hypothesis:** the frozen v1 prompt bundle (`f6777a96…`) + strict JSON-Schema structured
+  output works end-to-end against `anthropic/claude-haiku-4.5` via OpenRouter, and real
+  per-call token cost can be measured from actual usage × published per-MTok prices
+  (CLAUDE.md rule 6) to gate the full-run budget.
+- **Result:** two runs appended to `results/runs.jsonl`, both n=25 CAL, 0 parse failures,
+  upstream provider Amazon Bedrock 25/25 on both, computed cost == OpenRouter-reported cost
+  to the microdollar on both:
+  - few-shot k=9 (`run_id e22fba2a…`): accuracy 0.80, 65,205 prompt + 238 completion tokens,
+    **$0.066395 total = $0.002656/call**, latency p50 2.0 s / p95 8.4 s.
+  - zero-shot k=0 (`run_id 77cbd36f…`): accuracy 0.76, 32,430 + 263 tokens,
+    **$0.033745 total = $0.001350/call**, p50 1.6 s / p95 6.7 s.
+  - Pricing snapshots (published, from `GET /models`): Haiku 4.5 $1/$5 per MTok;
+    Sonnet 5 (`anthropic/claude-sonnet-5`, preflight only, no calls) $2/$10 per MTok.
+  - Smoke macro-F1 (0.46 / 0.38) is not a quality claim: n=25 leaves several of 9 classes
+    with zero support (hence the benign `metrics.py` zero-division RuntimeWarning); the
+    smoke exists to measure cost, and accuracy 0.80 merely confirms the pipeline is sane.
+- **Projection for approval (few-shot $0.002656/call Haiku, ≈$0.005312/call Sonnet):**
+  ablation on CAL 1,500/arm ≈ $6.0; Haiku few-shot TEST-IID n=5,000 ≈ $13.3 and
+  TEST-POSTCUTOFF n=5,000 ≈ $13.3; Sonnet 5 few-shot paired n=1,500 × 2 slices ≈ $15.9.
+  **Total ≈ $48.5** (+ retry contingency < $55). Subsample sizes are proposals, not yet frozen.
+- **Verdict:** **Smoke accepted; full runs NOT started.** Per STATUS.md §b the session stops
+  here — awaiting owner cost approval (and subsample-size sign-off) before the ablation and
+  any TEST-* run.
+- **Repro:** `make tier-c-smoke` (live API; appends two new records with fresh run_ids;
+  receipts land in `results/tier_c_raw/<config name>/<UTC ts>/calls.jsonl`)

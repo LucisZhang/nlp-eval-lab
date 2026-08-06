@@ -1,0 +1,29 @@
+# Tier C SMOKE (zero-shot) — cost-gate + plumbing proof, NOT a reported model.
+#
+# Single-variable partner of tier_c_haiku_smoke_fewshot_cal.yaml: IDENTICAL except
+# prompt.num_exemplars: 0 (the §6.2 zero-shot variant — same system + template, no
+# exemplar pairs). 25 seeded-subsample CAL rows through Claude Haiku 4.5 via OpenRouter
+# (CLAUDE.md rule 6), frozen prompt bundle v1. Purpose: prove the end-to-end path and
+# gate the real Tier C budget on a measured per-call $/1k figure. Metrics are noisy by
+# construction at n=25. Eval is on CAL (never TEST-*); the harness run for this config
+# MUST use --no-append (its record never enters results/runs.jsonl).
+model:
+  runner: tier_c
+  name: tier_c_haiku_smoke_zeroshot_cal
+  slug: anthropic/claude-haiku-4.5
+  params:
+    temperature: 0.0
+    max_tokens: 64          # output is just {"label": "<class>"}; 64 is ample headroom
+    request_timeout_s: 60
+    max_retries: 3          # transport/429/5xx only; parse failures use the fallback label
+prompt:
+  version: v1
+  num_exemplars: 0          # zero-shot: no exemplar pairs, same system + template
+data:
+  split: cal
+  eval_rows_cap: 25         # seeded subsample; frozen split file untouched
+  cap_seed: 20260806
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+seed: 20260806

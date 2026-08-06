@@ -21,6 +21,9 @@ tierb = [
     "torch>=2.13.0",
     "transformers>=5.14.1",
 ]
+tierc = [
+    "openai>=2.53.0",
+]
 
 [dependency-groups]
 dev = [
