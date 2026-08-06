@@ -77,3 +77,27 @@ reported runs. Every portfolio-bound number carries its reproduction command
   still wins selective-risk (AURC 0.050 vs 0.059) — relevant to Phase 4
   confidence-cascade thresholds.
 - **Repro:** `uv run python -m triage_lab.harness configs/tier_a_cnb_test_iid.yaml`
+
+## 2026-08-06 — Phase 3 step 1: Tier C prompt v1 + structured-output schema (versioned, content-hashed)
+
+- **Artifacts:** `prompts/tier_c/v1/{prompt.yaml, schema.json, exemplars.json}` (frozen;
+  any change = new version dir), loader `src/triage_lab/tier_c_prompt.py`, tests
+  `tests/test_tier_c_prompt.py` (14), Makefile targets `tier-c-prompt` /
+  `tier-c-exemplars-verify`. No API calls made; no configs or TEST-* slices touched.
+- **Hypothesis:** a single parameterized prompt version (k=0 zero-shot / k=9 few-shot via
+  `num_exemplars`) with a strict JSON-Schema label enum generated from `taxonomy.py`, and
+  one seeded exemplar per harmonized class from TRAIN (seed 20260806, 200–1200 normalized
+  chars, candidates sorted by complaint_id), satisfies hard rules 2 & 4: content-hashed,
+  frozen, byte-reproducible from the frozen snapshot, zero leakage into CAL/TEST-*.
+- **Result:** hashes — prompt.yaml `52f82550…`, schema.json `f533bb73…`, exemplars.json
+  `809db598…`, **bundle_sha256 `f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe`**
+  (this is the `prompt_hash` every Tier C run record must carry). 9 exemplars, one per
+  class, all verified present in TRAIN (`train_sha256 939186e7…` integrity-gated) and
+  absent from CAL/TEST-IID/TEST-DRIFT/TEST-POSTCUTOFF. `--verify-exemplars`: byte-identical
+  regeneration OK. Full suite 117 passed; ruff clean. `--generate-exemplars` refuses to
+  overwrite (freeze enforced in code, not just convention).
+- **Verdict:** **Prompt/schema versioning infrastructure accepted.** k landed at 9 (one per
+  class) against the plan's "k≈10" — stratified coverage beats a round number. Next task
+  (per STATUS.md §b): smoke run on a tiny subsample → real per-call token cost → stop for
+  cost approval before any full run.
+- **Repro:** `make tier-c-prompt && make tier-c-exemplars-verify && uv run pytest -q tests/test_tier_c_prompt.py`

@@ -1,0 +1,65 @@
+{
+  "created": "2026-08-06",
+  "exemplars": [
+    {
+      "complaint_id": 3110470,
+      "label": "card",
+      "narrative": "I was promised 0 % apr for 21 months ending XX/XX/2020 After five months of on time payments I accidentally made a payment late by 5 days. The late payment was due to their website not working properly. I contacted card member services and they agreed to credit me back the late fee. Then without notifying me they revoked my promotional period and began to charge me interest. I was neither notified over the phone nor was I notified by mail. I contacted the both XXXX XXXX and XXXX XXXX XXXX and was given the run around on the phone. I was treated very rude. I have taken notes on my phone conversations and have the names and dates of those who treated me rude and deceptive. I told them that I would call the police and they laughed at me. Sincerely, XXXX XXXX Customer"
+    },
+    {
+      "complaint_id": 3404898,
+      "label": "credit_reporting",
+      "narrative": "Even though Equifax have removed most of the fraudulent information from my consumer report, and even though they have VERIFIED TO ME that my information was involved in their data breach of 2017, they have not removed the last student loan account from my report and it is preventing me from recovery."
+    },
+    {
+      "complaint_id": 2144223,
+      "label": "debt_collection",
+      "narrative": "Mutual Financial Partners XXXX XXXX XXXX will not provide me with any information regarding the debt. I have asked for written proof, but they will not provide it. I received a call from a \" locator '' asking me to verify my address to \" deliver documents ''. I was originally told that they are called \" XXXX '' out of XXXX XXXX. After some research, I found out otherwise."
+    },
+    {
+      "complaint_id": 3127266,
+      "label": "deposit_account",
+      "narrative": "On XX/XX/XXXX I applied for a BBVA checking and savings account using a promotional offer to receive a {$200.00} and {$50.00} bonus respectively. I have completed the requirements of the offer. When I asked BBVA when I would be paid, they said that I wasn't eligible because I had a checking account open in the last 12 months. Fortunately I keep my own records and know this is incorrect. I closed my last BBVA checking account on XX/XX/XXXX. As anyone can see, it has been more than 12 months and thus I am eligible under the terms."
+    },
+    {
+      "complaint_id": 4391271,
+      "label": "money_service",
+      "narrative": "Paypal closed my account for no reason and will not help me with getting it back up and going I am not sure if this is some mistake as I assume it has to be. I have not been able to get help from them for months but I just remembered I could file report on here as I feel are not doing their job properly and it is effecting me a great deal as I used paypal quite frequently. My email linked to my Paypal is XXXX XXXX"
+    },
+    {
+      "complaint_id": 1812947,
+      "label": "mortgage",
+      "narrative": "My home loan ( and servicing ) was sold to a company called PHH Mortgage back in XXXX. I have been trying for a couple of months to contact them to setup direct debit for my monthly mortgage payments. I can not contact anyone who seems to be in the XXXX but instead I get routed to a call center in the XXXX. I have not been receiving paper statements by mail to confirm what my payment is. I have made two one-time payments through their online system but I have reason to suspect they are applying the entire payment towards my balance and nothing is being applied toward interest or escrow. But because I can not contact anyone through their numerous customer service phone numbers, I can not confirm what is going on. As a side note, I have done a search of online reviews for this company and was astonished to find that hundreds of others seem to be having the same ( and other ) problems with this company. It seems to me that they are exercising horrible ( and even illegal ) business practices and something needs to be done to protect me and others as consumers."
+    },
+    {
+      "complaint_id": 3909107,
+      "label": "payday_personal_loan",
+      "narrative": "I fell behind in my monthly payments due to illness. My wife contacted them and told them this. I can not pay at the time and my wife told them she would let them know when I could make a payment. She asked them to stop calling everyday. However, they continue to call several times a day. This is harassment."
+    },
+    {
+      "complaint_id": 3600884,
+      "label": "student_loan",
+      "narrative": "In order to refinance my mortgage, which I desperately need to do and as quickly as possible ( or it may not happen ), I need a payment amount to show up for my student loan on my credit report. However, because I was on forbearance, it is not showing up. I then applied for a payment plan, only to find out on the 10th business day when they finally answered my phone call that they would not be able to put me on a payment plan due to COVID-19. Thereafter, we decided that a suitable alternative would be a letter that could be emailed to me explaining the circumstances. However, they keep changing their story and at first, they were saying they would send that letter within a couple of hours and then they kept subsequently changing the time frame. This is unacceptable."
+    },
+    {
+      "complaint_id": 1579415,
+      "label": "vehicle_loan",
+      "narrative": "I am disputing a credit charge from XXXX XXXX in the amount of {$890.00} .On XX/XX/XXXX, I entered in to an agreement with XXXX XXXX giving me a 24 month grace period ending in XXXX I have been trying to correct this error with XXXX Research Specialist TD Bank which provided the loan. I have emailed her left messages on her voice mail, with no response."
+    }
+  ],
+  "note": "FROZEN few-shot exemplars for Tier C prompt v1 (CLAUDE.md rule 4). Do not edit; a change requires a new prompt version directory. Regenerate/verify byte-identically via `python -m triage_lab.tier_c_prompt --verify-exemplars`.",
+  "selection": {
+    "candidate_order": "ascending complaint_id",
+    "filter": {
+      "normalization": "collapse whitespace runs to a single space, strip ends",
+      "normalized_char_max": 1200,
+      "normalized_char_min": 200
+    },
+    "method": "one numpy.random.default_rng(seed) draw per class, classes visited in ascending name order over the id-sorted candidate list",
+    "n_classes": 9,
+    "seed": 20260806,
+    "source_split": "train",
+    "train_sha256": "939186e72a78c680107dd3ae0087485fabd5f50dc1cca8dab8ca0205956a342b"
+  },
+  "version": "v1"
+}

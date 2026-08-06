@@ -53,7 +53,7 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 ### Phase 3 — Tier C LLM  ▶ **NEXT (first authorized task)**
 | Task | Status | Evidence |
 |---|---|---|
-| Tier C prompt + structured-output schema (versioned, content-hashed) | pending | — |
+| Tier C prompt + structured-output schema (versioned, content-hashed) | done | EXPERIMENT_LOG 2026-08-06; `prompts/tier_c/v1/` bundle `f6777a96…` |
 | Zero-shot vs few-shot ablation on CAL (Haiku) | pending | — |
 | Smoke run + cost approval gate (see execution order) | pending | — |
 | Haiku 4.5 full eval — TEST-IID + TEST-POSTCUTOFF | pending | — |

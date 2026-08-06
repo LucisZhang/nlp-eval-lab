@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify
 
 setup:
 	uv sync --frozen
@@ -61,3 +61,14 @@ tier-b-bundle: tier-b-data
 	echo "bundle_path: data/tier_b_colab_bundle.tar.gz" && \
 	echo "size_bytes: $$(wc -c < data/tier_b_colab_bundle.tar.gz | tr -d ' ')" && \
 	shasum -a 256 data/tier_b_colab_bundle.tar.gz
+
+
+# Tier C prompt v1: print the frozen per-file + bundle content hashes (the prompt
+# identity every Tier C run record carries; CLAUDE.md rule 4).
+tier-c-prompt:
+	uv run python -m triage_lab.tier_c_prompt --version v1
+
+# Freeze gate: regenerate the frozen few-shot exemplars from data/ and fail loud on
+# any byte difference (TRAIN split or selection logic drift).
+tier-c-exemplars-verify:
+	uv run python -m triage_lab.tier_c_prompt --verify-exemplars
