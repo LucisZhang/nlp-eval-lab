@@ -135,3 +135,36 @@ reported runs. Every portfolio-bound number carries its reproduction command
   any TEST-* run.
 - **Repro:** `make tier-c-smoke` (live API; appends two new records with fresh run_ids;
   receipts land in `results/tier_c_raw/<config name>/<UTC ts>/calls.jsonl`)
+
+## 2026-08-07 — Phase 3 step 3: zero-shot vs few-shot ablation on CAL (Haiku 4.5)
+
+- **Configs:** `configs/tier_c_haiku_ablation_{fewshot,zeroshot}_cal.yaml` — both arms the
+  identical seeded 1,500-row CAL subsample (`eval_rows_cap: 1500`, `cap_seed: 20260806`, so
+  the pairing is exact); **single inter-arm delta: `prompt.num_exemplars` 9 vs 0.** Runner
+  gained `model.params.max_concurrency` (thread pool, id-order-aligned aggregation,
+  lock-guarded receipts) + read-only paired-compare CLI `triage_lab.tier_c_compare`; suite
+  150 passed, ruff clean. Runs executed 2026-08-06 UTC (~16:00Z).
+- **Hypothesis:** k=9 few-shot exemplars improve Haiku 4.5 macro-F1 over zero-shot on CAL
+  enough to justify 2× per-call cost.
+- **Result:** (both runs appended to `results/runs.jsonl`; 0 parse failures / 3,000 calls;
+  provider Amazon Bedrock 3,000/3,000; computed cost == OpenRouter-reported both arms)
+  - few-shot k=9 (`run_id c7598f84…`): macro-F1 **0.7674** [0.7351, 0.7986], accuracy
+    0.8413; 3,848,973 prompt + 14,561 completion tokens; **$3.9218** ($0.002615/call);
+    p50 1.39 s / p95 2.36 s.
+  - zero-shot k=0 (`run_id 3f310951…`): macro-F1 **0.7567** [0.7217, 0.7891], accuracy
+    0.8360; 1,882,473 + 16,091 tokens; **$1.9629** ($0.001309/call); p50 1.37 s / p95 2.33 s.
+  - **Paired few−zero deltas (n=1,500):** accuracy **+0.0053 [−0.0060, +0.0167]**, macro-F1
+    **+0.0107 [−0.0054, +0.0266]** — both CIs include zero; McNemar b=40, c=32, p=0.41.
+- **Verdict:** **Hypothesis not supported on CAL** — no paired CI excludes zero, so no
+  directional claim; few-shot buys no measurable CAL quality at 2× cost. Per UPGRADE_PLAN
+  §4.2 the C1 definition stays **few-shot** for the TEST-IID/POSTCUTOFF finals (plan is not
+  edited by execution sessions), and the ablation stands as the §6.2 reference pair. Noted
+  for Phase 4: zero-shot Haiku is a statistically indistinguishable half-cost point the
+  router frontier should include. Owner may optionally switch the TEST finals to zero-shot
+  (halves the remaining Haiku budget ≈$26.6→$13.5) — that is a plan deviation requiring
+  sign-off; default remains few-shot. Incidental: Haiku CAL macro-F1 (both arms) already
+  sits at/above Tier A's CAL 0.7534, consistent CIs pending the TEST finals.
+- **Repro:** arms:
+  `uv run --extra tierc python -m triage_lab.harness configs/tier_c_haiku_ablation_fewshot_cal.yaml`
+  then same with `..._zeroshot_...`; paired comparison:
+  `uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_haiku_ablation_fewshot_cal/20260806T160011Z/calls.jsonl results/tier_c_raw/tier_c_haiku_ablation_zeroshot_cal/20260806T160510Z/calls.jsonl --split cal`

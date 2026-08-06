@@ -14,6 +14,9 @@ rest of the module stays runnable in a light env, matching the tier_b test patte
 from __future__ import annotations
 
 import json
+import re
+import threading
+import time
 from types import SimpleNamespace
 
 import numpy as np
@@ -21,6 +24,7 @@ import pytest
 import yaml
 
 from triage_lab import harness, tier_c
+from triage_lab.tier_c_prompt import load_prompt_bundle
 
 REPO_ROOT = tier_c.REPO_ROOT
 
@@ -324,3 +328,72 @@ def test_smoke_configs_wellformed_and_single_variable():
     zero2["prompt"]["num_exemplars"] = None
     few2["model"]["name"] = zero2["model"]["name"] = "x"
     assert few2 == zero2
+
+
+# ---------------------------------------------------------------------------
+# Concurrency: predictions stay id-aligned regardless of completion order
+# ---------------------------------------------------------------------------
+
+class _ConcurrentMockCompletions:
+    """Mock that answers with the label embedded in the query narrative, but completes in
+    REVERSE id order (earlier ids sleep longer), to prove result re-collection by index."""
+
+    def __init__(self, n, completion_order, order_lock):
+        self._n = n
+        self._completion_order = completion_order
+        self._order_lock = order_lock
+
+    def create(self, **kwargs):
+        content = kwargs["messages"][-1]["content"]
+        m = re.search(r"IDX=(\d+)\|LABEL=([a-z_]+)", content)
+        idx, label = int(m.group(1)), m.group(2)
+        time.sleep(0.003 * (self._n - idx))          # low idx finishes last
+        with self._order_lock:
+            self._completion_order.append(idx)
+        usage = SimpleNamespace(prompt_tokens=10, completion_tokens=3, total_tokens=13, cost=1e-6)
+        choice = SimpleNamespace(
+            message=SimpleNamespace(content=json.dumps({"label": label})), finish_reason="stop"
+        )
+        return SimpleNamespace(choices=[choice], usage=usage, provider="Mock")
+
+
+class _ConcurrentMockClient:
+    def __init__(self, n):
+        self.completion_order: list[int] = []
+        comp = _ConcurrentMockCompletions(n, self.completion_order, threading.Lock())
+        self.chat = SimpleNamespace(completions=comp)
+
+
+def _run_classify(max_concurrency):
+    bundle = load_prompt_bundle("v1")
+    labels = bundle.labels
+    n = 12
+    ids = list(range(1000, 1000 + n))
+    expected = [labels[i % len(labels)] for i in range(n)]
+    texts = [f"IDX={i}|LABEL={expected[i]}" for i in range(n)]
+    client = _ConcurrentMockClient(n)
+    receipts: list[dict] = []
+    results = tier_c.classify_examples(
+        client, ids, texts,
+        bundle=bundle, num_exemplars=0, labels=labels, fallback_label=labels[0],
+        slug="anthropic/claude-haiku-4.5", temperature=0.0, max_tokens=8, max_retries=2,
+        pricing={"prompt_usd_per_token": 1e-6, "completion_usd_per_token": 5e-6},
+        max_concurrency=max_concurrency, receipt_sink=receipts.append,
+    )
+    return client, results, receipts, ids, expected, labels
+
+
+def test_classify_examples_concurrent_is_id_aligned():
+    client, results, receipts, ids, expected, _labels = _run_classify(max_concurrency=8)
+    # Results and receipts are complete and predictions map to the correct id's narrative.
+    assert [r["complaint_id"] for r in results] == ids       # id order preserved
+    assert [r["label"] for r in results] == expected          # each label matches its id
+    assert len(receipts) == len(ids)
+    # The mock forced completion order to differ from id order -> alignment is non-trivial.
+    assert client.completion_order != list(range(len(ids)))
+
+
+def test_classify_examples_sequential_matches_concurrent():
+    _c1, seq, _r1, ids, expected, _l = _run_classify(max_concurrency=1)
+    assert [r["label"] for r in seq] == expected
+    assert [r["complaint_id"] for r in seq] == ids

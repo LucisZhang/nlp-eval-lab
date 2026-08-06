@@ -54,7 +54,7 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 | Task | Status | Evidence |
 |---|---|---|
 | Tier C prompt + structured-output schema (versioned, content-hashed) | done | EXPERIMENT_LOG 2026-08-06; `prompts/tier_c/v1/` bundle `f6777a96…` |
-| Zero-shot vs few-shot ablation on CAL (Haiku) | pending — **awaiting cost approval** | — |
+| Zero-shot vs few-shot ablation on CAL (Haiku) | done | EXPERIMENT_LOG 2026-08-07; runs `c7598f84…`, `3f310951…`; paired CIs include zero (no few-shot gain on CAL) |
 | Smoke run + cost approval gate (see execution order) | **smoke done; approval pending** | EXPERIMENT_LOG 2026-08-06 (step 2); runs `e22fba2a…`, `77cbd36f…`; measured $0.002656/call few-shot, ~$48.5 projected total |
 | Haiku 4.5 full eval — TEST-IID + TEST-POSTCUTOFF | pending | — |
 | Sonnet 5 few-shot subsample | pending | — |
@@ -102,8 +102,9 @@ Tier B is **BLOCKED-until-weekend**; do the GPU-free work first, in this exact o
 1. **Phase 3 — Tier C** (do first)
    1. Version + hash the Tier C prompt and structured-output schema.
    2. ~~**Smoke run** (tiny subsample) → measure real per-call token cost~~ **done 2026-08-06**
-      → **STOPPED at the cost-approval gate: owner must approve ≈$48.5 projected spend and the
-      proposed subsample sizes (see EXPERIMENT_LOG 2026-08-06 step 2) before any full run.**
+      → **cost approval GRANTED by owner 2026-08-06** for ≈$48.5 total and the proposed
+      subsample sizes (ablation 1,500/arm; Haiku TEST-IID + TEST-POSTCUTOFF 5,000 each;
+      Sonnet 5 paired 1,500 × 2 slices — see EXPERIMENT_LOG 2026-08-06 step 2).
    3. After approval: zero-shot vs few-shot ablation on CAL, then full Haiku 4.5 (TEST-IID +
       TEST-POSTCUTOFF) and Sonnet 5 few-shot subsample.
 2. **Phase 4 — Calibration + router infra**, built against **Tier A outputs** (and Tier C once

@@ -30,6 +30,13 @@ Determinism / integrity: the eval split parquet is re-hashed against the frozen
 ``data.eval_rows_cap`` subsample is seeded by ``data.cap_seed`` and re-sorted so row order
 is stable (same convention as ``tier_b.subsample_eval``).
 
+Concurrency: ``model.params.max_concurrency`` (default 1 = sequential) fans the per-example
+calls out across a ThreadPoolExecutor. Predictions are re-collected by input index, so
+``y_true``/``y_pred`` stay id-aligned regardless of completion order; only the raw
+receipt-line order follows completion order (each line still carries its ``complaint_id``).
+The API's temperature-0 answers do not depend on call order, so this does not affect the
+metrics — it only shortens wall-clock.
+
 The ``openai`` client is imported lazily (inside the calling functions) so this module —
 and its pure helpers (env loader, pricing math, parsing, subsample, receipts) — import and
 unit-test with just numpy/duckdb, matching the harness's tolerant optional-runner loading.
@@ -47,8 +54,10 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 import time
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -75,6 +84,7 @@ _DEFAULT_TEMPERATURE = 0.0
 _DEFAULT_MAX_TOKENS = 64
 _DEFAULT_REQUEST_TIMEOUT_S = 60.0
 _DEFAULT_MAX_RETRIES = 3
+_DEFAULT_MAX_CONCURRENCY = 1
 _DEFAULT_SEED = 20260806
 
 # Retry backoff: sleep = min(base * 2**attempt, cap) seconds.
@@ -387,6 +397,109 @@ def build_receipt(
 
 
 # ---------------------------------------------------------------------------
+# Per-example classification (optionally concurrent)
+# ---------------------------------------------------------------------------
+
+def classify_examples(
+    client,
+    ids,
+    texts,
+    *,
+    bundle,
+    num_exemplars: int,
+    labels: list[str],
+    fallback_label: str,
+    slug: str,
+    temperature: float,
+    max_tokens: int,
+    max_retries: int,
+    pricing: dict,
+    max_concurrency: int,
+    receipt_sink,
+) -> list[dict]:
+    """Classify every example and return per-example results in the input (id) order.
+
+    Each example is handled by ``_work``; with ``max_concurrency > 1`` the work runs on a
+    ThreadPoolExecutor (the openai/httpx client is thread-safe for concurrent requests).
+    Results are placed into a pre-sized list by their input index, so the returned list is
+    aligned to the id-ordered ``ids``/``texts`` regardless of completion order — the caller
+    can zip it straight against ``y_true``. ``receipt_sink(receipt)`` is always invoked under
+    a lock, so it is thread-safe; with concurrency the receipt *line order* in the sink
+    follows completion order, but every line self-identifies via its ``complaint_id``.
+    Per-call latency and retries are measured per worker (``call_with_retries``) and are
+    unaffected by concurrency.
+    """
+    n = len(texts)
+    results: list[dict | None] = [None] * n
+    lock = threading.Lock()
+
+    def _work(idx: int) -> dict:
+        complaint_id = ids[idx]
+        narrative = texts[idx]
+        messages = build_messages(bundle, narrative, num_exemplars)
+        request = {
+            "slug": slug,
+            "messages": messages,
+            "schema": bundle.schema,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        fields, latency_ms, retries = call_with_retries(client, request, max_retries)
+        prompt_tokens = fields["prompt_tokens"]
+        completion_tokens = fields["completion_tokens"]
+        call_cost = compute_call_cost(prompt_tokens, completion_tokens, pricing)
+
+        label = parse_label(fields["content"], labels)
+        parse_failed = label is None
+        if parse_failed:
+            label = fallback_label
+
+        receipt = build_receipt(
+            complaint_id=complaint_id,
+            slug=slug,
+            provider=fields["provider"],
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=fields["total_tokens"],
+            computed_cost_usd=call_cost,
+            openrouter_cost_usd=fields["openrouter_cost"],
+            latency_ms=latency_ms,
+            finish_reason=fields["finish_reason"],
+            content=fields["content"],
+            retries=retries,
+            parse_failed=parse_failed,
+        )
+        with lock:
+            receipt_sink(receipt)
+
+        return {
+            "idx": idx,
+            "complaint_id": complaint_id,
+            "label": label,
+            "parse_failed": parse_failed,
+            "provider": fields["provider"] or "unknown",
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "openrouter_cost": fields["openrouter_cost"],
+            "call_cost": call_cost,
+            "latency_ms": latency_ms,
+        }
+
+    workers = max(1, int(max_concurrency))
+    if workers == 1:
+        for idx in range(n):
+            results[idx] = _work(idx)
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = [executor.submit(_work, idx) for idx in range(n)]
+            for future in futures:
+                record = future.result()  # re-raises worker exceptions -> loud fail
+                results[record["idx"]] = record
+
+    return [r for r in results if r is not None]
+
+
+# ---------------------------------------------------------------------------
 # Registered runner
 # ---------------------------------------------------------------------------
 
@@ -410,6 +523,7 @@ def tier_c_runner(config: dict) -> RunnerResult:
     max_tokens = int(params.get("max_tokens", _DEFAULT_MAX_TOKENS))
     request_timeout_s = float(params.get("request_timeout_s", _DEFAULT_REQUEST_TIMEOUT_S))
     max_retries = int(params.get("max_retries", _DEFAULT_MAX_RETRIES))
+    max_concurrency = int(params.get("max_concurrency", _DEFAULT_MAX_CONCURRENCY))
 
     prompt_cfg = config.get("prompt", {}) or {}
     version = prompt_cfg.get("version", _DEFAULT_PROMPT_VERSION)
@@ -457,6 +571,28 @@ def tier_c_runner(config: dict) -> RunnerResult:
     raw_dir.mkdir(parents=True, exist_ok=True)
     raw_path = raw_dir / "calls.jsonl"
 
+    with open(raw_path, "a", encoding="utf-8") as raw_f:
+        def _sink(receipt: dict) -> None:
+            raw_f.write(json.dumps(receipt, sort_keys=True) + "\n")
+
+        results = classify_examples(
+            client,
+            ids,
+            texts,
+            bundle=bundle,
+            num_exemplars=num_exemplars,
+            labels=labels,
+            fallback_label=fallback_label,
+            slug=slug,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            max_retries=max_retries,
+            pricing=pricing,
+            max_concurrency=max_concurrency,
+            receipt_sink=_sink,
+        )
+
+    # Aggregate deterministically in id order (results is already id-aligned).
     y_pred: list[str] = []
     latencies: list[float] = []
     provider_hist: dict[str, int] = {}
@@ -465,55 +601,16 @@ def tier_c_runner(config: dict) -> RunnerResult:
     total_completion_tokens = 0
     computed_cost = 0.0
     openrouter_cost_total = 0.0
-
-    with open(raw_path, "a", encoding="utf-8") as raw_f:
-        for complaint_id, narrative in zip(ids, texts, strict=True):
-            messages = build_messages(bundle, narrative, num_exemplars)
-            request = {
-                "slug": slug,
-                "messages": messages,
-                "schema": bundle.schema,
-                "temperature": temperature,
-                "max_tokens": max_tokens,
-            }
-            fields, latency_ms, retries = call_with_retries(client, request, max_retries)
-
-            prompt_tokens = fields["prompt_tokens"]
-            completion_tokens = fields["completion_tokens"]
-            call_cost = compute_call_cost(prompt_tokens, completion_tokens, pricing)
-
-            label = parse_label(fields["content"], labels)
-            parse_failed = label is None
-            if parse_failed:
-                parse_failures += 1
-                label = fallback_label
-
-            y_pred.append(label)
-            latencies.append(latency_ms)
-            provider = fields["provider"] or "unknown"
-            provider_hist[provider] = provider_hist.get(provider, 0) + 1
-            total_prompt_tokens += prompt_tokens
-            total_completion_tokens += completion_tokens
-            computed_cost += call_cost
-            if fields["openrouter_cost"] is not None:
-                openrouter_cost_total += fields["openrouter_cost"]
-
-            receipt = build_receipt(
-                complaint_id=complaint_id,
-                slug=slug,
-                provider=fields["provider"],
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                total_tokens=fields["total_tokens"],
-                computed_cost_usd=call_cost,
-                openrouter_cost_usd=fields["openrouter_cost"],
-                latency_ms=latency_ms,
-                finish_reason=fields["finish_reason"],
-                content=fields["content"],
-                retries=retries,
-                parse_failed=parse_failed,
-            )
-            raw_f.write(json.dumps(receipt, sort_keys=True) + "\n")
+    for r in results:
+        y_pred.append(r["label"])
+        latencies.append(r["latency_ms"])
+        provider_hist[r["provider"]] = provider_hist.get(r["provider"], 0) + 1
+        parse_failures += int(r["parse_failed"])
+        total_prompt_tokens += r["prompt_tokens"]
+        total_completion_tokens += r["completion_tokens"]
+        computed_cost += r["call_cost"]
+        if r["openrouter_cost"] is not None:
+            openrouter_cost_total += r["openrouter_cost"]
 
     n = len(y_pred)
     label2idx = {label: i for i, label in enumerate(labels)}
@@ -545,6 +642,7 @@ def tier_c_runner(config: dict) -> RunnerResult:
         "raw_log_path": str(raw_path.relative_to(REPO_ROOT)),
         "temperature": temperature,
         "max_tokens": max_tokens,
+        "max_concurrency": max_concurrency,
         "fallback_label": fallback_label,
         "run_type": config.get("run_type", "standard"),
     }

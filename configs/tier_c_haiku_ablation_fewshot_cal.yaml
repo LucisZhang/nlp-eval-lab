@@ -1,0 +1,32 @@
+# Tier C ABLATION (few-shot arm) — APPROVED few-shot-vs-zero-shot study on CAL (~$6 total).
+#
+# 1,500 seeded-subsample CAL rows through Claude Haiku 4.5 via OpenRouter (CLAUDE.md rule 6),
+# frozen prompt bundle v1, full 9-shot (one exemplar per class). PAIRED with
+# tier_c_haiku_ablation_zeroshot_cal.yaml: both arms use eval_rows_cap: 1500 and the SAME
+# cap_seed (20260806), so they select the IDENTICAL 1,500 CAL rows — the comparison is
+# paired (per-example). The ONLY inter-arm delta is prompt.num_exemplars (9 vs 0).
+#
+# Iteration on CAL (never TEST-*). Run with --no-append (these are ablation-arm records,
+# compared via triage_lab.tier_c_compare over the raw receipts, not appended to runs.jsonl
+# by this study). max_concurrency: 8 to keep the ~1,500-call arm to a few minutes.
+model:
+  runner: tier_c
+  name: tier_c_haiku_ablation_fewshot_cal
+  slug: anthropic/claude-haiku-4.5
+  params:
+    temperature: 0.0
+    max_tokens: 64          # output is just {"label": "<class>"}; 64 is ample headroom
+    request_timeout_s: 60
+    max_retries: 3          # transport/429/5xx only; parse failures use the fallback label
+    max_concurrency: 8      # ThreadPoolExecutor fan-out; predictions stay id-aligned
+prompt:
+  version: v1
+  num_exemplars: 9          # few-shot arm: one frozen exemplar per class
+data:
+  split: cal
+  eval_rows_cap: 1500       # seeded subsample; frozen split file untouched
+  cap_seed: 20260806        # SAME as the zero-shot arm -> identical paired row set
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+seed: 20260806
