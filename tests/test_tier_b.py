@@ -186,6 +186,34 @@ def test_verify_manifest_accepts_clean_and_rejects_tamper(tmp_path):
         train.verify_manifest(tmp_path)
 
 
+class _FakeTokenizer:
+    """Deterministic, order-independent stand-in for an HF tokenizer __call__."""
+
+    def __call__(self, texts, truncation=True, max_length=None, padding=False, **kw):
+        ids = []
+        for t in texts:
+            body = [ord(c) % 1000 for c in t]
+            if max_length is not None:
+                body = body[: max_length - 2]
+            ids.append([101, *body, 102])
+        return {"input_ids": ids, "attention_mask": [[1] * len(r) for r in ids]}
+
+
+def test_tokenize_chunked_matches_whole_pass():
+    train = _load_script("train_tier_b")
+    tok = _FakeTokenizer()
+    texts = [f"complaint number {i} about a widget dispute" for i in range(53)]  # not a chunk multiple
+
+    whole = train.tokenize_chunked(tok, texts, max_len=16, chunk_size=1000)   # single tokenizer call
+    chunked = train.tokenize_chunked(tok, texts, max_len=16, chunk_size=5)     # 11 chunks
+    # Byte-identical token arrays regardless of chunk boundary.
+    assert train.arrays_sha256(*whole) == train.arrays_sha256(*chunked)
+
+    ids_rows, _ = chunked
+    assert all(r.dtype == np.int32 for r in ids_rows)          # stored as int32 (memory fix)
+    assert max(len(r) for r in ids_rows) <= 16                 # truncation honored
+
+
 def test_verify_manifest_requires_manifest(tmp_path):
     train = _load_script("train_tier_b")
     with pytest.raises(FileNotFoundError, match="manifest"):

@@ -31,15 +31,18 @@ integrity/manifest helpers stay importable (and unit-testable) without them.
 from __future__ import annotations
 
 import argparse
+import gc
 import hashlib
 import json
 import platform
+import sys
 import time
 from pathlib import Path
 
 import yaml
 
 CHUNK_SIZE = 1024 * 1024
+TOKENIZE_CHUNK_SIZE = 5000  # tokenize TRAIN/CAL in ~5k-row chunks to bound CPU RAM
 KEY_LIBS = ("torch", "transformers", "accelerate", "tokenizers", "safetensors", "numpy")
 
 
@@ -112,6 +115,8 @@ def read_split(data_dir: Path, split: str, text_col: str, label_col: str,
     table = pq.read_table(Path(data_dir) / f"{split}.parquet", columns=[text_col, label_col])
     texts = table.column(text_col).to_pylist()
     labels = table.column(label_col).to_pylist()
+    del table  # release the Arrow buffers immediately; downstream uses the Python lists
+    gc.collect()
     texts = ["" if t is None else str(t) for t in texts]
     if cap is not None and cap < len(texts):
         import numpy as np
@@ -144,6 +149,63 @@ def _truncation_rate(tokenizer, texts, max_len: int, sample: int = 20000) -> flo
                         return_length=True, return_attention_mask=False)["length"]
     over = sum(1 for n in lengths if n > max_len)
     return over / len(subset) if subset else 0.0
+
+
+def _rss_mb() -> float:
+    """Resident set size in MB. Linux /proc/self/status first, resource.getrusage fallback."""
+    try:
+        with open("/proc/self/status") as f:
+            for line in f:
+                if line.startswith("VmRSS:"):
+                    return int(line.split()[1]) / 1024.0  # kB -> MB
+    except OSError:
+        pass
+    import resource
+
+    ru = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    # Linux ru_maxrss is kB; macOS/BSD is bytes.
+    return ru / 1024.0 if sys.platform.startswith("linux") else ru / (1024.0 * 1024.0)
+
+
+def tokenize_chunked(tokenizer, texts, max_len, chunk_size=TOKENIZE_CHUNK_SIZE, tag="", log=None):
+    """Tokenize `texts` in `chunk_size`-row chunks; keep each row as a NumPy int32 array.
+
+    Numerically identical to one whole-list ``tokenizer(texts, ...)`` call — tokenization
+    is per-text and order-independent, so chunking then concatenating yields the exact same
+    id sequences (proven by `arrays_sha256`). The win is memory: only `chunk_size` texts are
+    tokenized at once, and rows are stored as compact int32 arrays rather than lists of
+    Python ints (~7x smaller). The int32 rows are cast to torch long per batch by the
+    collator, so no training math changes. Emits flushed chunk-progress + RSS logs.
+    """
+    import numpy as np
+
+    ids_rows: list = []
+    mask_rows: list = []
+    n = len(texts)
+    for start in range(0, n, chunk_size):
+        enc = tokenizer(
+            texts[start : start + chunk_size], truncation=True, max_length=max_len, padding=False
+        )
+        ids_rows.extend(np.asarray(r, dtype=np.int32) for r in enc["input_ids"])
+        mask_rows.extend(np.asarray(r, dtype=np.int32) for r in enc["attention_mask"])
+        del enc
+        if log is not None:
+            log(f"[tokenize:{tag}] {min(start + chunk_size, n)}/{n} rows  rss={_rss_mb():.0f}MB",
+                flush=True)
+    return ids_rows, mask_rows
+
+
+def arrays_sha256(ids_rows, mask_rows) -> str:
+    """Canonical sha256 over ragged int32 rows — used to prove tokenization equivalence."""
+    import numpy as np
+
+    h = hashlib.sha256()
+    for tag, rows in ((b"##ids##", ids_rows), (b"##mask##", mask_rows)):
+        h.update(tag)
+        for r in rows:
+            h.update(np.asarray(r, dtype=np.int32).tobytes())
+            h.update(b"|")
+    return h.hexdigest()
 
 
 def train(config: dict, data_dir: Path, out_dir: Path) -> dict:
@@ -186,24 +248,42 @@ def train(config: dict, data_dir: Path, out_dir: Path) -> dict:
     tokenizer = AutoTokenizer.from_pretrained(base)
     trunc_rate = _truncation_rate(tokenizer, x_train, max_len)
 
-    def encode(texts, labels):
-        enc = tokenizer(texts, truncation=True, max_length=max_len, padding=False)
-        enc["labels"] = [label2id[v] for v in labels]
-        return enc
+    # Chunked, memory-bounded tokenization (the OOM fix). Store int32 rows, then drop the
+    # raw texts + labels and gc so the ~300k-string list does not coexist with the tokens.
+    train_ids, train_mask = tokenize_chunked(tokenizer, x_train, max_len, tag="train", log=print)
+    train_labels = np.asarray([label2id[v] for v in y_train], dtype=np.int64)
+    n_train_rows = len(train_labels)
+    del x_train, y_train
+    gc.collect()
 
-    class DictDataset(torch.utils.data.Dataset):
-        def __init__(self, enc):
-            self.enc = enc
-            self.n = len(enc["labels"])
+    cal_ids, cal_mask = tokenize_chunked(tokenizer, x_cal, max_len, tag="cal", log=print)
+    cal_labels = np.asarray([label2id[v] for v in y_cal], dtype=np.int64)
+    n_cal_rows = len(cal_labels)
+    del x_cal, y_cal
+    gc.collect()
+
+    class TokenizedDataset(torch.utils.data.Dataset):
+        """Holds int32 rows; __getitem__ returns the same list/int structure the collator
+        saw before (input_ids/attention_mask as Python-int lists, label as int), so batch
+        padding and casting to torch long are byte-for-byte unchanged."""
+
+        def __init__(self, ids_rows, mask_rows, label_codes):
+            self.ids = ids_rows
+            self.mask = mask_rows
+            self.labels = label_codes
 
         def __len__(self):
-            return self.n
+            return len(self.labels)
 
         def __getitem__(self, i):
-            return {k: v[i] for k, v in self.enc.items()}
+            return {
+                "input_ids": self.ids[i].tolist(),
+                "attention_mask": self.mask[i].tolist(),
+                "labels": int(self.labels[i]),
+            }
 
-    train_ds = DictDataset(encode(x_train, y_train))
-    cal_ds = DictDataset(encode(x_cal, y_cal))
+    train_ds = TokenizedDataset(train_ids, train_mask, train_labels)
+    cal_ds = TokenizedDataset(cal_ids, cal_mask, cal_labels)
 
     from transformers import DataCollatorWithPadding
 
@@ -292,8 +372,8 @@ def train(config: dict, data_dir: Path, out_dir: Path) -> dict:
         "seed": seed,
         "max_seq_length": max_len,
         "truncation_rate": trunc_rate,
-        "n_train_rows": len(x_train),
-        "n_cal_rows": len(x_cal),
+        "n_train_rows": n_train_rows,
+        "n_cal_rows": n_cal_rows,
         "labels": labels_sorted,
         "epochs": float(tr["epochs"]),
         "learning_rate": float(tr["learning_rate"]),

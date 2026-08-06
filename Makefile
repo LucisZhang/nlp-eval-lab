@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle
 
 setup:
 	uv sync --frozen
@@ -46,3 +46,18 @@ tier-a:
 # cloud GPU box needs (see docs/TIER_B_RUNBOOK.md). Deterministic, byte-identical.
 tier-b-data:
 	uv run python scripts/export_tier_b_data.py
+
+# Tier B Colab bundle: one tarball with the flat upload set (kit + script + requirements
+# + the four configs). Prints its path, size, and sha256. (gzip embeds a timestamp, so the
+# sha identifies a given build, not a reproducible one.)
+tier-b-bundle: tier-b-data
+	@stage=$$(mktemp -d) && \
+	cp -R data/tier_b_kit $$stage/tier_b_kit && \
+	cp scripts/train_tier_b.py requirements-tierb-colab.txt $$stage/ && \
+	cp configs/tier_b1_modernbert_sa.yaml configs/tier_b1_modernbert_sb.yaml \
+	   configs/tier_b1_modernbert_sc.yaml configs/tier_b2_distilbert_s0.yaml $$stage/ && \
+	tar -C $$stage -czf data/tier_b_colab_bundle.tar.gz . && \
+	rm -rf $$stage && \
+	echo "bundle_path: data/tier_b_colab_bundle.tar.gz" && \
+	echo "size_bytes: $$(wc -c < data/tier_b_colab_bundle.tar.gz | tr -d ' ')" && \
+	shasum -a 256 data/tier_b_colab_bundle.tar.gz

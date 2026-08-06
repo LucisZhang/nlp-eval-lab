@@ -33,16 +33,23 @@ files** — the training script re-hashes them against the manifest and aborts o
 
 ## 2. Upload to the GPU box
 
-Upload exactly these to the Colab/box working dir:
+The upload set is packaged into a single reproducible **Colab bundle** so you upload one
+file. It contains exactly what the box needs (the training script has **zero repo
+imports**, so this is everything):
 
-- `data/tier_b_kit/` (the whole folder: both parquets + `manifest.json`)
-- `scripts/train_tier_b.py`
+```bash
+make tier-b-bundle    # -> data/tier_b_colab_bundle.tar.gz  (prints path, size, sha256)
+```
+
+Bundle contents (flat layout the runbook's commands assume — `tier_b_kit/`, the script,
+the requirements, the four configs):
+
+- `tier_b_kit/` — both parquets + `manifest.json` (from `make tier-b-data`)
+- `train_tier_b.py`
 - `requirements-tierb-colab.txt`
-- the four training configs:
-  `configs/tier_b1_modernbert_sa.yaml`, `...sb.yaml`, `...sc.yaml`,
-  `configs/tier_b2_distilbert_s0.yaml`
+- `tier_b1_modernbert_sa.yaml`, `...sb.yaml`, `...sc.yaml`, `tier_b2_distilbert_s0.yaml`
 
-The training script has **zero repo imports** — those files are all it needs.
+Upload `data/tier_b_colab_bundle.tar.gz`, then on the box: `tar xzf tier_b_colab_bundle.tar.gz`.
 
 ## 3. Install deps (GPU box)
 
@@ -57,13 +64,20 @@ fp32 on CPU/MPS. No flag needed.
 
 ## 4. Train the four checkpoints (GPU box)
 
+Always run with `python -u` (unbuffered) and `tee` the console to a logfile, so the
+flushed chunk-tokenization + RSS-memory progress survives a disconnect and is available if
+a run is killed (e.g. CPU-RAM OOM during data prep):
+
 ```bash
-python train_tier_b.py --config tier_b1_modernbert_sa.yaml --data-dir tier_b_kit --out ckpt/tier_b1_sa
-python train_tier_b.py --config tier_b1_modernbert_sb.yaml --data-dir tier_b_kit --out ckpt/tier_b1_sb
-python train_tier_b.py --config tier_b1_modernbert_sc.yaml --data-dir tier_b_kit --out ckpt/tier_b1_sc
-python train_tier_b.py --config tier_b2_distilbert_s0.yaml --data-dir tier_b_kit --out ckpt/tier_b2_s0
+mkdir -p logs
+python -u train_tier_b.py --config tier_b1_modernbert_sa.yaml --data-dir tier_b_kit --out ckpt/tier_b1_sa 2>&1 | tee logs/tier_b1_sa.log
+python -u train_tier_b.py --config tier_b1_modernbert_sb.yaml --data-dir tier_b_kit --out ckpt/tier_b1_sb 2>&1 | tee logs/tier_b1_sb.log
+python -u train_tier_b.py --config tier_b1_modernbert_sc.yaml --data-dir tier_b_kit --out ckpt/tier_b1_sc 2>&1 | tee logs/tier_b1_sc.log
+python -u train_tier_b.py --config tier_b2_distilbert_s0.yaml --data-dir tier_b_kit --out ckpt/tier_b2_s0 2>&1 | tee logs/tier_b2_s0.log
 ```
 
+Tokenization is chunked (~5k rows/chunk) and the raw texts are released + `gc`'d before
+GPU training, so CPU RAM stays bounded; watch the `[tokenize:*] N/M rows rss=…MB` lines.
 Each run prints hardware/precision/wall-clock and the final CAL macro-F1, and writes into
 its `--out`:
 
@@ -138,9 +152,9 @@ and the eval uses `--no-append` so `results/runs.jsonl` is untouched:
 
 ```bash
 uv run python scripts/export_tier_b_data.py --out data/tier_b_kit_smoke
-uv run --extra tierb python scripts/train_tier_b.py \
+uv run --extra tierb python -u scripts/train_tier_b.py \
     --config configs/tier_b_smoke.yaml --data-dir data/tier_b_kit_smoke \
-    --out data/checkpoints/tier_b_smoke
+    --out data/checkpoints/tier_b_smoke 2>&1 | tee logs/tier_b_smoke.log
 uv run --extra tierb python -m triage_lab.harness configs/tier_b_smoke.yaml --no-append
 uv run --extra tierb python scripts/export_onnx_distilbert.py \
     --checkpoint data/checkpoints/tier_b_smoke --out data/onnx/tier_b_smoke --n-samples 300
