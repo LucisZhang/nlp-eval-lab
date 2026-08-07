@@ -286,18 +286,21 @@ def expected_cost_per_1k(correct, api_cost_usd, to_human, *, c_misroute: float,
     return out
 
 
-def resample_means_per_1k(
+def resample_means(
     arrays: dict[str, np.ndarray],
     *,
+    scale: float = 1.0,
     n_resamples: int = harness.N_RESAMPLES,
     seed: int = harness.BOOTSTRAP_SEED,
 ) -> dict[str, np.ndarray]:
-    """Bootstrap replicate means (x1,000) for several id-aligned arrays, SHARED indices.
+    """Bootstrap replicate means (x`scale`) for several id-aligned arrays, SHARED indices.
 
     Public because sharing the index vector across the total and its components is a
     correctness property, not an implementation detail: it is what makes the component
     bands decompose the total band instead of being three unrelated intervals. Exposed so
-    a test can assert, replicate by replicate, that the components sum to the total.
+    a test can assert, replicate by replicate, that the components sum to the total, and
+    reused for non-cost quantities (e.g. paired accuracy deltas) whose unit is not dollars
+    per 1,000 — hence `scale` rather than a hardcoded PER_N_COMPLAINTS.
     """
     lengths = {len(a) for a in arrays.values()}
     if len(lengths) != 1:
@@ -308,7 +311,7 @@ def resample_means_per_1k(
     for i in range(n_resamples):
         idx = rng.integers(0, n, size=n)  # ONE draw per replicate, shared by every array
         for k, arr in arrays.items():
-            reps[k][i] = arr[idx].mean() * PER_N_COMPLAINTS
+            reps[k][i] = arr[idx].mean() * scale
     return reps
 
 
@@ -334,7 +337,8 @@ def bootstrap_cost(
                             c_misroute=c_misroute, c_human=c_human)
     total = sum(comps[k] for k in COMPONENT_KEYS)
     arrays = {TOTAL_KEY: total, **comps}
-    reps = resample_means_per_1k(arrays, n_resamples=n_resamples, seed=seed)
+    reps = resample_means(arrays, scale=PER_N_COMPLAINTS, n_resamples=n_resamples,
+                          seed=seed)
 
     out: dict[str, dict[str, float]] = {}
     for k, arr in arrays.items():
@@ -816,6 +820,52 @@ def check_provenance(art: predictions.PredictionsArtifact, record: dict) -> None
             "artifact was not produced by the inputs this record names, so a cost number "
             "computed from it must not be stamped with this run's identity"
         )
+
+
+def load_artifact_verified(record: dict, preds_dir=DEFAULT_PREDS_DIR, *,
+                           allowed_splits: set[str] | None = None):
+    """Read a run's artifact and refuse it unless it passes the repo's FULL gate.
+
+    Three layers, cheapest-to-strongest, all hard failures:
+
+    1. `check_provenance` — the artifact's embedded ids/hashes are this run's.
+    2. `allowed_splits` — an optional whitelist, so a caller that must not touch a slice
+       (e.g. CAL-only threshold fitting) is stopped structurally rather than by review.
+    3. `predictions.verify_artifact` — the repo's own structural + aggregate gate: ids
+       unique and non-null, every id a member of the frozen split, `y_true` agreeing with
+       that split, `p_max` exactly `probs.max`, `y_pred` the argmax (or the one-hot column
+       for tier_c), and the artifact's recomputed accuracy/macro_f1/aurc/acc_at_cov::*
+       matching the logged record to 1e-9.
+
+    Layer 3 is the one worth arguing for: anything that reads `p_max` as a *ranking* signal
+    or joins several artifacts per row is broken by exactly the faults that leave aggregate
+    metrics untouched — a permuted id column, a p_max that is not the row's max
+    probability. Re-running the gate costs under a second per artifact and removes any need
+    to trust that `make preds` was run after the last change.
+    """
+    art_path = Path(preds_dir) / f"{record['run_id']}.parquet"
+    art = predictions.read_artifact(art_path)
+    check_provenance(art, record)
+    split = (record.get("dataset") or {}).get("split", "")
+    if allowed_splits is not None and split not in allowed_splits:
+        raise ValueError(
+            f"run {record['run_id'][:8]} is on split {split!r}, which is outside the "
+            f"allowed set {sorted(allowed_splits)} for this task"
+        )
+    config = predictions.load_config_checked(record)
+    rows = predictions.verify_artifact(art, record, config, art_path=art_path)
+    failed = [r for r in rows if not r["ok"]]
+    if failed:
+        detail = "; ".join(
+            f"{r['check']}: {r.get('detail', f'{r.get("abs_delta")!r} off')}"
+            for r in failed
+        )
+        raise ValueError(
+            f"artifact {record['run_id'][:8]} ({art_path}) fails the predictions "
+            f"verification gate — {detail}. A number computed from an unverified artifact "
+            "is not a number for the run it claims to describe"
+        )
+    return art
 
 
 def score_run(record: dict, cfg: CostConfig, *, preds_dir=DEFAULT_PREDS_DIR,

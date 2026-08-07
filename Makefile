@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim
 
 setup:
 	uv sync --frozen
@@ -106,3 +106,10 @@ cost-model:
 # results/thresholds/. Offline and CAL-only — no API calls, no TEST-* artifact is opened.
 thresholds:
 	uv run python -m triage_lab.threshold_opt
+
+# Router simulator on TEST-IID (Phase 4 task 4): applies the CAL-fit tau* constants from
+# results/thresholds/ to the frozen TEST-IID artifacts, prices every policy, and reports
+# paired deltas + McNemar against each baseline. Offline (no model runs, no API calls);
+# TEST-* artifacts are read here because this IS the final reported evaluation.
+router-sim: thresholds
+	uv run python -m triage_lab.router_sim

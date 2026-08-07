@@ -58,8 +58,10 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import MappingProxyType
 
 import duckdb
 import numpy as np
@@ -98,6 +100,54 @@ VERIFY_METRICS = (
     "acc_at_cov::0.95",
 )
 VERIFY_TOL = 1e-9
+
+# ---------------------------------------------------------------------------
+# Registered configuration DOCUMENTATION corrections
+# ---------------------------------------------------------------------------
+# A run record pins the sha256 of the config bytes that produced it, and every gate in
+# this repo re-hashes the file and refuses a mismatch (`load_config_checked`). That is the
+# right default: a config edit after the fact means the artifact's provenance names inputs
+# that did not produce it.
+#
+# Very occasionally the correct action is to fix PROSE in a config — a comment that states
+# something false about the experiment. Deleting the comment is worse (the false claim
+# stays in git history with nothing pointing at it) and re-running is worse still (it would
+# spend money/compute to change nothing). So the exception is made explicit here rather
+# than by loosening the gate:
+#
+#   - keyed by run_id, so it applies to exactly one run;
+#   - pinned to BOTH hashes, so it applies to exactly one before/after pair — any third
+#     hash (including a later edit of the same file) fails like any other mismatch;
+#   - carrying a reason and an owner-approval date, auditable against EXPERIMENT_LOG.md;
+#   - announced on stdout whenever it is exercised.
+#
+# A semantic change (model, features, split, seed, calibration) must NEVER be registered
+# here; it is a new run.
+#
+# The public name is a read-only MappingProxyType view. A provenance exemption list that
+# any imported module (or test) can append to at runtime is not an exemption list, it is a
+# disabled gate: `CONFIG_DOC_CORRECTIONS[some_run] = {...}` would be a one-line, invisible
+# way to make any config mismatch pass. Registering a correction is a source edit and a
+# code review, by construction.
+_CONFIG_DOC_CORRECTIONS: dict[str, dict[str, str]] = {
+    # tier_a_logreg_test_iid: the header claimed tier_a_logreg_wordchar_cal was "the
+    # winning CAL rung". results/runs.jsonl says the word-only rung won every logged CAL
+    # metric; the wordchar rung is the FEATURE MATCH to this frozen final. Comment-only.
+    "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7": {
+        "recorded_sha256":
+            "b22be1e963760c2f277562c4afa89eb1014dd6bc0fd1cb86fd588c12d6f3b8c0",
+        "corrected_sha256":
+            "0813065e47c7152959a36e1b6c193a6332608e13337570ce61161526da643983",
+        "reason": (
+            "header-comment documentation fix, owner-approved 2026-08-07 "
+            "(EXPERIMENT_LOG Phase 4 task 4)"
+        ),
+    },
+}
+
+CONFIG_DOC_CORRECTIONS: Mapping[str, dict[str, str]] = MappingProxyType(
+    _CONFIG_DOC_CORRECTIONS
+)
 
 
 # ---------------------------------------------------------------------------
@@ -701,6 +751,25 @@ def load_records(results_path=DEFAULT_RESULTS_PATH) -> list[dict]:
     return records
 
 
+def records_by_config(results_path=DEFAULT_RESULTS_PATH) -> dict[str, dict]:
+    """Run records keyed by config file stem, for callers that select runs by config.
+
+    A duplicated config stem is a hard error rather than a last-one-wins pick: two runs of
+    the same config differ in something the record does not name (code, environment), and
+    silently choosing one would make every downstream number depend on file order.
+    """
+    out: dict[str, dict] = {}
+    for record in load_records(results_path):
+        name = Path(record.get("config_path", "")).stem
+        if name in out:
+            raise ValueError(
+                f"two run records share config {name!r} ({out[name]['run_id'][:8]}, "
+                f"{record['run_id'][:8]}); cannot pick one without a rule"
+            )
+        out[name] = record
+    return out
+
+
 def _is_smoke(record: dict) -> bool:
     return "smoke" in Path(record.get("config_path", "")).name.lower()
 
@@ -717,6 +786,24 @@ def select_records(records, selectors, *, select_all: bool) -> list[dict]:
     return chosen
 
 
+def config_doc_correction(record: dict) -> dict | None:
+    """The registered documentation correction for this run, if the file hash matches it.
+
+    Returns the registry entry only when BOTH hashes line up — the record still logs
+    `recorded_sha256` and the file on disk now hashes to `corrected_sha256`. Any other
+    combination returns None and the caller hard-fails, so the exception cannot widen into
+    "this run is allowed to drift".
+    """
+    entry = CONFIG_DOC_CORRECTIONS.get(record.get("run_id", ""))
+    if not entry:
+        return None
+    path = _repo_path(record["config_path"])
+    if (record.get("config_sha256", "") == entry["recorded_sha256"]
+            and harness.config_sha256(path) == entry["corrected_sha256"]):
+        return entry
+    return None
+
+
 def load_config_checked(record: dict) -> dict:
     """Load the record's config, refusing it unless the file still hashes as logged.
 
@@ -724,17 +811,31 @@ def load_config_checked(record: dict) -> dict:
     the config file has changed since the run, that stamp would name inputs that did not
     produce this data — a provenance forgery, and the exact failure the artifact exists to
     make impossible. Hard fail, naming both hashes.
+
+    The single exception is ``CONFIG_DOC_CORRECTIONS``: a comment-only edit, registered in
+    code against one run id and one exact pair of hashes. It is announced on stdout every
+    time it is used, because a provenance exception that nobody sees is indistinguishable
+    from a provenance hole.
     """
     path = _repo_path(record["config_path"])
     config = harness.load_config(path)
     actual = harness.config_sha256(path)
     logged = record.get("config_sha256", "")
-    if actual != logged:
+    if actual == logged:
+        return config
+
+    correction = config_doc_correction(record)
+    if correction is None:
         raise ValueError(
             f"config hash mismatch for {path}: file hashes {actual} but run "
             f"{record.get('run_id', '?')[:8]} logged {logged}; the config changed since "
             "the run, so this reconstruction is not that run"
         )
+    print(
+        f"[{record['run_id'][:8]}] ACCEPTED REGISTERED DOCUMENTATION CORRECTION for "
+        f"{path.name}: recorded {logged[:12]} -> file {actual[:12]}. "
+        f"{correction['reason']}"
+    )
     return config
 
 

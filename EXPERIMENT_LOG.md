@@ -639,3 +639,111 @@ reported runs. Every portfolio-bound number carries its reproduction command
   points are committed and replayable (exact-τ regression suite).
 - **Repro:** `make thresholds` (= `uv run python -m triage_lab.threshold_opt --all`);
   tests: `uv run pytest tests/test_threshold_opt.py -q`.
+
+## 2026-08-08 — Phase 4 task 4: router simulator on TEST-IID (all available policies)
+
+- **Owner decisions (2026-08-07, binding for this task):** (1) cross-family A→C vs
+  A→human re-evaluated on the full n=5,000 Haiku TEST-IID paired rows, offline; if the
+  CI still includes zero → directional-only, no additional samples purchased. (2)
+  Headline router = **Haiku-terminal** cascade; its empty parse-failure→human arm is a
+  reported robustness fact; c_human sensitivity covered by the A→human rung;
+  Sonnet-terminal deferred to the drift chapter. (3) Frozen Tier A TEST final stays;
+  the erroneous "winning CAL rung" header comment in `tier_a_logreg_test_iid.yaml` is
+  fixed as a documentation correction (see registry below). (4) τ→TEST transfer:
+  **threshold transfer primary** (CAL-fit τ* deployed as a fixed constant, realized
+  TEST coverage reported — production semantics); coverage-matched transfer secondary
+  sensitivity only.
+- **Config documentation correction (registry):** the comment fix changes the file
+  hash, so it is registered explicitly in `predictions.CONFIG_DOC_CORRECTIONS`
+  (immutable MappingProxyType): run `8e4d6345…`, recorded `b22be1e96376…` → corrected
+  `0813065e47c7…`, announced on stdout on every use; any other run/hash mismatch
+  hard-fails exactly as before. Prose-only nature proven two ways: parsed-object
+  equality of old-vs-new YAML, and comment-stripping invariance. Force-regeneration of
+  the affected run reproduces all 7 logged metrics at abs delta 0.00e+00.
+  **Footnote (owner decision 3):** on CAL, word-only LogReg beat word+char on all
+  three logged metrics (acc 0.8264 vs 0.8193, macro-F1 0.7535 vs 0.7466, AURC 0.0664
+  vs 0.0678) and its CAL-fit gate was cheaper ($970.35 vs $998.16/1k). The frozen
+  TEST final remains word+char (its documented rationale is now feature-match to the
+  frozen final + Phase 5 robustness expectation, not "winning CAL rung"); the model
+  choice is NOT reopened.
+- **Hypothesis:** deploying the CAL-fit τ* constants on TEST-IID yields a router that
+  dominates ≥2 single-tier policies on cost (phase-accept criterion), with the
+  Haiku-terminal cascade as the headline.
+- **Method:** `src/triage_lab/router_sim.py` consumes only frozen artifacts (no new
+  API calls): Tier A TEST-IID artifacts (`8e4d6345` LogReg isotonic, `c20cd14a` CNB),
+  the Haiku TEST-IID artifact + receipts (`70a1b0c4`, 5,000 rows), CAL-fit operating
+  points loaded from `results/thresholds/` primary-rung files (validated: bound to the
+  CAL run record via runs.jsonl, finite/in-range τ and coverage, count consistency,
+  duplicate files hard-fail), cost model v1. Policies — full TEST-IID (n=104,443):
+  a_only, a_only_cnb, a_to_human@τ*, all_human; paired 5,000 subset: those plus
+  c_only and a_to_c_parsefail_human@τ* (measured per-receipt costs, incurred-spend
+  semantics; 0/5,000 Haiku parse failures → human arm empty, as expected). System
+  metrics count human rows as correct (assumption documented in outputs);
+  answered-only metrics reported alongside. Paired deltas (cost + accuracy, shared
+  frozen resample indices) and McNemar on shared machine rows. Two pre-commit Codex
+  reviews drove: the threshold-artifact validation gate above; a McNemar exact-tail
+  rewrite (old code hit OverflowError on ~6,000-digit binomial tails — no full-TEST
+  McNemar was computable at all — and after the first fix still silently underflowed
+  to a fabricated p=0.0 for n>1074; now exponent-bound-routed with boundary
+  regressions at n∈{1073..1076} and 196-case parity vs the old formula); the
+  coverage-matched "nearest achievable" contract (matching error 6.67e-05 vs quantum
+  2e-04 on real data); and the immutable correction registry.
+- **Result** (threshold transfer PRIMARY; `results/router_sim/`; 45 module tests,
+  full suite 313 passed):
+
+  Full TEST-IID (n=104,443):
+
+  | policy | cov_machine | human% | acc_mach | acc_sys | mF1_ans | mF1_sys | cost/1k [95% CI] |
+  |---|---|---|---|---|---|---|---|
+  | a_only (LogReg) | 1.0000 | 0 | 0.8444 | 0.8444 | 0.7605 | 0.7605 | 933.41 [920.94, 946.45] |
+  | a_only_cnb | 1.0000 | 0 | 0.8279 | 0.8279 | 0.7265 | 0.7265 | 1032.39 [1019.75, 1046.19] |
+  | **a_to_human@τ*** | 0.8206 | 17.94 | 0.9089 | 0.9253 | 0.8405 | 0.8916 | **896.89 [886.69, 906.94]** |
+  | all_human | 0 | 100 | — | 1.0000 | — | 1.0000 | 2500.00 |
+
+  Paired subset (n=5,000):
+
+  | policy | cov_A | human% | acc_mach | mF1_ans | cost/1k [95% CI] |
+  |---|---|---|---|---|---|
+  | a_only | 1.0000 | 0 | 0.8448 | 0.7652 | 931.20 [870.00, 992.40] |
+  | c_only (Haiku) | — | 0 | 0.8474 | 0.7697 | 916.92 [859.32, 980.51] |
+  | a_to_human@τ* | 0.7786 | 22.14 | 0.9253 | 0.8603 | 902.70 [857.58, 949.00] |
+  | **a_to_c@τ*** (headline) | 0.6224 | 0 | 0.8526 | 0.7749 | **884.89 [827.27, 946.09]** |
+
+  Paired deltas (✓ = CI excludes zero): full a_to_human−a_only **−36.52
+  [−44.51, −28.91] ✓**; full a_to_human−a_only_cnb **−135.50 [−145.74, −125.16] ✓**;
+  paired a_to_c−c_only **−32.02 [−53.64, −10.43] ✓** (McNemar b=52/c=26, p=0.0043);
+  paired a_to_c−a_only −46.31 [−95.53, **+6.54**] · (McNemar p=0.078); paired
+  **a_to_c−a_to_human −17.81 [−63.02, +27.20] · → owner decision 1 verdict:
+  DIRECTIONAL ONLY**, under both transfer modes.
+- **Findings:**
+  - **Phase-accept groundwork, stated honestly:** the criterion "router dominates ≥2
+    single-tier policies" is met by the **confidence-gated A→human router on full
+    TEST-IID** (beats a_only and a_only_cnb, both paired CIs excluding zero) — not by
+    the LLM cascade specifically. The Haiku-terminal headline dominates **one** model
+    baseline (c_only). `all_human` is deliberately excluded from dominance counting
+    (at c_human=$2.50 any machine policy beats $2,500/1k arithmetically — counting it
+    would inflate the claim).
+  - **Threshold transfer loses 5–16 points of realized coverage** (a_to_human full:
+    0.8689 target → 0.8206 realized; a_to_c: 0.7793 → 0.6224): CAL rungs emit raw
+    p_max, the TEST final emits isotonic-compressed p_max, so the same constant
+    answers fewer rows. This is not cosmetic — under the coverage-matched SECONDARY,
+    a_to_c would have dominated a_only too (**−83.71 [−129.34, −36.92] ✓**) and
+    a_to_human−a_only on the subset flips significant (−67.10 ✓). The intended
+    operating point dominates; the raw-space constant shipped into isotonic space
+    does not. Calibration-space alignment for threshold fitting is an open item for
+    the frontier-claims task / owner.
+  - a_to_c's machine accuracy 0.8526 > both a_only 0.8448 and c_only 0.8474 at 100%
+    machine coverage — the cascade routes hard rows to the slightly-better model and
+    keeps easy rows on the free one; but at n=5,000 its cost edge over a_only is not
+    yet a claim (CI +6.54 upper bound).
+  - McNemar on a_to_c−a_to_human's 3,893 shared machine rows favors a_to_human
+    (p=0.0024) — expected: those are the easy rows both answer; the policies differ
+    on what happens to the hard 22%.
+- **Verdict:** router simulator complete and gate-hardened; hypothesis **partially
+  confirmed** — a confidence-gated router beats ≥2 single tiers with paired CIs, but
+  the specific Haiku-terminal headline's a_only edge is directional pending either the
+  calibration-space fix or Tier B. Honest diagnosis (the lab's credibility rule) is
+  the deliverable: the shortfall is attributable to the raw→isotonic threshold
+  transfer, measured and quantified above.
+- **Repro:** `make router-sim` (= `uv run python -m triage_lab.router_sim --all`);
+  tests: `uv run pytest tests/test_router_sim.py -q`.

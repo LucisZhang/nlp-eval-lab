@@ -1,9 +1,21 @@
 # Tier A FINAL reported point (LogReg): word + char_wb, isotonic-calibrated on
-# CAL, evaluated ONCE on TEST-IID. Features/params match the winning CAL rung
-# (tier_a_logreg_wordchar_cal); the deltas vs that rung are the reporting
+# CAL, evaluated ONCE on TEST-IID. Features/params match the CAL rung
+# tier_a_logreg_wordchar_cal; the deltas vs that rung are the reporting
 # switches: calibration none -> isotonic and split cal -> test_iid. Fit on
 # TRAIN, calibrate on CAL, evaluate on TEST-IID (no TEST-* data touches
 # training or calibration).
+#
+# NOTE (owner-approved documentation correction, 2026-08-07, Phase 4 task 4): this
+# header previously described tier_a_logreg_wordchar_cal as "the winning CAL rung".
+# That claim is not supported by results/runs.jsonl — the WORD-ONLY rung
+# (tier_a_logreg_word_cal, d35c23d2) beat it on every logged CAL metric:
+# accuracy 0.8264 vs 0.8193, macro_f1 0.7535 vs 0.7466, aurc 0.0664 vs 0.0678.
+# The wordchar rung is the feature/param match to THIS frozen final config, which is
+# the only rationale this comment should have claimed. Correcting prose only: no
+# model, feature, split, seed or calibration setting changed, so run 8e4d6345's
+# numbers are untouched. The resulting file-hash change is registered explicitly in
+# predictions.CONFIG_DOC_CORRECTIONS so the provenance gate accepts exactly this
+# correction for exactly this run and nothing else.
 model:
   runner: tier_a
   name: tier_a_logreg_test_iid

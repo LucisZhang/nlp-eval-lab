@@ -60,6 +60,12 @@ N_RESAMPLES = 1000
 BOOTSTRAP_SEED = 20260805
 CI_LOWER_PCT = 2.5
 CI_UPPER_PCT = 97.5
+
+# IEEE-754 float64 range limits, used by `mcnemar` to decide when its exact-integer tail
+# has to be scaled in log space: the largest finite value is just under 2^1024, and the
+# smallest positive subnormal is 2^-1074 (so 0.5**n silently becomes 0.0 for n > 1074).
+MAX_FLOAT_EXP = 1024
+MIN_SUBNORMAL_EXP = 1074
 BOOTSTRAP_METHOD = "percentile"
 
 
@@ -315,6 +321,25 @@ def mcnemar(y_true, pred_a, pred_b, class_labels=None) -> dict[str, float]:
 
     b = #(A right, B wrong), c = #(A wrong, B right), n = b + c.
     p = min(1, 2 * Σ_{i=0}^{min(b,c)} C(n, i) * 0.5^n). n == 0 -> p = 1.0.
+
+    The tail is accumulated exactly in Python ints via the recurrence
+    ``C(n, i+1) = C(n, i) * (n - i) // (i + 1)`` — same values as summing ``math.comb``,
+    but O(k) big-int operations instead of recomputing each binomial from scratch, which
+    matters once n reaches the tens of thousands (a full TEST-IID model-vs-model
+    comparison).
+
+    The final scaling is done in log space whenever the float expression
+    ``2.0 * tail * 0.5**n`` cannot represent the answer, decided by EXPONENT BOUNDS rather
+    than by catching an exception — because the two failure modes are not symmetric:
+
+    - **overflow** (``2 * tail`` ≥ 2^1024) raises, and is loud;
+    - **underflow** (``n > 1074``, so ``0.5**n`` is 0.0) does NOT raise. It silently
+      returns p = 0.0 for any strongly imbalanced comparison on a slice of more than ~1k
+      discordant pairs — a fabricated "infinitely significant" result. Probe: n = 1075
+      with min(b, c) = 0 returned exactly 0.0 instead of ≈5e-324.
+
+    Results are bit-identical to the float path wherever that path was well-defined; only
+    the two out-of-range regimes changed, and one of them was previously silent.
     """
     yt = np.asarray(y_true)
     pa = np.asarray(pred_a)
@@ -328,8 +353,17 @@ def mcnemar(y_true, pred_a, pred_b, class_labels=None) -> dict[str, float]:
         p_value = 1.0
     else:
         k = min(b, c)
-        tail = sum(math.comb(n, i) for i in range(k + 1))
-        p_value = min(1.0, 2.0 * tail * (0.5**n))
+        term = 1  # C(n, 0)
+        tail = 1
+        for i in range(k):
+            term = term * (n - i) // (i + 1)
+            tail += term
+        # float64 can represent 2*tail only below 2^1024, and 0.5**n only for n <= 1074.
+        if (2 * tail).bit_length() <= MAX_FLOAT_EXP and n <= MIN_SUBNORMAL_EXP:
+            p_value = min(1.0, 2.0 * tail * (0.5**n))
+        else:
+            log_p = math.log(2.0) + math.log(tail) - n * math.log(2.0)
+            p_value = min(1.0, math.exp(log_p)) if log_p < 0.0 else 1.0
     return {"b": b, "c": c, "n_discordant": n, "p_value": float(p_value)}
 
 

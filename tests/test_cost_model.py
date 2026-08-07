@@ -266,7 +266,8 @@ def test_resample_uses_one_shared_index_draw_per_replicate():
     total = comps["misroute"] + comps["api"] + comps["human"]
     arrays = {"total": total, **comps}
 
-    reps = cost_model.resample_means_per_1k(arrays, n_resamples=3, seed=42)
+    reps = cost_model.resample_means(arrays, scale=cost_model.PER_N_COMPLAINTS,
+                                     n_resamples=3, seed=42)
     summed = reps["misroute"] + reps["api"] + reps["human"]
     assert summed == pytest.approx(reps["total"], abs=1e-9)
 
@@ -277,8 +278,8 @@ def test_resample_uses_one_shared_index_draw_per_replicate():
             assert reps[key][i] == pytest.approx(arr[idx].mean() * 1000, abs=1e-12), key
 
     with pytest.raises(ValueError, match="id-aligned"):
-        cost_model.resample_means_per_1k({"a": np.zeros(3), "b": np.zeros(4)},
-                                         n_resamples=2, seed=1)
+        cost_model.resample_means({"a": np.zeros(3), "b": np.zeros(4)},
+                                  n_resamples=2, seed=1)
 
 
 def test_component_points_sum_to_total():

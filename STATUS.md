@@ -66,8 +66,8 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 | Risk-coverage machinery (+ per-example prediction artifacts, all runs) | done | `182d425`; EXPERIMENT_LOG 2026-08-07 Phase 4 task 1 (row was stale — completed previous session, flipped 2026-08-07) |
 | Cost-model implementation | done | EXPERIMENT_LOG 2026-08-07 Phase 4 task 2; `configs/cost_model_v1.yaml` `f76ad15a…`; `results/cost_model/` |
 | Threshold optimization on CAL (per owner-amended §4.2: τ at A/B only, Tier C terminal, parse-failure→human; amendment recorded in UPGRADE_PLAN §4.2 + EXPERIMENT_LOG) | done | EXPERIMENT_LOG 2026-08-07 Phase 4 task 3; `results/thresholds/`; carry-forwards for task 4: cross-family delta directional-only at n=1,500; τ→TEST transfer rule (calibration-space) open; parse-fail arm empty on Haiku, fires on Sonnet; `tier_a_logreg_test_iid.yaml` "winning CAL rung" comment unsupported by runs.jsonl |
-| Router simulator vs all policies | pending | — |
-| Two headline frontier claims with CIs; router dominates ≥2 single tiers (or honest diagnosis) | pending — **partial**: build infra against Tier A (+ Tier C when ready) now; Tier B frontier points **pending Tier B** | — |
+| Router simulator vs all policies (TEST-IID, owner decisions 1–4 of 2026-08-07 applied) | done | EXPERIMENT_LOG 2026-08-08 Phase 4 task 4; `results/router_sim/`; A→human dominates a_only + a_only_cnb (paired CIs ✓); Haiku-terminal headline dominates c_only only; cross-family delta directional-only (owner decision 1 verdict) |
+| Two headline frontier claims with CIs; router dominates ≥2 single tiers (or honest diagnosis) | pending — **partial**: dominance criterion met by A→human on full TEST-IID (honest diagnosis logged: raw→isotonic threshold transfer costs 5–16 pts coverage; calibration-space alignment is an open owner item); Tier B frontier points **pending Tier B** | EXPERIMENT_LOG 2026-08-08 Phase 4 task 4 (groundwork) |
 
 ### Phase 5 — Drift protocol
 | Task | Status | Evidence |

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 
 import numpy as np
 import pytest
@@ -286,3 +287,64 @@ def test_run_end_to_end(tmp_path):
     assert m["ci_lo"] <= m["point"] <= m["ci_hi"]
     assert on_disk["wall_clock_seconds"] >= 0.0
     assert on_disk["cost_usd"] is None
+
+
+def test_mcnemar_survives_large_discordant_counts():
+    """Regression: the exact tail overflows float64 well before TEST-slice sizes.
+
+    At n = 20,000 discordant pairs the exact binomial tail has ~6,000 digits, so the
+    naive `2.0 * tail * 0.5**n` raised OverflowError and the test could not be reported
+    at all on a full TEST-IID model-vs-model comparison. The log-space fallback must
+    return a real p-value, and small-n results must stay bit-identical.
+    """
+    b, c = 10_500, 9_500
+    y_true = ["x"] * (b + c)
+    pred_a = ["x"] * b + ["y"] * c
+    pred_b = ["y"] * b + ["x"] * c
+    res = harness.mcnemar(y_true, pred_a, pred_b)
+    assert res["n_discordant"] == b + c
+    assert 0.0 < res["p_value"] < 1.0
+    assert math.isfinite(res["p_value"])
+    # normal approximation sanity: z = (|b-c|-1)/sqrt(b+c) -> p well below 1e-6 here
+    z = (abs(b - c) - 1) / math.sqrt(b + c)
+    assert res["p_value"] < math.exp(-z * z / 2)
+
+    # exact small-n path is untouched (same value as the textbook formula)
+    small = harness.mcnemar(["x"] * 6, ["x"] * 5 + ["y"], ["y"] * 5 + ["x"])
+    assert small["p_value"] == 0.21875
+
+
+@pytest.mark.parametrize("n", [1073, 1074, 1075, 1076, 2000])
+def test_mcnemar_extreme_imbalance_does_not_silently_underflow(n):
+    """Regression: `0.5**n` is 0.0 for n > 1074 and raises nothing.
+
+    With min(b, c) = 0 the tail is 1, so the float expression `2.0 * 1 * 0.5**n` silently
+    produced p = 0.0 for every strongly imbalanced comparison on more than ~1k discordant
+    pairs — a fabricated "infinitely significant" result on a slice this repo routinely
+    evaluates. The value must be the true 2^-(n-1), reported down to the smallest
+    representable double and only then flushing to zero.
+    """
+    y_true = ["x"] * n
+    res = harness.mcnemar(y_true, ["x"] * n, ["y"] * n)
+    assert res["b"] == n and res["c"] == 0
+    expected = 2.0 ** (-(n - 1))          # exact p = 2 * C(n,0) * 2^-n
+    if expected > 0.0:                    # representable as a (sub)normal double
+        assert res["p_value"] == pytest.approx(expected, rel=1e-12)
+        assert res["p_value"] > 0.0
+    else:
+        assert res["p_value"] == 0.0      # genuinely below 2^-1074
+
+
+def test_mcnemar_matches_the_exact_float_formula_wherever_it_is_defined():
+    """The fast path must not have moved: same values as `2*Σ C(n,i)*0.5**n` for small n."""
+    for b in range(0, 40, 3):
+        for c in range(0, 40, 3):
+            n = b + c
+            if n == 0:
+                continue
+            k = min(b, c)
+            expected = min(1.0, 2.0 * sum(math.comb(n, i) for i in range(k + 1))
+                           * (0.5**n))
+            got = harness.mcnemar(["x"] * n, ["x"] * b + ["y"] * c,
+                                  ["y"] * b + ["x"] * c)["p_value"]
+            assert got == expected, (b, c)

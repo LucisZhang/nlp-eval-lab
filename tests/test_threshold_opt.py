@@ -471,7 +471,7 @@ def test_missing_parse_failed_flag_is_a_hard_failure(tmp_path):
 def test_non_cal_artifact_is_refused(tmp_path):
     _write_artifact(tmp_path, "aa" * 32, [1], ["a"], ["a"], ["a", "b"], split="test_iid")
     record = _record("aa" * 32, "tier_a_x", split="test_iid")
-    with pytest.raises(ValueError, match="CAL-only"):
+    with pytest.raises(ValueError, match="outside the allowed set"):
         threshold_opt.load_artifact_checked(record, tmp_path)
 
 

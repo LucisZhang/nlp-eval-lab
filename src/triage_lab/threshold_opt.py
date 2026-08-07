@@ -417,63 +417,20 @@ def argmin_index(cost: np.ndarray) -> int:
 # Loading CAL inputs (offline; TEST-* is never opened here)
 # ---------------------------------------------------------------------------
 
-def _records_by_config(results_path=DEFAULT_RESULTS_PATH) -> dict[str, dict]:
-    """Non-smoke run records keyed by config file stem."""
-    out: dict[str, dict] = {}
-    for record in predictions.load_records(results_path):
-        name = Path(record.get("config_path", "")).stem
-        if name in out:
-            raise ValueError(
-                f"two run records share config {name!r} ({out[name]['run_id'][:8]}, "
-                f"{record['run_id'][:8]}); cannot pick one without a rule"
-            )
-        out[name] = record
-    return out
+# Run selection by config stem lives in `predictions` (shared with the router simulator);
+# kept under the module-local name this module and its tests already use.
+_records_by_config = predictions.records_by_config
 
 
 def load_artifact_checked(record: dict, preds_dir=DEFAULT_PREDS_DIR):
-    """Read a run's artifact and refuse it unless it passes the repo's FULL gate.
+    """CAL-only wrapper around the repo's full artifact gate.
 
-    Three layers, cheapest-to-strongest, all hard failures:
-
-    1. `cost_model.check_provenance` — the artifact's embedded ids/hashes are this run's.
-    2. CAL-only — this task may not open a TEST-* artifact, structurally.
-    3. `predictions.verify_artifact` — the repo's own structural + aggregate gate: ids
-       unique and non-null, every id a member of the frozen split, `y_true` agreeing with
-       that split, `p_max` exactly `probs.max`, `y_pred` the argmax (or the one-hot column
-       for tier_c), and the artifact's recomputed accuracy/macro_f1/aurc/acc_at_cov::*
-       matching the logged record to 1e-9.
-
-    Layer 3 is the one worth arguing for: threshold optimization reads `p_max` as a
-    *ranking* signal and joins three sources per row, so exactly the faults that leave
-    aggregate metrics untouched — a permuted id column, a p_max that is not the row's max
-    probability — are the ones that would silently corrupt a tau. Re-running the gate
-    costs under a second per artifact and removes any need to trust that `make preds` was
-    run after the last change.
+    Threshold fitting must never see a TEST-* slice, so the whitelist is enforced by the
+    loader rather than by convention: there is no code path in this module that can open
+    one. The gate itself (provenance + `predictions.verify_artifact`) lives in
+    `cost_model.load_artifact_verified` and is shared with the router simulator.
     """
-    art_path = Path(preds_dir) / f"{record['run_id']}.parquet"
-    art = predictions.read_artifact(art_path)
-    cost_model.check_provenance(art, record)
-    split = (record.get("dataset") or {}).get("split", "")
-    if split != "cal":
-        raise ValueError(
-            f"run {record['run_id'][:8]} is on split {split!r}; threshold optimization is "
-            "CAL-only (no TEST-* artifact may be opened in this task)"
-        )
-    config = predictions.load_config_checked(record)
-    rows = predictions.verify_artifact(art, record, config, art_path=art_path)
-    failed = [r for r in rows if not r["ok"]]
-    if failed:
-        detail = "; ".join(
-            f"{r['check']}: {r.get('detail', f'{r.get("abs_delta")!r} off')}"
-            for r in failed
-        )
-        raise ValueError(
-            f"artifact {record['run_id'][:8]} ({art_path}) fails the predictions "
-            f"verification gate — {detail}. A threshold selected on an unverified "
-            "artifact is not a threshold for the run it claims to describe"
-        )
-    return art
+    return cost_model.load_artifact_verified(record, preds_dir, allowed_splits={"cal"})
 
 
 def _artifact_block(record: dict, art, config_name: str) -> dict:
@@ -678,8 +635,9 @@ def _per_example_cost_at(policy: PolicyData, tau: float,
 def _delta_from_costs(per_a: np.ndarray, per_b: np.ndarray, *, n_resamples: int,
                       seed: int, favors=("tau_star", "reference")) -> dict:
     diff = per_a - per_b
-    reps = cost_model.resample_means_per_1k(
-        {"delta": diff}, n_resamples=n_resamples, seed=seed)["delta"]
+    reps = cost_model.resample_means(
+        {"delta": diff}, scale=cost_model.PER_N_COMPLAINTS,
+        n_resamples=n_resamples, seed=seed)["delta"]
     lo, hi = np.percentile(reps, [harness.CI_LOWER_PCT, harness.CI_UPPER_PCT])
     point = float(diff.mean()) * cost_model.PER_N_COMPLAINTS
     return {
