@@ -324,3 +324,75 @@ reported runs. Every portfolio-bound number carries its reproduction command
   uv run python -m triage_lab.tier_c_compare /tmp/tierc_cmp/sonnet_iid_ok.jsonl /tmp/tierc_cmp/haiku_iid_ok.jsonl --split test_iid
   uv run python -m triage_lab.tier_c_compare /tmp/tierc_cmp/sonnet_pc_ok.jsonl /tmp/tierc_cmp/haiku_pc_ok.jsonl --split test_postcutoff
   ```
+
+## 2026-08-07 — Phase 3 step 7a: provider-routing audit + latency-exhibit relabel (no API calls)
+
+- **Method:** code + receipts audit, prompted by the owner's observation that recent Tier C
+  runs were all served by Amazon Bedrock despite an assumed pin to Anthropic. Read the
+  request construction (`src/triage_lab/tier_c.py::_create_completion`) and aggregated the
+  per-call `provider` field across every committed Tier C receipt.
+- **Result:**
+  - **Provider pinning is NOT in effect and never was.** The request body sends only
+    `model/messages/temperature/max_tokens/response_format` plus
+    `extra_body={"usage": {"include": true}}` — no OpenRouter `provider` routing preference
+    (`order`/`only`/`allow_fallbacks`) is sent anywhere, and no config exposes one.
+    OpenRouter free-routes every call.
+  - Aggregate across all 8 committed Tier C runs (16,050 calls): **Amazon Bedrock 16,020
+    (99.81%)**, Anthropic 18 (0.11%, all Haiku finals), Azure 12 (0.07%, all Sonnet finals).
+  - **Latency relabel:** all Phase 3 p50/p95 latency figures (steps 2–6) are client-side
+    wall-clock through the OpenRouter proxy on this un-pinned, ≈99.8%-Bedrock route at
+    `max_concurrency: 8`. They characterize **Claude via OpenRouter→Bedrock**, not the
+    Anthropic first-party API; the Haiku-vs-Sonnet latency ratio (~2.3× p50) is contingent
+    on OpenRouter's routing. STATUS.md's Phase 3 acceptance row now carries this labeling;
+    upstream region is not exposed by OpenRouter, so per UPGRADE_PLAN §7 the latency method
+    statement is "provider recorded per call; region unknown".
+  - Prior log entries are correct as written (each already reported its provider histogram);
+    nothing is retro-edited.
+- **Verdict:** **No mislogged data — the gap was labeling, now fixed.** If provider-controlled
+  latency is ever wanted, sending an OpenRouter `provider` preference is a params change =
+  new config/run version, never an in-place edit; not done here.
+- **Repro (read-only):**
+  `grep -n "extra_body\|provider" src/triage_lab/tier_c.py` (no routing preference), and
+  `python3 -c "import json,glob;h={};[h.update({r['provider']:h.get(r['provider'],0)+1}) for f in glob.glob('results/tier_c_raw/*/*/calls.jsonl') for r in map(json.loads,open(f))];print(h)"`
+
+## 2026-08-07 — Phase 3 step 7b: v2-params PROBE — Sonnet 5 zero-shot, max_tokens 256, POSTCUTOFF only
+
+- **Config:** `configs/tier_c_sonnet_zeroshot_v2params_test_postcutoff.yaml` — identical to
+  the v1 POSTCUTOFF config except **`max_tokens: 64 → 256`** (single delta; same frozen v1
+  prompt bundle `f6777a96…`, same 1,500 shared rows via `cap_seed: 20260806`). Owner-approved
+  2026-08-07 (~$6). **PROBE: the v1 run (`d1c42d7d…`) stays PRIMARY in the results log;
+  this run exists only to bound the truncation artifact.**
+- **Hypothesis:** step 6 found Sonnet's +5.5-pt paired POSTCUTOFF advantage was earned
+  despite 37/1,500 length-truncated calls resolving to fallback labels; lifting the
+  completion budget recovers those rows and widens the advantage — i.e. v1 understates
+  Sonnet on drifted data.
+- **Result** (`run_id 1f2b8f2a…`; computed cost == OpenRouter-reported; providers Bedrock
+  1,495 + Azure 5 — un-pinned routing per step 7a):
+  - macro-F1 **0.7960** [0.7763, 0.8158], accuracy **0.8087** [0.7886, 0.8280];
+    **$5.8055 = $3.870/1k**; p50 3.32 s / p95 5.79 s (OpenRouter→Bedrock route); prompt
+    tokens 2,779,838 (byte-identical prompts to v1, same rows), completion 24,582.
+  - **Parse failures 37 → 3 (0.2%)**, all three still `finish_reason: "length"` at 256
+    tokens (ids 21021115, 21069060, 21714801) — a larger budget shrinks but does not
+    eliminate reasoning-token burn.
+  - **v2 − v1 paired (same 1,500 rows):** accuracy **+0.0073** [−0.0020, +0.0180], macro-F1
+    **+0.0083** [−0.0021, +0.0192]; McNemar b=33 / c=22 (55 discordant), **p=0.18** — the
+    paired CI includes zero. The 55 discordant rows exceed the 37 recovered fallback rows:
+    temperature-0 answers still vary run-to-run across the un-pinned provider route, so part
+    of the movement is route/rerun noise, not budget.
+  - **v2 − Haiku paired (same rows, Haiku receipts filtered to the shared 1,500):** accuracy
+    **+0.0627** [+0.0460, +0.0800], macro-F1 **+0.0541** [+0.0350, +0.0750]; McNemar
+    b=130 / c=36, **p=1.1e-13** — vs the v1 primary +0.0553 / +0.0458 (p=2.0e-10), and
+    consistent with the step 6 sensitivity view (+0.0622 excluding fallback rows).
+- **Verdict:** **v1 understates Sonnet's POSTCUTOFF advantage by at most ≈1 accuracy point,
+  and not statistically significantly (v2−v1 CI includes zero).** The primary +5.5-pt
+  paired-advantage claim stands as reported; the probe bounds the 64-token truncation
+  artifact rather than revising the headline. Step 6's router implication is refined:
+  parse-failure-as-escalation-signal stands, but the completion budget's direct accuracy
+  cost on this task is ≤1 pt, and even 256 tokens leaves a 0.2% silent-failure tail.
+  Task spend $5.81; cumulative Tier C spend $36.49 of the approved ≈$48.5 envelope.
+- **Repro:**
+  `uv run --extra tierc python -m triage_lab.harness configs/tier_c_sonnet_zeroshot_v2params_test_postcutoff.yaml`
+  (live API); comparisons (read-only):
+  `uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_sonnet_zeroshot_v2params_test_postcutoff/20260807T040553Z/calls.jsonl results/tier_c_raw/tier_c_sonnet_zeroshot_test_postcutoff/20260807T020907Z/calls.jsonl --split test_postcutoff`
+  then the same v2 receipts vs the Haiku POSTCUTOFF receipts filtered to the shared 1,500
+  ids (filter snippet as in step 6's repro block).
