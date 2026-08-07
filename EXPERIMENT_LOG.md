@@ -168,3 +168,39 @@ reported runs. Every portfolio-bound number carries its reproduction command
   `uv run --extra tierc python -m triage_lab.harness configs/tier_c_haiku_ablation_fewshot_cal.yaml`
   then same with `..._zeroshot_...`; paired comparison:
   `uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_haiku_ablation_fewshot_cal/20260806T160011Z/calls.jsonl results/tier_c_raw/tier_c_haiku_ablation_zeroshot_cal/20260806T160510Z/calls.jsonl --split cal`
+
+## 2026-08-07 — Phase 3 step 4: Haiku 4.5 zero-shot FINALS on TEST-IID + TEST-POSTCUTOFF
+
+- **Configs:** `configs/tier_c_haiku_zeroshot_{test_iid,test_postcutoff}.yaml` — first and
+  only Tier C touch of TEST-*; zero-shot per the §4.2 amendment (owner-approved 2026-08-07,
+  commit `9812499`); the two configs differ only in `model.name`/`data.split`; n=5,000
+  seeded subsample each (`cap_seed: 20260806`, kept identical to the ablation so the Sonnet 5
+  subsample pairs on the same rows); prompt bundle `f6777a96…`, k=0.
+- **Hypothesis:** the frozen zero-shot Haiku config holds ≈0.76 macro-F1 (its CAL level) on
+  TEST-IID; the TEST-POSTCUTOFF delta (contamination defense, §6.3.5) is reported whatever
+  it shows.
+- **Result:** (0 parse failures / 10,000 calls; computed cost == OpenRouter-reported both
+  runs; providers per call: IID Bedrock 4,984 + Anthropic 16, POSTCUTOFF Bedrock 4,998 +
+  Anthropic 2)
+  - TEST-IID (`run_id 70a1b0c4…`): macro-F1 **0.7697** [0.7499, 0.7886], accuracy **0.8474**
+    [0.8368, 0.8570]; **$6.5751** = **$1.315/1k complaints**; p50 1.38 s / p95 2.52 s;
+    6,307,301 prompt + 53,557 completion tokens.
+  - TEST-POSTCUTOFF (`run_id 82af4e01…`): macro-F1 **0.7254** [0.7122, 0.7396], accuracy
+    **0.7374** [0.7246, 0.7494]; **$6.8521** = **$1.370/1k**; p50 1.43 s / p95 2.36 s.
+  - **Contamination/drift delta (POSTCUTOFF − IID, different rows → not paired; per-slice
+    CIs disjoint on both metrics):** macro-F1 **−0.0443**, accuracy **−0.1100**. This
+    conflates post-training-cutoff contamination defense with genuine 2026 distribution
+    drift; Phase 5's yearly TEST-DRIFT slices will decompose it. Reported as measured.
+  - vs Tier A on TEST-IID (run `8e4d6345`, macro-F1 0.7605 [0.7564, 0.7643]): Haiku's point
+    is +0.009 with overlapping CIs and different eval rows (full slice vs 5k subsample) —
+    **no cross-tier claim**; the Phase 4 frontier will handle cross-tier comparisons properly.
+  - ECE/Brier/AURC for Tier C remain degenerate one-hot artifacts (see step 2 note), logged
+    but not quality claims.
+- **Verdict:** **Both Haiku final points established and CI'd.** IID held slightly above the
+  CAL level (0.770 vs 0.757). The −4.4pt macro-F1 / −11.0pt accuracy POSTCUTOFF drop is the
+  honest headline of the contamination defense. Task spend $13.43 (projected ~$13.5 for
+  zero-shot); cumulative Tier C spend $19.41 of the approved ≈$48.5 envelope (zero-shot
+  switch leaves ample room for Sonnet 5, the remaining Phase 3 task).
+- **Repro:**
+  `uv run --extra tierc python -m triage_lab.harness configs/tier_c_haiku_zeroshot_test_iid.yaml`
+  then same with `..._test_postcutoff.yaml` (live API; receipts under `results/tier_c_raw/`).

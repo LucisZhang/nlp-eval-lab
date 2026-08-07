@@ -56,7 +56,7 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 | Tier C prompt + structured-output schema (versioned, content-hashed) | done | EXPERIMENT_LOG 2026-08-06; `prompts/tier_c/v1/` bundle `f6777a96…` |
 | Zero-shot vs few-shot ablation on CAL (Haiku) | done | EXPERIMENT_LOG 2026-08-07; runs `c7598f84…`, `3f310951…`; paired CIs include zero (no few-shot gain on CAL) |
 | Smoke run + cost approval gate (see execution order) | **smoke done; approval pending** | EXPERIMENT_LOG 2026-08-06 (step 2); runs `e22fba2a…`, `77cbd36f…`; measured $0.002656/call few-shot, ~$48.5 projected total |
-| Haiku 4.5 full eval — TEST-IID + TEST-POSTCUTOFF (**zero-shot** per §4.2 amendment 2026-08-07) | pending | — |
+| Haiku 4.5 full eval — TEST-IID + TEST-POSTCUTOFF (**zero-shot** per §4.2 amendment 2026-08-07) | done | EXPERIMENT_LOG 2026-08-07 (step 4); runs `70a1b0c4…`, `82af4e01…`; IID macro-F1 0.7697, POSTCUTOFF −0.0443 delta; $1.32–1.37/1k |
 | Sonnet 5 subsample (**zero-shot** per §4.2 amendment 2026-08-07) | pending | — |
 | Both Tier C points with CIs on both slices; measured $/1k + p50/p95 latency; Haiku-vs-Sonnet paired delta; contamination delta; raw API logs retained | pending | — |
 
