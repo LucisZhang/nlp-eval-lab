@@ -50,17 +50,17 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 
 > **Kit is ready to launch the moment the A6000 is free.** Only the GPU-bound train/eval steps remain.
 
-### Phase 3 — Tier C LLM  ▶ **NEXT (first authorized task)**
+### Phase 3 — Tier C LLM  ✅ **COMPLETE 2026-08-07** (acceptance closed — EXPERIMENT_LOG step 6)
 | Task | Status | Evidence |
 |---|---|---|
 | Tier C prompt + structured-output schema (versioned, content-hashed) | done | EXPERIMENT_LOG 2026-08-06; `prompts/tier_c/v1/` bundle `f6777a96…` |
 | Zero-shot vs few-shot ablation on CAL (Haiku) | done | EXPERIMENT_LOG 2026-08-07; runs `c7598f84…`, `3f310951…`; paired CIs include zero (no few-shot gain on CAL) |
-| Smoke run + cost approval gate (see execution order) | **smoke done; approval pending** | EXPERIMENT_LOG 2026-08-06 (step 2); runs `e22fba2a…`, `77cbd36f…`; measured $0.002656/call few-shot, ~$48.5 projected total |
+| Smoke run + cost approval gate (see execution order) | done (approval granted 2026-08-06 — see §b) | EXPERIMENT_LOG 2026-08-06 (step 2); runs `e22fba2a…`, `77cbd36f…`; measured $0.002656/call few-shot, ~$48.5 projected total |
 | Haiku 4.5 full eval — TEST-IID + TEST-POSTCUTOFF (**zero-shot** per §4.2 amendment 2026-08-07) | done | EXPERIMENT_LOG 2026-08-07 (step 4); runs `70a1b0c4…`, `82af4e01…`; IID macro-F1 0.7697, POSTCUTOFF −0.0443 delta; $1.32–1.37/1k |
 | Sonnet 5 subsample (**zero-shot** per §4.2 amendment 2026-08-07) | done | EXPERIMENT_LOG 2026-08-07 (step 5); runs `e1503146…`, `d1c42d7d…`; IID macro-F1 0.7418, POSTCUTOFF 0.7876; $3.66–3.85/1k; 1,500-row subsets pair with Haiku rows (verified) |
-| Both Tier C points with CIs on both slices; measured $/1k + p50/p95 latency; Haiku-vs-Sonnet paired delta; contamination delta; raw API logs retained | pending | — |
+| Both Tier C points with CIs on both slices; measured $/1k + p50/p95 latency; Haiku-vs-Sonnet paired delta; contamination delta; raw API logs retained | done | EXPERIMENT_LOG 2026-08-07 (step 6); paired Sonnet−Haiku: IID ≈0 (McNemar p=1.00), POSTCUTOFF +0.0553 acc / +0.0458 macro-F1 (p=2e-10); sensitivity excl. fallback rows agrees; fallback asymmetry 0 vs 12/37 reported |
 
-### Phase 4 — Calibration + router
+### Phase 4 — Calibration + router  ▶ **NEXT (per §b order)**
 | Task | Status | Evidence |
 |---|---|---|
 | Risk-coverage machinery | pending | — |
@@ -107,8 +107,9 @@ Tier B is **BLOCKED-until-weekend**; do the GPU-free work first, in this exact o
       Sonnet 5 paired 1,500 × 2 slices — see EXPERIMENT_LOG 2026-08-06 step 2).
    3. ~~Zero-shot vs few-shot ablation on CAL~~ **done 2026-08-07** (no few-shot gain; paired
       CIs include zero → owner amended UPGRADE_PLAN §4.2: **all Tier C finals run zero-shot**,
-      few-shot config archived for possible drift-slice probes). Then full Haiku 4.5
-      (TEST-IID + TEST-POSTCUTOFF, zero-shot) and Sonnet 5 zero-shot subsample.
+      few-shot config archived for possible drift-slice probes). ~~Then full Haiku 4.5
+      (TEST-IID + TEST-POSTCUTOFF, zero-shot) and Sonnet 5 zero-shot subsample.~~
+      **All done 2026-08-07; Phase 3 acceptance closed (EXPERIMENT_LOG step 6). Next: Phase 4.**
 2. **Phase 4 — Calibration + router infra**, built against **Tier A outputs** (and Tier C once
    logged). Stand up the cost model, risk-coverage, threshold optimization, and router simulator.
    Any frontier claim requiring Tier B points is **pending Tier B**.

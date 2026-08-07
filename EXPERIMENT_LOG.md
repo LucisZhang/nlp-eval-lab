@@ -249,3 +249,78 @@ reported runs. Every portfolio-bound number carries its reproduction command
 - **Repro:**
   `uv run --extra tierc python -m triage_lab.harness configs/tier_c_sonnet_zeroshot_test_iid.yaml`
   then same with `..._test_postcutoff.yaml` (live API; receipts under `results/tier_c_raw/`).
+
+## 2026-08-07 — Phase 3 step 6 (acceptance): paired Haiku-vs-Sonnet deltas + Phase 3 close-out
+
+- **Method:** `triage_lab.tier_c_compare` (frozen read-only tool; no API calls, no new runs)
+  on the shared 1,500 ids per slice. The tool requires identical id sets, so the Haiku
+  receipts are first filtered to the Sonnet id set (copies under a temp dir; committed
+  receipts untouched). **A = Sonnet, B = Haiku**, so every delta below reads Sonnet − Haiku
+  (the tool's `arm_a_role`/`arm_b_role` strings still say "few_shot"/"zero_shot" — that is a
+  CAL-ablation naming convention; the receipt paths in each report identify the real arms).
+  Fallback-labeled calls enter exactly as the runner scored them (frozen protocol).
+- **Hypothesis:** the paired same-rows delta confirms the step 5 impression — no Sonnet gain
+  on TEST-IID, a real Sonnet gain on TEST-POSTCUTOFF.
+- **Result — PRIMARY (frozen protocol, all 1,500 shared rows per slice):**
+  - TEST-IID: accuracy **−0.0007** [−0.0167, +0.0140], macro-F1 **−0.0073** [−0.0427,
+    +0.0263]; McNemar b=68 / c=69 (137 discordant), **p=1.00**. Sonnet and Haiku are
+    statistically indistinguishable on IID at **2.8× the $/1k** (Sonnet $3.66 vs Haiku
+    $1.32) and ~2.3× the p50 latency (3.17 s vs 1.38 s).
+  - TEST-POSTCUTOFF: accuracy **+0.0553** [+0.0393, +0.0734], macro-F1 **+0.0458**
+    [+0.0282, +0.0663]; McNemar b=128 / c=45 (173 discordant), **p=2.0e-10**. Sonnet is
+    decisively better on post-cutoff data; the capability gap only appears off the models'
+    (shared) training distribution.
+- **Result — SENSITIVITY (excludes Sonnet's fallback-labeled rows; NOT the headline — the
+  frozen-protocol numbers above stay primary):** IID n=1,488: accuracy +0.0007 [−0.0148,
+  +0.0155], macro-F1 −0.0066 [−0.0419, +0.0291], p=1.00 — conclusion unchanged. POSTCUTOFF
+  n=1,463: accuracy +0.0622 [+0.0458, +0.0793], macro-F1 +0.0499 [+0.0318, +0.0692],
+  p=2.0e-13 — slightly larger, same conclusion. **Neither slice's verdict is driven by the
+  parse-failure handling.**
+- **Fallback asymmetry (substantive finding, not a bug):** Haiku produced valid structured
+  output on **10,000/10,000** final calls; Sonnet failed to answer **12/1,500 (0.8%)** on IID
+  and **37/1,500 (2.5%)** on POSTCUTOFF — every failure `finish_reason: "length"`, i.e. the
+  64-token completion budget (an ops-style latency/cost constraint both models share) was
+  consumed by Sonnet's internal reasoning before any parseable JSON was emitted, and the
+  frozen protocol scored the call as the fallback label. Under a production output-token
+  budget, **the stronger model silently fails to answer up to 2.5% of the time while the
+  cheaper model never does** — and the failure rate rose on the drifted slice, exactly where
+  escalation to the stronger model is most valuable. Router implication for Phase 4: a
+  structured-output parse failure is itself a signal (abstain/escalate/retry-with-bigger-
+  budget), and completion budget is a per-model config dimension, not a shared constant.
+- **Contamination delta recap (per-model, cross-slice, different rows → not paired):** Haiku
+  macro-F1 −0.0443 / accuracy −0.1100 (step 4, n=5,000/slice); Sonnet macro-F1 +0.0459 /
+  accuracy −0.0400 (step 5, n=1,500/slice, confounded by the 0.8%→2.5% fallback shift). The
+  paired same-rows view above is the clean statement: the Sonnet−Haiku gap moves from ≈0 on
+  IID to ≈+5 pts on POSTCUTOFF.
+- **Phase 3 ✅ Accept checklist:** both Tier C points with CIs on both slices ✓ (runs
+  `70a1b0c4…`, `82af4e01…`, `e1503146…`, `d1c42d7d…`); measured $/1k ✓ (Haiku $1.32–1.37,
+  Sonnet $3.66–3.85) and p50/p95 latency ✓ per model; Haiku-vs-Sonnet paired delta ✓ (this
+  entry); contamination delta ✓ (steps 4–5 + recap above); raw API logs retained ✓
+  (committed under `results/tier_c_raw/`, commits `f67cf6a`, `67af2d2`).
+- **Verdict:** **Phase 3 acceptance satisfied — phase complete.** Headline: zero-shot Sonnet 5
+  buys nothing over Haiku 4.5 on TEST-IID at 2.8× the cost, but is worth ≈+5.5 pts accuracy
+  (paired, p=2e-10) on TEST-POSTCUTOFF — while also silently failing 2.5% of POSTCUTOFF
+  calls under the shared 64-token output budget. Total Tier C spend $30.68 of the approved
+  ≈$48.5 (this step: $0, no API calls).
+- **Repro** (read-only; regenerates the four reports from committed receipts):
+  ```
+  python3 - <<'EOF'
+  import json, pathlib
+  base = pathlib.Path("results/tier_c_raw"); out = pathlib.Path("/tmp/tierc_cmp"); out.mkdir(exist_ok=True)
+  for tag, h, s in (("iid", "tier_c_haiku_zeroshot_test_iid/20260807T004109Z",
+                     "tier_c_sonnet_zeroshot_test_iid/20260807T015725Z"),
+                    ("pc", "tier_c_haiku_zeroshot_test_postcutoff/20260807T005820Z",
+                     "tier_c_sonnet_zeroshot_test_postcutoff/20260807T020907Z")):
+      srec = [json.loads(l) for l in open(base / s / "calls.jsonl") if l.strip()]
+      shared = {r["complaint_id"] for r in srec}
+      ok = {r["complaint_id"] for r in srec if not r.get("parse_failed")}
+      hl = [l for l in open(base / h / "calls.jsonl") if l.strip()]
+      (out / f"haiku_{tag}_shared.jsonl").write_text("".join(l for l in hl if json.loads(l)["complaint_id"] in shared))
+      (out / f"haiku_{tag}_ok.jsonl").write_text("".join(l for l in hl if json.loads(l)["complaint_id"] in ok))
+      (out / f"sonnet_{tag}_ok.jsonl").write_text("".join(json.dumps(r) + "\n" for r in srec if not r.get("parse_failed")))
+  EOF
+  uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_sonnet_zeroshot_test_iid/20260807T015725Z/calls.jsonl /tmp/tierc_cmp/haiku_iid_shared.jsonl --split test_iid
+  uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_sonnet_zeroshot_test_postcutoff/20260807T020907Z/calls.jsonl /tmp/tierc_cmp/haiku_pc_shared.jsonl --split test_postcutoff
+  uv run python -m triage_lab.tier_c_compare /tmp/tierc_cmp/sonnet_iid_ok.jsonl /tmp/tierc_cmp/haiku_iid_ok.jsonl --split test_iid
+  uv run python -m triage_lab.tier_c_compare /tmp/tierc_cmp/sonnet_pc_ok.jsonl /tmp/tierc_cmp/haiku_pc_ok.jsonl --split test_postcutoff
+  ```
