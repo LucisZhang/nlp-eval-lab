@@ -6,6 +6,8 @@
     "mean_per_example_usd": 0.0,
     "mode": "amortized_zero",
     "note": "TF-IDF + calibrated linear model inference runs on CPU in <1 ms/example with no per-call vendor charge; the amortized compute cost per complaint rounds to $0 at any volume this router operates at. Recorded as an ESTIMATE (a modeling choice to charge zero), not a measurement, so the router's cost advantage is never credited to an unmeasured Tier A expense.",
+    "raw_log_path": "",
+    "receipts_sha256": "",
     "total_usd": 0.0
   },
   "bootstrap": {

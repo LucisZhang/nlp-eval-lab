@@ -405,10 +405,10 @@ def pricing_rates(record: dict) -> tuple[float, float]:
     return rates[0], rates[1]
 
 
-def load_receipt_costs(raw_log_path, *, model_slug: str, prompt_rate: float,
-                       completion_rate: float,
-                       tol: float = RECEIPT_COST_TOL) -> dict[int, float]:
-    """Map complaint_id -> VERIFIED `computed_cost_usd` from a tier_c receipts jsonl.
+def load_receipt_records(raw_log_path, *, model_slug: str, prompt_rate: float,
+                         completion_rate: float,
+                         tol: float = RECEIPT_COST_TOL) -> dict[int, dict]:
+    """Map complaint_id -> VERIFIED receipt dict from a tier_c receipts jsonl.
 
     Every receipt must survive four checks before its dollar figure counts as measured:
 
@@ -429,9 +429,14 @@ def load_receipt_costs(raw_log_path, *, model_slug: str, prompt_rate: float,
 
     Every failure is collected and reported by category (offending ids named) rather than
     raising on the first bad line, so one pass tells you the whole story.
+
+    Returns the whole verified line (not just the price) because downstream policies need
+    other measured fields off the same receipt — notably `parse_failed`, the router's only
+    Tier C -> human signal. Keeping one verified loader means those fields can never be
+    read from a receipt that failed the cost gate.
     """
     path = _repo_path(raw_log_path)
-    out: dict[int, float] = {}
+    out: dict[int, dict] = {}
     bad: dict[str, list[int]] = {
         "duplicate complaint_id": [],
         "non-positive/non-integer token count": [],
@@ -472,7 +477,7 @@ def load_receipt_costs(raw_log_path, *, model_slug: str, prompt_rate: float,
                 bad["computed_cost_usd does not follow from tokens x pricing_snapshot"
                     ].append(cid)
                 continue
-            out[cid] = float(cost)
+            out[cid] = rec
 
     failures = [(name, ids) for name, ids in bad.items() if ids]
     if failures:
@@ -485,8 +490,19 @@ def load_receipt_costs(raw_log_path, *, model_slug: str, prompt_rate: float,
     return out
 
 
-def join_receipt_costs(ids, raw_log_path, *, record: dict) -> np.ndarray:
-    """Per-example verified USD for `ids`, joined ON complaint_id. Missing id = hard fail.
+def receipts_sha256(raw_log_path) -> str:
+    """sha256 of the receipts file actually consumed (same hasher as every other artifact).
+
+    The run record names a receipts PATH, not its contents. Binding the file's hash into
+    each derived artifact makes the receipts themselves part of the provenance chain, so a
+    later edit, truncation or re-download of a `calls.jsonl` is detectable by comparing
+    hashes rather than by re-deriving costs and noticing they moved.
+    """
+    return sha256_file(_repo_path(raw_log_path))
+
+
+def join_receipts(ids, raw_log_path, *, record: dict) -> list[dict]:
+    """Verified receipt per id, joined ON complaint_id. Missing id = hard fail.
 
     The join key is the complaint id, never position: receipt line order is completion
     order under concurrency, so a positional zip would silently mis-assign every cost.
@@ -498,11 +514,11 @@ def join_receipt_costs(ids, raw_log_path, *, record: dict) -> np.ndarray:
             f"run {record.get('run_id', '?')[:8]} has no extra.model_slug; the receipts "
             "cannot be confirmed to come from the model this run called"
         )
-    costs_by_id = load_receipt_costs(
+    by_id = load_receipt_records(
         raw_log_path, model_slug=model_slug,
         prompt_rate=prompt_rate, completion_rate=completion_rate,
     )
-    missing = [int(cid) for cid in ids if int(cid) not in costs_by_id]
+    missing = [int(cid) for cid in ids if int(cid) not in by_id]
     if missing:
         raise KeyError(
             f"{len(missing)} predicted complaint_id(s) have no receipt in "
@@ -510,7 +526,36 @@ def join_receipt_costs(ids, raw_log_path, *, record: dict) -> np.ndarray:
             f"{' ...' if len(missing) > MAX_OFFENDERS_SHOWN else ''}; every scored example "
             "must carry exactly one measured per-call cost"
         )
-    return np.asarray([costs_by_id[int(cid)] for cid in ids], dtype=np.float64)
+    return [by_id[int(cid)] for cid in ids]
+
+
+def join_receipt_costs(ids, raw_log_path, *, record: dict) -> np.ndarray:
+    """Per-example verified USD for `ids`, joined ON complaint_id."""
+    return np.asarray(
+        [r["computed_cost_usd"] for r in join_receipts(ids, raw_log_path, record=record)],
+        dtype=np.float64,
+    )
+
+
+def join_parse_failed(ids, raw_log_path, *, record: dict) -> np.ndarray:
+    """Per-example `parse_failed` flag, from the SAME verified receipts as the costs.
+
+    Parse failure is the router's only Tier C -> human signal (UPGRADE_PLAN §4.2 as
+    narrowed by the 2026-08-07 amendment), so it is a routing input and gets the same
+    treatment as a price: it must be an explicit boolean on a receipt that already passed
+    the cost gate. A missing or non-boolean flag is a hard failure — defaulting it to
+    False would silently route a garbled response's fallback label to a customer.
+    """
+    receipts = join_receipts(ids, raw_log_path, record=record)
+    bad = [int(r["complaint_id"]) for r in receipts
+           if not isinstance(r.get("parse_failed"), bool)]
+    if bad:
+        raise ValueError(
+            f"receipt(s) with missing/non-boolean parse_failed in "
+            f"{_repo_path(raw_log_path)}: {_offenders(bad)}; parse failure is a routing "
+            "decision input and cannot be defaulted"
+        )
+    return np.asarray([bool(r["parse_failed"]) for r in receipts], dtype=bool)
 
 
 def check_cost_sum(joined: np.ndarray, record: dict, *, tol: float = COST_SUM_TOL) -> dict:
@@ -554,6 +599,8 @@ class Policy:
     to_human: np.ndarray
     api_policy: dict
     cost_sum_check: dict | None = None
+    receipts_sha256: str = ""
+    raw_log_path: str = ""
 
     def __len__(self) -> int:
         return len(self.correct)
@@ -592,6 +639,7 @@ def build_single_tier_policy(record: dict, art: predictions.PredictionsArtifact,
     correct = (art.y_true == art.y_pred)
     n = len(art)
     cost_sum_check = None
+    receipts_hash = ""
 
     if mode == "amortized_zero":
         # No .get default: an amortized charge is a modeling DECISION and must be written
@@ -619,6 +667,7 @@ def build_single_tier_policy(record: dict, art: predictions.PredictionsArtifact,
                 "there is nothing measured to join"
             )
         api_cost = join_receipt_costs(art.complaint_id, raw_log_path, record=record)
+        receipts_hash = receipts_sha256(raw_log_path)
         cost_sum_check = check_cost_sum(api_cost, record)
         if not cost_sum_check["ok"]:
             raise ValueError(
@@ -645,6 +694,8 @@ def build_single_tier_policy(record: dict, art: predictions.PredictionsArtifact,
         to_human=np.zeros(n, dtype=bool),
         api_policy=dict(policy_cfg),
         cost_sum_check=cost_sum_check,
+        receipts_sha256=receipts_hash,
+        raw_log_path=str((record.get("extra") or {}).get("raw_log_path", "")),
     )
 
 
@@ -675,6 +726,9 @@ def build_result(policy: Policy, art: predictions.PredictionsArtifact, cfg: Cost
         "note": " ".join(str(policy.api_policy.get("note", "")).split()),
         "total_usd": _round(float(policy.api_cost_usd.sum())),
         "mean_per_example_usd": _round(float(policy.api_cost_usd.mean())),
+        # Receipts identity: the run record names a PATH, this names the BYTES.
+        "raw_log_path": policy.raw_log_path,
+        "receipts_sha256": policy.receipts_sha256,
     }
     return {
         "schema_version": SCHEMA_VERSION,

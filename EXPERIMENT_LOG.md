@@ -549,3 +549,93 @@ reported runs. Every portfolio-bound number carries its reproduction command
   spend — carry into threshold optimization (task 3) and the frontier claims.
 - **Repro:** `make cost-model` (= `uv run python -m triage_lab.cost_model --all`);
   tests: `uv run pytest tests/test_cost_model.py -q`.
+
+## 2026-08-07 — Phase 4 task 3: threshold optimization on CAL (owner-amended §4.2 cascade)
+
+- **Owner amendment (recorded, 2026-08-07, blockquote added to UPGRADE_PLAN §4.2):** the
+  cascade carries confidence thresholds at **Tier A (and Tier B when it lands) only**;
+  **Tier C is an unconditional terminal stop** once escalated (no τ_C, no Tier C
+  self-confidence); **parse-failure is the only Tier C→human signal**. Rationale: the
+  lab's own evidence (Phase 4 task 1) shows the frontier tier emits no usable confidence
+  (structured-output p_max is a degenerate one-hot); its one reliable self-signal is
+  failure to answer, so the router encodes exactly that. **Considered-and-deferred
+  alternative (owner-directed, NOT implemented):** the §4.2 3-sample self-consistency
+  proxy on the escalated subset — it would require temperature>0 (a new Tier C protocol
+  version) and new API spend for a signal of questionable signal-to-noise given the 55
+  discordant rows observed between temperature-0 reruns of identical prompts (step 7b).
+- **Hypothesis:** a Tier A confidence gate lowers expected cost vs answer-everything on
+  CAL at cost-model v1 defaults, and the escalate-to-C arm beats the send-to-human arm
+  at those defaults.
+- **Method:** `src/triage_lab/threshold_opt.py` sweeps τ_A over the CAL artifact's
+  distinct p_max values (answer-nothing point included in the argmin space) for two
+  policy families: `a_to_human` (full CAL, n=86,972) and `a_to_c_parsefail_human`
+  (paired 1,500-row subset of the Tier C zero-shot CAL run `3f310951…`; escalated rows
+  charged their MEASURED per-receipt cost; parse-failed rows → human with incurred spend
+  still charged, overriding the artifact's fallback label), plus `a_only` / `c_only` /
+  `all_human` references through the same machinery. Objective = expected cost/1k under
+  `configs/cost_model_v1.yaml` (`f76ad15a…`). Full bootstrap CIs (frozen constants,
+  shared indices) at operating points; **paired deltas** (τ* vs references;
+  cross-family on identical rows) per the no-claim-without-paired-CI rule; 6×6
+  c_misroute × c_human sensitivity grid (defaults an exact cell; evidence class:
+  estimated parameters, measured predictions). PRIMARY Tier A rung =
+  `tier_a_logreg_wordchar_cal` (`abcadd53…`) — byte-matched in family/params/features/
+  seed to the TEST-IID final `tier_a_logreg_test_iid`; all three CAL rungs swept.
+  **p_max-space note:** CAL rungs are `calibration: none`, the TEST final is isotonic —
+  every operating point is recorded both as τ* (in the CAL artifact's own p_max space)
+  and as target coverage; the τ→TEST transfer rule is a task-4 decision. Pre-commit
+  Codex review (no blockers) drove: exact-float64 τ serialization (the 10-dp-rounded τ
+  mis-replayed 6/9 files by one boundary row — now 0/9, regression-tested against every
+  shipped operating point), the full `predictions.verify_artifact` gate on every loaded
+  artifact, receipts sha256 bound into provenance (thresholds + cost_model outputs), and
+  an atomicity proof test for batch publish.
+- **Result** (PRIMARY rung, v1 defaults; `results/thresholds/`, summary
+  `summary__cost-f76ad15a.json`; 35 module tests, full suite 261 passed):
+
+  | policy | data | point | τ* | cov_A | esc% | human% | cost/1k [95% CI] |
+  |---|---|---|---|---|---|---|---|
+  | a_to_human | full CAL | τ* | 0.558766 | 0.8689 | 13.11 | 13.11 | 998.16 [985.08, 1010.75] |
+  | a_to_human | full CAL | a_only | — | 1.0000 | 0 | 0 | 1084.14 [1068.68, 1099.12] |
+  | a_to_human | full CAL | all_human | — | 0 | 100 | 100 | 2500.00 [2500.00, 2500.00] |
+  | a_to_c_parsefail_human | paired 1,500 | τ* | 0.702020 | 0.7793 | 22.07 | 0.00 | 896.29 [788.30, 1012.29] |
+  | a_to_c_parsefail_human | paired 1,500 | a_only | — | 1.0000 | 0 | 0 | 1048.00 [935.90, 1168.00] |
+  | a_to_c_parsefail_human | paired 1,500 | c_only | — | 0 | 100 | 0 | 985.31 [877.31, 1097.42] |
+
+  Paired deltas (negative favors τ*): a_to_human τ*−a_only **−85.98 [−93.90, −79.27]**
+  (full CAL); a_to_c τ*−a_only **−151.71 [−231.70, −71.70]**; a_to_c τ*−c_only
+  **−89.02 [−165.14, −9.02]** — all exclude zero. Cross-checks: a_only full-CAL and
+  c_only reproduce the task-2 numbers exactly from an independent code path.
+- **Findings:**
+  - **A Tier A confidence gate pays for itself everywhere:** both thresholded families
+    beat `a_only` in every cell of the 6×6 grid (32× price range), and at defaults the
+    paired CIs exclude zero.
+  - **Cross-family claim is directional only:** a_to_c@τ* − a_to_human@τ* on identical
+    rows = **−64.04 [−129.06, +4.65]** — CI includes zero at n=1,500. The sensitivity
+    grid favors escalate-to-C in every cell at defaults, with the family boundary at
+    c_human/c_misroute ≈ 0.344 (v1 defaults sit at 0.4167, C side); but per the
+    no-claim rule this is not yet a claim. Task 4 needs the larger paired TEST slice or
+    must report it as directional.
+  - **a_to_c's τ* is price-insensitive:** coverage 0.7793 in all 36 cells (stable even
+    at c_misroute $240) — API spend is too small to move the boundary; the gate sits
+    where Tier C's accuracy overtakes Tier A's confidence-conditional accuracy.
+    a_to_human's τ* swings coverage 0.076→1.000 across the same grid.
+  - **Parse-failure arm is empty on Haiku:** 0/1,500 parse failures in the CAL
+    zero-shot receipts (and 0 in every Haiku run); the Tier C→human path is exercised
+    only synthetically in tests here. It does fire on Sonnet (12/37/3 on
+    IID/POSTCUTOFF/v2params) — a Haiku-terminal cascade's c_human sensitivity is
+    vacuous, a Sonnet-terminal one is not. Carry to task 4.
+  - **Pre-existing discrepancy (flagged, not fixed):** `tier_a_logreg_test_iid.yaml`'s
+    header comment calls wordchar "the winning CAL rung", but on CAL it loses to
+    word-only on all three logged metrics (acc 0.8193 vs 0.8264, macro-F1 0.7466 vs
+    0.7535, AURC 0.0664 word vs 0.0678 wordchar), and word-only's τ* is cheaper here
+    ($970.35 vs $998.16/1k). Feature-match to the shipping TEST final still makes
+    wordchar PRIMARY for router work; the comment's claim is unsupported by
+    results/runs.jsonl. Owner decision needed if Tier A model choice is ever revisited;
+    TEST finals stay frozen.
+  - Selection caveat: τ* is chosen on the same CAL data it is scored on (by design —
+    CAL is the threshold-fitting split); unbiased evaluation happens on TEST in task 4.
+- **Verdict:** hypothesis confirmed with paired CIs for the gate-vs-a_only claims;
+  escalate-to-C superiority at defaults is a point-estimate/sensitivity finding, not
+  yet a CI-backed claim. Threshold machinery, sensitivity exhibits, and operating
+  points are committed and replayable (exact-τ regression suite).
+- **Repro:** `make thresholds` (= `uv run python -m triage_lab.threshold_opt --all`);
+  tests: `uv run pytest tests/test_threshold_opt.py -q`.

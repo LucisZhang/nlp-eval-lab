@@ -153,6 +153,18 @@ CFPB complaints.csv.zip  ──▶  ingest (DuckDB) ──▶ harmonize taxonomy
 
 **Router — the centerpiece.** Confidence cascade: Tier A answers if `p_max ≥ τ_A`; else escalate to Tier B; if `p_max ≥ τ_B` answer; else escalate to Tier C; below `τ_C`-proxy → human queue. Thresholds (τ_A, τ_B) chosen on the calibration split to minimize expected cost under an explicit, parameterized business cost model: `cost = c_misroute · P(error) + c_api · E[tokens] + c_human · P(human)` with defaults documented and user-adjustable in the demo (e.g., misroute = $6 handling delay, human review = $2.50, API cost measured). Deliverable claim shape: *"At equal accuracy to the all-LLM policy, the router cuts cost per 1,000 complaints by X% (measured); at equal cost to the all-linear policy, it raises macro-F1 by Y points (measured)."*
 
+> **AMENDMENT (2026-08-07, owner-approved, evidence-based — narrows the router spec above.)**
+> The cascade carries confidence thresholds at **Tier A (and Tier B when it lands) only**.
+> Tier C is an **unconditional terminal stop** once escalated — there is no τ_C and no use of
+> Tier C self-confidence. Basis: the lab's own evidence (Phase 4 task 1, per-example
+> artifacts) shows the frontier tier emits no usable confidence signal — its structured-output
+> p_max is a degenerate one-hot — and its one reliable self-signal is failure to answer. The
+> router encodes exactly that: **parse-failure is the only Tier C→human signal.** The
+> 3-sample self-consistency proxy contemplated above is **considered-and-deferred, not
+> implemented**: it would require temperature>0 (a new protocol version) and new API spend
+> for a signal of questionable signal-to-noise, given the 55 discordant rows observed between
+> temperature-0 reruns of the same 1,500 prompts (EXPERIMENT_LOG 2026-08-07 step 7b).
+
 ### 4.3 Engineering stack
 
 - **Python 3.12, `uv` for locked environments.** Repo layout: `data/` (gitignored) · `src/triage_lab/` (ingest, models, eval, router) · `configs/*.yaml` (one per experiment) · `results/` (append-only JSONL run log, committed) · `EXPERIMENT_LOG.md` (dated, hypothesis→result→verdict format copied from the NER session summary) · `demo/` (static site) · `seeds/` (ported coursework exhibits).

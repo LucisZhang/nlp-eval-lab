@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds
 
 setup:
 	uv sync --frozen
@@ -99,3 +99,10 @@ risk-coverage:
 # run record's logged cost_usd at 1e-6 — a mismatch fails loud.
 cost-model:
 	uv run python -m triage_lab.cost_model --all
+
+# Threshold optimization on CAL (Phase 4 task 3): sweeps the Tier A confidence gate over
+# every distinct p_max, prices each operating point with the cost model, and writes the
+# argmin + reference policies + a (c_misroute x c_human) sensitivity grid to
+# results/thresholds/. Offline and CAL-only — no API calls, no TEST-* artifact is opened.
+thresholds:
+	uv run python -m triage_lab.threshold_opt

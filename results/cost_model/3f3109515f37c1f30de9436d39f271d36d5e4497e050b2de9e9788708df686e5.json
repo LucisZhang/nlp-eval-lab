@@ -6,6 +6,8 @@
     "mean_per_example_usd": 0.0013086187,
     "mode": "measured_receipts",
     "note": "Per-example USD joined on complaint_id from the run's own committed per-call receipts (results/tier_c_raw/<run>/<ts>/calls.jsonl, field computed_cost_usd = real prompt/completion token counts x published per-MTok prices). MEASURED. The joined per-example sum is cross-checked against the run record's cost_usd at 1e-6 and reported as cost_sum_check; a mismatch fails the run.",
+    "raw_log_path": "results/tier_c_raw/tier_c_haiku_ablation_zeroshot_cal/20260806T160510Z/calls.jsonl",
+    "receipts_sha256": "7b7e1984b61e7310ce9541da855a19e5cff7841d8697737c530b4d43c680c0de",
     "total_usd": 1.962928
   },
   "bootstrap": {

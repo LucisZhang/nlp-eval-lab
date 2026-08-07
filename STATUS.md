@@ -65,7 +65,7 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 |---|---|---|
 | Risk-coverage machinery (+ per-example prediction artifacts, all runs) | done | `182d425`; EXPERIMENT_LOG 2026-08-07 Phase 4 task 1 (row was stale — completed previous session, flipped 2026-08-07) |
 | Cost-model implementation | done | EXPERIMENT_LOG 2026-08-07 Phase 4 task 2; `configs/cost_model_v1.yaml` `f76ad15a…`; `results/cost_model/` |
-| Threshold optimization on CAL | pending — **⚠ OWNER PLAN DECISION NEEDED FIRST**: Tier C p_max is a degenerate one-hot (Phase 4 task 1), so §4.2's cascade spec has no usable Tier C confidence signal; any redesign of the escalation signal (parse-failure signal, Tier A/B confidence gating Tier C, etc.) is an owner decision, not a local one. Also see the cascade cost-accounting seam + misroute-dominance findings (Phase 4 task 2) | — |
+| Threshold optimization on CAL (per owner-amended §4.2: τ at A/B only, Tier C terminal, parse-failure→human; amendment recorded in UPGRADE_PLAN §4.2 + EXPERIMENT_LOG) | done | EXPERIMENT_LOG 2026-08-07 Phase 4 task 3; `results/thresholds/`; carry-forwards for task 4: cross-family delta directional-only at n=1,500; τ→TEST transfer rule (calibration-space) open; parse-fail arm empty on Haiku, fires on Sonnet; `tier_a_logreg_test_iid.yaml` "winning CAL rung" comment unsupported by runs.jsonl |
 | Router simulator vs all policies | pending | — |
 | Two headline frontier claims with CIs; router dominates ≥2 single tiers (or honest diagnosis) | pending — **partial**: build infra against Tier A (+ Tier C when ready) now; Tier B frontier points **pending Tier B** | — |
 

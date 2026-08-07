@@ -1,0 +1,1690 @@
+{
+  "cost_config": {
+    "evidence_class": {
+      "api_cost.tier_a": "estimated",
+      "api_cost.tier_c": "measured",
+      "params.c_human_usd": "estimated",
+      "params.c_misroute_usd": "estimated"
+    },
+    "params": {
+      "c_human_usd": 2.5,
+      "c_misroute_usd": 6.0
+    },
+    "path": "configs/cost_model_v1.yaml",
+    "sha256": "f76ad15a87457db64f50392d3a7bdd9ea65a581fa06478b6759538d16b5143d0",
+    "version": "v1"
+  },
+  "kind": "summary",
+  "n_parse_failed_tier_c_cal": 0,
+  "notes": {
+    "amendment": "Owner-approved amendment (2026-08-07) narrowing UPGRADE_PLAN \u00a74.2: confidence thresholds exist at Tier A only (Tier B when it lands). Tier C is an unconditional TERMINAL stop once escalated \u2014 there is no tau_C and Tier C confidence is never used, because its p_max is a degenerate one-hot. The only Tier C -> human signal is parse_failed on that row's receipt. The \u00a74.2 3-sample self-consistency proxy is considered-and-deferred (it would require temperature > 0 = a new protocol version and new spend, for questionable signal-to-noise), and no part of it is implemented.",
+    "p_max_space": "tau* is a threshold in THIS artifact's p_max space. All three CAL rungs are calibration: none (raw model probabilities), while the TEST-IID final config tier_a_logreg_test_iid is calibration: isotonic (fit on CAL). A tau selected here is therefore NOT directly comparable to a tau in the calibrated TEST-IID p_max space. Each operating point is recorded both as tau* and as a target coverage (fraction answered by Tier A); which transfer rule to use \u2014 threshold matching vs coverage-quantile matching \u2014 and how to handle the calibration-space mismatch is a task-4 decision and is deliberately NOT resolved here.",
+    "selection_optimism": "tau* is selected by argmin on the SAME CAL rows it is scored on, so the cost reported at tau* is optimistically biased (selection optimism) and its CI covers sampling noise at a FIXED tau, not the variability of the selection itself. Unbiased evaluation of the selected operating point happens once, on TEST, in task 4.",
+    "tie_break": "Ties in the cost argmin are broken toward the LARGEST Tier A coverage (fewest escalations): at equal modeled cost, the policy that escalates less is cheaper in latency and operational load, neither of which this cost model prices."
+  },
+  "primary_tier_a_config": "tier_a_logreg_wordchar_cal",
+  "results": [
+    {
+      "cross_family_paired_delta": null,
+      "dataset": "full_cal",
+      "file": "a_to_human__full_cal__d35c23d2__cost-f76ad15a.json",
+      "is_primary": false,
+      "n_examples": 86972,
+      "operating_points": {
+        "a_only": {
+          "accuracy_machine": 0.8263694062,
+          "accuracy_system": 0.8263694062,
+          "coverage_a": 1.0,
+          "escalation_rate": 0.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "misroute": {
+              "ci_hi": 1056.4796716185,
+              "ci_lo": 1026.8804902727,
+              "point": 1041.7835625259
+            },
+            "total": {
+              "ci_hi": 1056.4796716185,
+              "ci_lo": 1026.8804902727,
+              "point": 1041.7835625259
+            }
+          },
+          "human_rate": 0.0,
+          "tau": 0.16125124450474995
+        },
+        "all_human": {
+          "accuracy_machine": null,
+          "accuracy_system": 1.0,
+          "coverage_a": 0.0,
+          "escalation_rate": 1.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 2500.0,
+              "ci_lo": 2500.0,
+              "point": 2500.0
+            },
+            "misroute": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "total": {
+              "ci_hi": 2500.0,
+              "ci_lo": 2500.0,
+              "point": 2500.0
+            }
+          },
+          "human_rate": 1.0,
+          "tau": null
+        },
+        "tau_star": {
+          "accuracy_machine": 0.8735943657,
+          "accuracy_system": 0.8889757623,
+          "coverage_a": 0.8783171595,
+          "escalation_rate": 0.1216828405,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 309.7836085177,
+              "ci_lo": 298.6018488709,
+              "point": 304.207101136
+            },
+            "misroute": {
+              "ci_hi": 678.702915881,
+              "ci_lo": 653.4516856,
+              "point": 666.1454261142
+            },
+            "total": {
+              "ci_hi": 982.6265924665,
+              "ci_lo": 957.8253633353,
+              "point": 970.3525272501
+            }
+          },
+          "human_rate": 0.1216828405,
+          "tau": 0.5145421772855197
+        }
+      },
+      "paired_deltas": {
+        "tau_star_minus_a_only": {
+          "delta_cost_per_1k": {
+            "ci_hi": -63.9853918503,
+            "ci_lo": -78.669140643,
+            "point": -71.4310352757
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        },
+        "tau_star_minus_all_human": {
+          "delta_cost_per_1k": {
+            "ci_hi": -1517.3734075335,
+            "ci_lo": -1542.1746366647,
+            "point": -1529.6474727499
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        }
+      },
+      "policy_family": "a_to_human",
+      "target_coverage_a": 0.8783171595,
+      "tau_star": 0.5145421772855197,
+      "tier_a_config": "tier_a_logreg_word_cal",
+      "tier_a_run_id": "d35c23d22b05988e86722c5ea5893a65e2dcb880f8c2f4a17ceae9db9aec889f"
+    },
+    {
+      "cross_family_paired_delta": null,
+      "dataset": "paired_subset",
+      "file": "a_to_human__paired_subset__d35c23d2__cost-f76ad15a.json",
+      "is_primary": false,
+      "n_examples": 1500,
+      "operating_points": {
+        "a_only": {
+          "accuracy_machine": 0.832,
+          "accuracy_system": 0.832,
+          "coverage_a": 1.0,
+          "escalation_rate": 0.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "misroute": {
+              "ci_hi": 1128.0,
+              "ci_lo": 892.0,
+              "point": 1008.0
+            },
+            "total": {
+              "ci_hi": 1128.0,
+              "ci_lo": 892.0,
+              "point": 1008.0
+            }
+          },
+          "human_rate": 0.0,
+          "tau": 0.20905414476678594
+        },
+        "all_human": {
+          "accuracy_machine": null,
+          "accuracy_system": 1.0,
+          "coverage_a": 0.0,
+          "escalation_rate": 1.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 2500.0,
+              "ci_lo": 2500.0,
+              "point": 2500.0
+            },
+            "misroute": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "total": {
+              "ci_hi": 2500.0,
+              "ci_lo": 2500.0,
+              "point": 2500.0
+            }
+          },
+          "human_rate": 1.0,
+          "tau": null
+        },
+        "tau_star": {
+          "accuracy_machine": 0.8537768538,
+          "accuracy_system": 0.8593333333,
+          "coverage_a": 0.962,
+          "escalation_rate": 0.038,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 120.0,
+              "ci_lo": 71.6666666667,
+              "point": 95.0
+            },
+            "misroute": {
+              "ci_hi": 952.1,
+              "ci_lo": 744.0,
+              "point": 844.0
+            },
+            "total": {
+              "ci_hi": 1050.025,
+              "ci_lo": 834.3333333333,
+              "point": 939.0
+            }
+          },
+          "human_rate": 0.038,
+          "tau": 0.37885169745011205
+        }
+      },
+      "paired_deltas": {
+        "tau_star_minus_a_only": {
+          "delta_cost_per_1k": {
+            "ci_hi": -38.9833333333,
+            "ci_lo": -101.6666666667,
+            "point": -69.0
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        },
+        "tau_star_minus_all_human": {
+          "delta_cost_per_1k": {
+            "ci_hi": -1449.975,
+            "ci_lo": -1665.6666666667,
+            "point": -1561.0
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        }
+      },
+      "policy_family": "a_to_human",
+      "target_coverage_a": 0.962,
+      "tau_star": 0.37885169745011205,
+      "tier_a_config": "tier_a_logreg_word_cal",
+      "tier_a_run_id": "d35c23d22b05988e86722c5ea5893a65e2dcb880f8c2f4a17ceae9db9aec889f"
+    },
+    {
+      "cross_family_paired_delta": {
+        "delta_cost_per_1k": {
+          "ci_hi": 5.7031395167,
+          "ci_lo": -142.9948646333,
+          "point": -66.6679666667
+        },
+        "excludes_zero": false,
+        "favors": "a_to_c_parsefail_human",
+        "note": "The per-operating-point CIs under `operating_points` are MARGINAL: two operating points of the same policy share every example, so their marginal bands overlap even when one dominates. Any 'tau* beats X' claim must cite `paired_deltas` (bootstrap CI on the per-example cost difference, same shared-index contract) and requires that CI to exclude zero \u2014 CLAUDE.md's comparison rule.",
+        "vs": "a_to_human@tau_star (paired_subset)"
+      },
+      "dataset": "paired_subset",
+      "file": "a_to_c_parsefail_human__paired_subset__d35c23d2__cost-f76ad15a.json",
+      "is_primary": false,
+      "n_examples": 1500,
+      "operating_points": {
+        "a_only": {
+          "accuracy_machine": 0.832,
+          "accuracy_system": 0.832,
+          "coverage_a": 1.0,
+          "escalation_rate": 0.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "misroute": {
+              "ci_hi": 1128.0,
+              "ci_lo": 892.0,
+              "point": 1008.0
+            },
+            "total": {
+              "ci_hi": 1128.0,
+              "ci_lo": 892.0,
+              "point": 1008.0
+            }
+          },
+          "human_rate": 0.0,
+          "tau": 0.20905414476678594
+        },
+        "c_only": {
+          "accuracy_machine": 0.836,
+          "accuracy_system": 0.836,
+          "coverage_a": 0.0,
+          "escalation_rate": 1.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 1.32603695,
+              "ci_lo": 1.29129285,
+              "point": 1.3086186667
+            },
+            "human": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "misroute": {
+              "ci_hi": 1096.1,
+              "ci_lo": 876.0,
+              "point": 984.0
+            },
+            "total": {
+              "ci_hi": 1097.4195200167,
+              "ci_lo": 877.3063863167,
+              "point": 985.3086186667
+            }
+          },
+          "human_rate": 0.0,
+          "tau": null
+        },
+        "tau_star": {
+          "accuracy_machine": 0.8546666667,
+          "accuracy_system": 0.8546666667,
+          "coverage_a": 0.7433333333,
+          "escalation_rate": 0.2566666667,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.3612989,
+              "ci_lo": 0.3020194833,
+              "point": 0.3320333333
+            },
+            "human": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "misroute": {
+              "ci_hi": 988.0,
+              "ci_lo": 768.0,
+              "point": 872.0
+            },
+            "total": {
+              "ci_hi": 988.3299986167,
+              "ci_lo": 768.3188025,
+              "point": 872.3320333333
+            }
+          },
+          "human_rate": 0.0,
+          "tau": 0.7059410330430381
+        }
+      },
+      "paired_deltas": {
+        "tau_star_minus_a_only": {
+          "delta_cost_per_1k": {
+            "ci_hi": -59.6640598167,
+            "ci_lo": -215.6490873667,
+            "point": -135.6679666667
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        },
+        "tau_star_minus_c_only": {
+          "delta_cost_per_1k": {
+            "ci_hi": -40.9900068333,
+            "ci_lo": -177.0041232333,
+            "point": -112.9765853333
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        }
+      },
+      "policy_family": "a_to_c_parsefail_human",
+      "target_coverage_a": 0.7433333333,
+      "tau_star": 0.7059410330430381,
+      "tier_a_config": "tier_a_logreg_word_cal",
+      "tier_a_run_id": "d35c23d22b05988e86722c5ea5893a65e2dcb880f8c2f4a17ceae9db9aec889f"
+    },
+    {
+      "cross_family_paired_delta": null,
+      "dataset": "full_cal",
+      "file": "a_to_human__full_cal__abcadd53__cost-f76ad15a.json",
+      "is_primary": true,
+      "n_examples": 86972,
+      "operating_points": {
+        "a_only": {
+          "accuracy_machine": 0.8193096629,
+          "accuracy_system": 0.8193096629,
+          "coverage_a": 1.0,
+          "escalation_rate": 0.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "misroute": {
+              "ci_hi": 1099.1209814653,
+              "ci_lo": 1068.6835993193,
+              "point": 1084.14202272
+            },
+            "total": {
+              "ci_hi": 1099.1209814653,
+              "ci_lo": 1068.6835993193,
+              "point": 1084.14202272
+            }
+          },
+          "human_rate": 0.0,
+          "tau": 0.15771183528130053
+        },
+        "all_human": {
+          "accuracy_machine": null,
+          "accuracy_system": 1.0,
+          "coverage_a": 0.0,
+          "escalation_rate": 1.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 2500.0,
+              "ci_lo": 2500.0,
+              "point": 2500.0
+            },
+            "misroute": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "total": {
+              "ci_hi": 2500.0,
+              "ci_lo": 2500.0,
+              "point": 2500.0
+            }
+          },
+          "human_rate": 1.0,
+          "tau": null
+        },
+        "tau_star": {
+          "accuracy_machine": 0.871413826,
+          "accuracy_system": 0.8882743872,
+          "coverage_a": 0.8688773398,
+          "escalation_rate": 0.1311226602,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 333.2976417698,
+              "ci_lo": 322.1431897622,
+              "point": 327.8066504162
+            },
+            "misroute": {
+              "ci_hi": 682.0143264499,
+              "ci_lo": 657.6599365313,
+              "point": 670.3536770455
+            },
+            "total": {
+              "ci_hi": 1010.7510175689,
+              "ci_lo": 985.0809743366,
+              "point": 998.1603274617
+            }
+          },
+          "human_rate": 0.1311226602,
+          "tau": 0.5587660167157666
+        }
+      },
+      "paired_deltas": {
+        "tau_star_minus_a_only": {
+          "delta_cost_per_1k": {
+            "ci_hi": -79.2709147772,
+            "ci_lo": -93.9029227797,
+            "point": -85.9816952582
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        },
+        "tau_star_minus_all_human": {
+          "delta_cost_per_1k": {
+            "ci_hi": -1489.2489824311,
+            "ci_lo": -1514.9190256634,
+            "point": -1501.8396725383
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        }
+      },
+      "policy_family": "a_to_human",
+      "target_coverage_a": 0.8688773398,
+      "tau_star": 0.5587660167157666,
+      "tier_a_config": "tier_a_logreg_wordchar_cal",
+      "tier_a_run_id": "abcadd53508790783bcce40963ca7d54c14977f195f30830466c1e81b221b76a"
+    },
+    {
+      "cross_family_paired_delta": null,
+      "dataset": "paired_subset",
+      "file": "a_to_human__paired_subset__abcadd53__cost-f76ad15a.json",
+      "is_primary": true,
+      "n_examples": 1500,
+      "operating_points": {
+        "a_only": {
+          "accuracy_machine": 0.8253333333,
+          "accuracy_system": 0.8253333333,
+          "coverage_a": 1.0,
+          "escalation_rate": 0.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "misroute": {
+              "ci_hi": 1168.0,
+              "ci_lo": 935.9,
+              "point": 1048.0
+            },
+            "total": {
+              "ci_hi": 1168.0,
+              "ci_lo": 935.9,
+              "point": 1048.0
+            }
+          },
+          "human_rate": 0.0,
+          "tau": 0.21182440445645917
+        },
+        "all_human": {
+          "accuracy_machine": null,
+          "accuracy_system": 1.0,
+          "coverage_a": 0.0,
+          "escalation_rate": 1.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 2500.0,
+              "ci_lo": 2500.0,
+              "point": 2500.0
+            },
+            "misroute": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "total": {
+              "ci_hi": 2500.0,
+              "ci_lo": 2500.0,
+              "point": 2500.0
+            }
+          },
+          "human_rate": 1.0,
+          "tau": null
+        },
+        "tau_star": {
+          "accuracy_machine": 0.8842845973,
+          "accuracy_system": 0.9013333333,
+          "coverage_a": 0.8526666667,
+          "escalation_rate": 0.1473333333,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 413.3333333333,
+              "ci_lo": 325.0,
+              "point": 368.3333333333
+            },
+            "misroute": {
+              "ci_hi": 684.1,
+              "ci_lo": 503.9,
+              "point": 592.0
+            },
+            "total": {
+              "ci_hi": 1063.3583333333,
+              "ci_lo": 865.325,
+              "point": 960.3333333333
+            }
+          },
+          "human_rate": 0.1473333333,
+          "tau": 0.5904843322691172
+        }
+      },
+      "paired_deltas": {
+        "tau_star_minus_a_only": {
+          "delta_cost_per_1k": {
+            "ci_hi": -28.9916666667,
+            "ci_lo": -148.3333333333,
+            "point": -87.6666666667
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        },
+        "tau_star_minus_all_human": {
+          "delta_cost_per_1k": {
+            "ci_hi": -1436.6416666667,
+            "ci_lo": -1634.675,
+            "point": -1539.6666666667
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        }
+      },
+      "policy_family": "a_to_human",
+      "target_coverage_a": 0.8526666667,
+      "tau_star": 0.5904843322691172,
+      "tier_a_config": "tier_a_logreg_wordchar_cal",
+      "tier_a_run_id": "abcadd53508790783bcce40963ca7d54c14977f195f30830466c1e81b221b76a"
+    },
+    {
+      "cross_family_paired_delta": {
+        "delta_cost_per_1k": {
+          "ci_hi": 4.6511569,
+          "ci_lo": -129.0620309,
+          "point": -64.0433386667
+        },
+        "excludes_zero": false,
+        "favors": "a_to_c_parsefail_human",
+        "note": "The per-operating-point CIs under `operating_points` are MARGINAL: two operating points of the same policy share every example, so their marginal bands overlap even when one dominates. Any 'tau* beats X' claim must cite `paired_deltas` (bootstrap CI on the per-example cost difference, same shared-index contract) and requires that CI to exclude zero \u2014 CLAUDE.md's comparison rule.",
+        "vs": "a_to_human@tau_star (paired_subset)"
+      },
+      "dataset": "paired_subset",
+      "file": "a_to_c_parsefail_human__paired_subset__abcadd53__cost-f76ad15a.json",
+      "is_primary": true,
+      "n_examples": 1500,
+      "operating_points": {
+        "a_only": {
+          "accuracy_machine": 0.8253333333,
+          "accuracy_system": 0.8253333333,
+          "coverage_a": 1.0,
+          "escalation_rate": 0.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "misroute": {
+              "ci_hi": 1168.0,
+              "ci_lo": 935.9,
+              "point": 1048.0
+            },
+            "total": {
+              "ci_hi": 1168.0,
+              "ci_lo": 935.9,
+              "point": 1048.0
+            }
+          },
+          "human_rate": 0.0,
+          "tau": 0.21182440445645917
+        },
+        "c_only": {
+          "accuracy_machine": 0.836,
+          "accuracy_system": 0.836,
+          "coverage_a": 0.0,
+          "escalation_rate": 1.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 1.32603695,
+              "ci_lo": 1.29129285,
+              "point": 1.3086186667
+            },
+            "human": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "misroute": {
+              "ci_hi": 1096.1,
+              "ci_lo": 876.0,
+              "point": 984.0
+            },
+            "total": {
+              "ci_hi": 1097.4195200167,
+              "ci_lo": 877.3063863167,
+              "point": 985.3086186667
+            }
+          },
+          "human_rate": 0.0,
+          "tau": null
+        },
+        "tau_star": {
+          "accuracy_machine": 0.8506666667,
+          "accuracy_system": 0.8506666667,
+          "coverage_a": 0.7793333333,
+          "escalation_rate": 0.2206666667,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.3208733667,
+              "ci_lo": 0.2612023667,
+              "point": 0.2899946667
+            },
+            "human": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "misroute": {
+              "ci_hi": 1012.0,
+              "ci_lo": 788.0,
+              "point": 896.0
+            },
+            "total": {
+              "ci_hi": 1012.2873946,
+              "ci_lo": 788.3047614,
+              "point": 896.2899946667
+            }
+          },
+          "human_rate": 0.0,
+          "tau": 0.7020199991538795
+        }
+      },
+      "paired_deltas": {
+        "tau_star_minus_a_only": {
+          "delta_cost_per_1k": {
+            "ci_hi": -71.7018339167,
+            "ci_lo": -231.6973429,
+            "point": -151.7100053333
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        },
+        "tau_star_minus_c_only": {
+          "delta_cost_per_1k": {
+            "ci_hi": -9.02185325,
+            "ci_lo": -165.14491655,
+            "point": -89.018624
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        }
+      },
+      "policy_family": "a_to_c_parsefail_human",
+      "target_coverage_a": 0.7793333333,
+      "tau_star": 0.7020199991538795,
+      "tier_a_config": "tier_a_logreg_wordchar_cal",
+      "tier_a_run_id": "abcadd53508790783bcce40963ca7d54c14977f195f30830466c1e81b221b76a"
+    },
+    {
+      "cross_family_paired_delta": null,
+      "dataset": "full_cal",
+      "file": "a_to_human__full_cal__c78c9d07__cost-f76ad15a.json",
+      "is_primary": false,
+      "n_examples": 86972,
+      "operating_points": {
+        "a_only": {
+          "accuracy_machine": 0.8062939797,
+          "accuracy_system": 0.8062939797,
+          "coverage_a": 1.0,
+          "escalation_rate": 0.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "misroute": {
+              "ci_hi": 1177.9756703307,
+              "ci_lo": 1146.2292461942,
+              "point": 1162.2361219703
+            },
+            "total": {
+              "ci_hi": 1177.9756703307,
+              "ci_lo": 1146.2292461942,
+              "point": 1162.2361219703
+            }
+          },
+          "human_rate": 0.0,
+          "tau": 0.12099223802739081
+        },
+        "all_human": {
+          "accuracy_machine": null,
+          "accuracy_system": 1.0,
+          "coverage_a": 0.0,
+          "escalation_rate": 1.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 2500.0,
+              "ci_lo": 2500.0,
+              "point": 2500.0
+            },
+            "misroute": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "total": {
+              "ci_hi": 2500.0,
+              "ci_lo": 2500.0,
+              "point": 2500.0
+            }
+          },
+          "human_rate": 1.0,
+          "tau": null
+        },
+        "tau_star": {
+          "accuracy_machine": 0.858850942,
+          "accuracy_system": 0.8781101964,
+          "coverage_a": 0.8635537874,
+          "escalation_rate": 0.1364462126,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 346.8084555949,
+              "ci_lo": 335.8825254105,
+              "point": 341.1155314354
+            },
+            "misroute": {
+              "ci_hi": 744.8604148462,
+              "ci_lo": 718.2949684956,
+              "point": 731.3388216897
+            },
+            "total": {
+              "ci_hi": 1085.876488985,
+              "ci_lo": 1058.5459975624,
+              "point": 1072.4543531251
+            }
+          },
+          "human_rate": 0.1364462126,
+          "tau": 0.38653453012087646
+        }
+      },
+      "paired_deltas": {
+        "tau_star_minus_a_only": {
+          "delta_cost_per_1k": {
+            "ci_hi": -81.868589891,
+            "ci_lo": -97.1581371016,
+            "point": -89.7817688451
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        },
+        "tau_star_minus_all_human": {
+          "delta_cost_per_1k": {
+            "ci_hi": -1414.123511015,
+            "ci_lo": -1441.4540024376,
+            "point": -1427.5456468749
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        }
+      },
+      "policy_family": "a_to_human",
+      "target_coverage_a": 0.8635537874,
+      "tau_star": 0.38653453012087646,
+      "tier_a_config": "tier_a_cnb_wordchar_cal",
+      "tier_a_run_id": "c78c9d076f676bb7ee0352502747a9dd90dfec88d3998ddb38f48b55ac5355a5"
+    },
+    {
+      "cross_family_paired_delta": null,
+      "dataset": "paired_subset",
+      "file": "a_to_human__paired_subset__c78c9d07__cost-f76ad15a.json",
+      "is_primary": false,
+      "n_examples": 1500,
+      "operating_points": {
+        "a_only": {
+          "accuracy_machine": 0.8126666667,
+          "accuracy_system": 0.8126666667,
+          "coverage_a": 1.0,
+          "escalation_rate": 0.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "misroute": {
+              "ci_hi": 1240.0,
+              "ci_lo": 1008.0,
+              "point": 1124.0
+            },
+            "total": {
+              "ci_hi": 1240.0,
+              "ci_lo": 1008.0,
+              "point": 1124.0
+            }
+          },
+          "human_rate": 0.0,
+          "tau": 0.14240968797244866
+        },
+        "all_human": {
+          "accuracy_machine": null,
+          "accuracy_system": 1.0,
+          "coverage_a": 0.0,
+          "escalation_rate": 1.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 2500.0,
+              "ci_lo": 2500.0,
+              "point": 2500.0
+            },
+            "misroute": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "total": {
+              "ci_hi": 2500.0,
+              "ci_lo": 2500.0,
+              "point": 2500.0
+            }
+          },
+          "human_rate": 1.0,
+          "tau": null
+        },
+        "tau_star": {
+          "accuracy_machine": 0.8592592593,
+          "accuracy_system": 0.8733333333,
+          "coverage_a": 0.9,
+          "escalation_rate": 0.1,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 288.3333333333,
+              "ci_lo": 215.0,
+              "point": 250.0
+            },
+            "misroute": {
+              "ci_hi": 860.1,
+              "ci_lo": 664.0,
+              "point": 760.0
+            },
+            "total": {
+              "ci_hi": 1117.0,
+              "ci_lo": 912.3166666667,
+              "point": 1010.0
+            }
+          },
+          "human_rate": 0.1,
+          "tau": 0.3278468637834419
+        }
+      },
+      "paired_deltas": {
+        "tau_star_minus_a_only": {
+          "delta_cost_per_1k": {
+            "ci_hi": -61.3333333333,
+            "ci_lo": -167.3416666667,
+            "point": -114.0
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        },
+        "tau_star_minus_all_human": {
+          "delta_cost_per_1k": {
+            "ci_hi": -1383.0,
+            "ci_lo": -1587.6833333333,
+            "point": -1490.0
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        }
+      },
+      "policy_family": "a_to_human",
+      "target_coverage_a": 0.9,
+      "tau_star": 0.3278468637834419,
+      "tier_a_config": "tier_a_cnb_wordchar_cal",
+      "tier_a_run_id": "c78c9d076f676bb7ee0352502747a9dd90dfec88d3998ddb38f48b55ac5355a5"
+    },
+    {
+      "cross_family_paired_delta": {
+        "delta_cost_per_1k": {
+          "ci_hi": 17.2289214,
+          "ci_lo": -145.5748434333,
+          "point": -65.542548
+        },
+        "excludes_zero": false,
+        "favors": "a_to_c_parsefail_human",
+        "note": "The per-operating-point CIs under `operating_points` are MARGINAL: two operating points of the same policy share every example, so their marginal bands overlap even when one dominates. Any 'tau* beats X' claim must cite `paired_deltas` (bootstrap CI on the per-example cost difference, same shared-index contract) and requires that CI to exclude zero \u2014 CLAUDE.md's comparison rule.",
+        "vs": "a_to_human@tau_star (paired_subset)"
+      },
+      "dataset": "paired_subset",
+      "file": "a_to_c_parsefail_human__paired_subset__c78c9d07__cost-f76ad15a.json",
+      "is_primary": false,
+      "n_examples": 1500,
+      "operating_points": {
+        "a_only": {
+          "accuracy_machine": 0.8126666667,
+          "accuracy_system": 0.8126666667,
+          "coverage_a": 1.0,
+          "escalation_rate": 0.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "human": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "misroute": {
+              "ci_hi": 1240.0,
+              "ci_lo": 1008.0,
+              "point": 1124.0
+            },
+            "total": {
+              "ci_hi": 1240.0,
+              "ci_lo": 1008.0,
+              "point": 1124.0
+            }
+          },
+          "human_rate": 0.0,
+          "tau": 0.14240968797244866
+        },
+        "c_only": {
+          "accuracy_machine": 0.836,
+          "accuracy_system": 0.836,
+          "coverage_a": 0.0,
+          "escalation_rate": 1.0,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 1.32603695,
+              "ci_lo": 1.29129285,
+              "point": 1.3086186667
+            },
+            "human": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "misroute": {
+              "ci_hi": 1096.1,
+              "ci_lo": 876.0,
+              "point": 984.0
+            },
+            "total": {
+              "ci_hi": 1097.4195200167,
+              "ci_lo": 877.3063863167,
+              "point": 985.3086186667
+            }
+          },
+          "human_rate": 0.0,
+          "tau": null
+        },
+        "tau_star": {
+          "accuracy_machine": 0.8426666667,
+          "accuracy_system": 0.8426666667,
+          "coverage_a": 0.6526666667,
+          "escalation_rate": 0.3473333333,
+          "expected_cost_per_1k": {
+            "api": {
+              "ci_hi": 0.4903126167,
+              "ci_lo": 0.4246705667,
+              "point": 0.457452
+            },
+            "human": {
+              "ci_hi": 0.0,
+              "ci_lo": 0.0,
+              "point": 0.0
+            },
+            "misroute": {
+              "ci_hi": 1052.1,
+              "ci_lo": 832.0,
+              "point": 944.0
+            },
+            "total": {
+              "ci_hi": 1052.5766242167,
+              "ci_lo": 832.4616263833,
+              "point": 944.457452
+            }
+          },
+          "human_rate": 0.0,
+          "tau": 0.7617909878552239
+        }
+      },
+      "paired_deltas": {
+        "tau_star_minus_a_only": {
+          "delta_cost_per_1k": {
+            "ci_hi": -91.55368585,
+            "ci_lo": -267.5352351167,
+            "point": -179.542548
+          },
+          "excludes_zero": true,
+          "favors": "tau_star"
+        },
+        "tau_star_minus_c_only": {
+          "delta_cost_per_1k": {
+            "ci_hi": 3.1665899333,
+            "ci_lo": -88.8483105167,
+            "point": -40.8511666667
+          },
+          "excludes_zero": false,
+          "favors": "tau_star"
+        }
+      },
+      "policy_family": "a_to_c_parsefail_human",
+      "target_coverage_a": 0.6526666667,
+      "tau_star": 0.7617909878552239,
+      "tier_a_config": "tier_a_cnb_wordchar_cal",
+      "tier_a_run_id": "c78c9d076f676bb7ee0352502747a9dd90dfec88d3998ddb38f48b55ac5355a5"
+    }
+  ],
+  "schema_version": "thresholds-v1",
+  "sensitivity_comparison_paired_subset": {
+    "cells": [
+      {
+        "beats_a_only": true,
+        "c_human_usd": 0.3125,
+        "c_misroute_usd": 0.75,
+        "cost_per_1k_a_only": 131.0,
+        "cost_per_1k_a_to_c": 112.2899946667,
+        "cost_per_1k_a_to_human": 120.0416666667,
+        "cost_per_1k_all_human": 312.5,
+        "cost_per_1k_c_only": 124.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.8526666667,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 0.625,
+        "c_misroute_usd": 0.75,
+        "cost_per_1k_a_only": 131.0,
+        "cost_per_1k_a_to_c": 112.2899946667,
+        "cost_per_1k_a_to_human": 131.0,
+        "cost_per_1k_all_human": 625.0,
+        "cost_per_1k_c_only": 124.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 1.0,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 1.25,
+        "c_misroute_usd": 0.75,
+        "cost_per_1k_a_only": 131.0,
+        "cost_per_1k_a_to_c": 112.2899946667,
+        "cost_per_1k_a_to_human": 131.0,
+        "cost_per_1k_all_human": 1250.0,
+        "cost_per_1k_c_only": 124.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 1.0,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 2.5,
+        "c_misroute_usd": 0.75,
+        "cost_per_1k_a_only": 131.0,
+        "cost_per_1k_a_to_c": 112.2899946667,
+        "cost_per_1k_a_to_human": 131.0,
+        "cost_per_1k_all_human": 2500.0,
+        "cost_per_1k_c_only": 124.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 1.0,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 5.0,
+        "c_misroute_usd": 0.75,
+        "cost_per_1k_a_only": 131.0,
+        "cost_per_1k_a_to_c": 112.2899946667,
+        "cost_per_1k_a_to_human": 131.0,
+        "cost_per_1k_all_human": 5000.0,
+        "cost_per_1k_c_only": 124.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 1.0,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 10.0,
+        "c_misroute_usd": 0.75,
+        "cost_per_1k_a_only": 131.0,
+        "cost_per_1k_a_to_c": 112.2899946667,
+        "cost_per_1k_a_to_human": 131.0,
+        "cost_per_1k_all_human": 10000.0,
+        "cost_per_1k_c_only": 124.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 1.0,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 0.3125,
+        "c_misroute_usd": 1.5,
+        "cost_per_1k_a_only": 262.0,
+        "cost_per_1k_a_to_c": 224.2899946667,
+        "cost_per_1k_a_to_human": 179.5416666667,
+        "cost_per_1k_all_human": 312.5,
+        "cost_per_1k_c_only": 247.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.7646666667,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 0.625,
+        "c_misroute_usd": 1.5,
+        "cost_per_1k_a_only": 262.0,
+        "cost_per_1k_a_to_c": 224.2899946667,
+        "cost_per_1k_a_to_human": 240.0833333333,
+        "cost_per_1k_all_human": 625.0,
+        "cost_per_1k_c_only": 247.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.8526666667,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 1.25,
+        "c_misroute_usd": 1.5,
+        "cost_per_1k_a_only": 262.0,
+        "cost_per_1k_a_to_c": 224.2899946667,
+        "cost_per_1k_a_to_human": 262.0,
+        "cost_per_1k_all_human": 1250.0,
+        "cost_per_1k_c_only": 247.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 1.0,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 2.5,
+        "c_misroute_usd": 1.5,
+        "cost_per_1k_a_only": 262.0,
+        "cost_per_1k_a_to_c": 224.2899946667,
+        "cost_per_1k_a_to_human": 262.0,
+        "cost_per_1k_all_human": 2500.0,
+        "cost_per_1k_c_only": 247.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 1.0,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 5.0,
+        "c_misroute_usd": 1.5,
+        "cost_per_1k_a_only": 262.0,
+        "cost_per_1k_a_to_c": 224.2899946667,
+        "cost_per_1k_a_to_human": 262.0,
+        "cost_per_1k_all_human": 5000.0,
+        "cost_per_1k_c_only": 247.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 1.0,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 10.0,
+        "c_misroute_usd": 1.5,
+        "cost_per_1k_a_only": 262.0,
+        "cost_per_1k_a_to_c": 224.2899946667,
+        "cost_per_1k_a_to_human": 262.0,
+        "cost_per_1k_all_human": 10000.0,
+        "cost_per_1k_c_only": 247.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 1.0,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 0.3125,
+        "c_misroute_usd": 3.0,
+        "cost_per_1k_a_only": 524.0,
+        "cost_per_1k_a_to_c": 448.2899946667,
+        "cost_per_1k_a_to_human": 236.7083333333,
+        "cost_per_1k_all_human": 312.5,
+        "cost_per_1k_c_only": 493.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.3833333333,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 0.625,
+        "c_misroute_usd": 3.0,
+        "cost_per_1k_a_only": 524.0,
+        "cost_per_1k_a_to_c": 448.2899946667,
+        "cost_per_1k_a_to_human": 359.0833333333,
+        "cost_per_1k_all_human": 625.0,
+        "cost_per_1k_c_only": 493.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.7646666667,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 1.25,
+        "c_misroute_usd": 3.0,
+        "cost_per_1k_a_only": 524.0,
+        "cost_per_1k_a_to_c": 448.2899946667,
+        "cost_per_1k_a_to_human": 480.1666666667,
+        "cost_per_1k_all_human": 1250.0,
+        "cost_per_1k_c_only": 493.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.8526666667,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 2.5,
+        "c_misroute_usd": 3.0,
+        "cost_per_1k_a_only": 524.0,
+        "cost_per_1k_a_to_c": 448.2899946667,
+        "cost_per_1k_a_to_human": 524.0,
+        "cost_per_1k_all_human": 2500.0,
+        "cost_per_1k_c_only": 493.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 1.0,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 5.0,
+        "c_misroute_usd": 3.0,
+        "cost_per_1k_a_only": 524.0,
+        "cost_per_1k_a_to_c": 448.2899946667,
+        "cost_per_1k_a_to_human": 524.0,
+        "cost_per_1k_all_human": 5000.0,
+        "cost_per_1k_c_only": 493.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 1.0,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 10.0,
+        "c_misroute_usd": 3.0,
+        "cost_per_1k_a_only": 524.0,
+        "cost_per_1k_a_to_c": 448.2899946667,
+        "cost_per_1k_a_to_human": 524.0,
+        "cost_per_1k_all_human": 10000.0,
+        "cost_per_1k_c_only": 493.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 1.0,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 0.3125,
+        "c_misroute_usd": 6.0,
+        "cost_per_1k_a_only": 1048.0,
+        "cost_per_1k_a_to_c": 896.2899946667,
+        "cost_per_1k_a_to_human": 259.9166666667,
+        "cost_per_1k_all_human": 312.5,
+        "cost_per_1k_c_only": 985.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.2066666667,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 0.625,
+        "c_misroute_usd": 6.0,
+        "cost_per_1k_a_only": 1048.0,
+        "cost_per_1k_a_to_c": 896.2899946667,
+        "cost_per_1k_a_to_human": 473.4166666667,
+        "cost_per_1k_all_human": 625.0,
+        "cost_per_1k_c_only": 985.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.3833333333,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 1.25,
+        "c_misroute_usd": 6.0,
+        "cost_per_1k_a_only": 1048.0,
+        "cost_per_1k_a_to_c": 896.2899946667,
+        "cost_per_1k_a_to_human": 718.1666666667,
+        "cost_per_1k_all_human": 1250.0,
+        "cost_per_1k_c_only": 985.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.7646666667,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 2.5,
+        "c_misroute_usd": 6.0,
+        "cost_per_1k_a_only": 1048.0,
+        "cost_per_1k_a_to_c": 896.2899946667,
+        "cost_per_1k_a_to_human": 960.3333333333,
+        "cost_per_1k_all_human": 2500.0,
+        "cost_per_1k_c_only": 985.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.8526666667,
+        "is_cost_config_default": true,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 5.0,
+        "c_misroute_usd": 6.0,
+        "cost_per_1k_a_only": 1048.0,
+        "cost_per_1k_a_to_c": 896.2899946667,
+        "cost_per_1k_a_to_human": 1048.0,
+        "cost_per_1k_all_human": 5000.0,
+        "cost_per_1k_c_only": 985.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 1.0,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 10.0,
+        "c_misroute_usd": 6.0,
+        "cost_per_1k_a_only": 1048.0,
+        "cost_per_1k_a_to_c": 896.2899946667,
+        "cost_per_1k_a_to_human": 1048.0,
+        "cost_per_1k_all_human": 10000.0,
+        "cost_per_1k_c_only": 985.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 1.0,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 0.3125,
+        "c_misroute_usd": 12.0,
+        "cost_per_1k_a_only": 2096.0,
+        "cost_per_1k_a_to_c": 1792.2899946667,
+        "cost_per_1k_a_to_human": 271.9166666667,
+        "cost_per_1k_all_human": 312.5,
+        "cost_per_1k_c_only": 1969.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.2066666667,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 0.625,
+        "c_misroute_usd": 12.0,
+        "cost_per_1k_a_only": 2096.0,
+        "cost_per_1k_a_to_c": 1792.2899946667,
+        "cost_per_1k_a_to_human": 519.8333333333,
+        "cost_per_1k_all_human": 625.0,
+        "cost_per_1k_c_only": 1969.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.2066666667,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 1.25,
+        "c_misroute_usd": 12.0,
+        "cost_per_1k_a_only": 2096.0,
+        "cost_per_1k_a_to_c": 1792.2899946667,
+        "cost_per_1k_a_to_human": 946.8333333333,
+        "cost_per_1k_all_human": 1250.0,
+        "cost_per_1k_c_only": 1969.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.3833333333,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 2.5,
+        "c_misroute_usd": 12.0,
+        "cost_per_1k_a_only": 2096.0,
+        "cost_per_1k_a_to_c": 1792.2899946667,
+        "cost_per_1k_a_to_human": 1436.3333333333,
+        "cost_per_1k_all_human": 2500.0,
+        "cost_per_1k_c_only": 1969.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.7646666667,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 5.0,
+        "c_misroute_usd": 12.0,
+        "cost_per_1k_a_only": 2096.0,
+        "cost_per_1k_a_to_c": 1792.2899946667,
+        "cost_per_1k_a_to_human": 1920.6666666667,
+        "cost_per_1k_all_human": 5000.0,
+        "cost_per_1k_c_only": 1969.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.8526666667,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 10.0,
+        "c_misroute_usd": 12.0,
+        "cost_per_1k_a_only": 2096.0,
+        "cost_per_1k_a_to_c": 1792.2899946667,
+        "cost_per_1k_a_to_human": 2096.0,
+        "cost_per_1k_all_human": 10000.0,
+        "cost_per_1k_c_only": 1969.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 1.0,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 0.3125,
+        "c_misroute_usd": 24.0,
+        "cost_per_1k_a_only": 4192.0,
+        "cost_per_1k_a_to_c": 3584.2899946667,
+        "cost_per_1k_a_to_human": 288.75,
+        "cost_per_1k_all_human": 312.5,
+        "cost_per_1k_c_only": 3937.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.076,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 0.625,
+        "c_misroute_usd": 24.0,
+        "cost_per_1k_a_only": 4192.0,
+        "cost_per_1k_a_to_c": 3584.2899946667,
+        "cost_per_1k_a_to_human": 543.8333333333,
+        "cost_per_1k_all_human": 625.0,
+        "cost_per_1k_c_only": 3937.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.2066666667,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 1.25,
+        "c_misroute_usd": 24.0,
+        "cost_per_1k_a_only": 4192.0,
+        "cost_per_1k_a_to_c": 3584.2899946667,
+        "cost_per_1k_a_to_human": 1039.6666666667,
+        "cost_per_1k_all_human": 1250.0,
+        "cost_per_1k_c_only": 3937.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.2066666667,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 2.5,
+        "c_misroute_usd": 24.0,
+        "cost_per_1k_a_only": 4192.0,
+        "cost_per_1k_a_to_c": 3584.2899946667,
+        "cost_per_1k_a_to_human": 1893.6666666667,
+        "cost_per_1k_all_human": 2500.0,
+        "cost_per_1k_c_only": 3937.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.3833333333,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 5.0,
+        "c_misroute_usd": 24.0,
+        "cost_per_1k_a_only": 4192.0,
+        "cost_per_1k_a_to_c": 3584.2899946667,
+        "cost_per_1k_a_to_human": 2872.6666666667,
+        "cost_per_1k_all_human": 5000.0,
+        "cost_per_1k_c_only": 3937.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.7646666667,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_human"
+      },
+      {
+        "beats_a_only": true,
+        "c_human_usd": 10.0,
+        "c_misroute_usd": 24.0,
+        "cost_per_1k_a_only": 4192.0,
+        "cost_per_1k_a_to_c": 3584.2899946667,
+        "cost_per_1k_a_to_human": 3841.3333333333,
+        "cost_per_1k_all_human": 10000.0,
+        "cost_per_1k_c_only": 3937.3086186667,
+        "coverage_a_a_to_c": 0.7793333333,
+        "coverage_a_a_to_human": 0.8526666667,
+        "is_cost_config_default": false,
+        "winner_family": "a_to_c_parsefail_human"
+      }
+    ],
+    "note": "Family comparison is made ONLY on the paired 1,500-row subset, where both families are defined on identical rows. Evidence class: estimated parameters, measured predictions. The grid axes (c_misroute, c_human) are ESTIMATED business defaults being varied on purpose; the per-row predictions, correctness and Tier C API costs underneath every cell are MEASURED. Point estimates only \u2014 no CIs on the grid."
+  },
+  "tier_a_configs_swept": [
+    "tier_a_logreg_word_cal",
+    "tier_a_logreg_wordchar_cal",
+    "tier_a_cnb_wordchar_cal"
+  ],
+  "tier_c_config": "tier_c_haiku_ablation_zeroshot_cal"
+}
