@@ -461,3 +461,91 @@ reported runs. Every portfolio-bound number carries its reproduction command
 - **Repro:** `make preds` (add `--force` to regenerate over existing artifacts:
   `uv run python -m triage_lab.predictions --all --force`), then `make risk-coverage`;
   tests: `uv run pytest tests/test_predictions.py tests/test_risk_coverage.py -q`.
+
+## 2026-08-07 — Phase 4 task 2: cost-model implementation (single-tier baseline costs, all runs)
+
+- **Hypothesis:** the UPGRADE_PLAN §4.2 business cost model
+  (`cost = c_misroute · P(error) + c_api · E[tokens] + c_human · P(human)`; defaults
+  c_misroute $6.00, c_human $2.50, both ESTIMATED; API cost MEASURED) can be implemented
+  against the frozen per-example artifacts with Tier C API cost joined per-example from
+  committed receipts, reproducing each run's logged `cost_usd` exactly; expectation going
+  in: measured API cost visibly separates the tiers on the cost axis.
+- **Method:** new `src/triage_lab/cost_model.py` + versioned parameter file
+  `configs/cost_model_v1.yaml` (sha256 `f76ad15a8745…`, bound into every output).
+  Per-example cost = `c_misroute·1{answered ∧ wrong} + api_cost_usd + c_human·1{human}`,
+  where `api_cost_usd` is **incurred spend charged unconditionally** — a policy that
+  defers to human before any paid call passes 0.0 for that row, and a cascade that pays
+  for an LLM call and then defers still carries that spend. Human-assigned rows are
+  assumed correctly resolved (assumption recorded in every output JSON). Expected cost per 1,000 complaints with 95%
+  bootstrap CI (frozen constants: n=1,000, seed 20260805, percentile), total + per-component
+  from the same resamples. Tier A api_cost = $0 (amortized CPU inference <1 ms/example,
+  evidence class ESTIMATED, per §6.1); Tier C api_cost joined from the run's
+  `calls.jsonl` receipts on `complaint_id` (`computed_cost_usd` = real tokens × published
+  prices, evidence class MEASURED). Hard-fail gates: missing/duplicate receipt, null or
+  negative cost, and Σ(joined per-example costs) vs the run record's logged `cost_usd`
+  beyond 1e-6 (`cost_sum_check` in each JSON). Outputs
+  `results/cost_model/<run_id>.json` — committed, derived, regenerable (same class as
+  `results/risk_coverage/`; runs.jsonl untouched). Tier detection comes from the cost
+  config's `api_cost` keys: Tier B is deliberately unpriced in v1, so Tier B artifacts
+  will fail loud until a v2 config prices GPU inference (never silently $0).
+  An external Codex review (2026-08-07, same-day) was run on the diff before commit: it
+  confirmed the implementer-flagged cascade seam as a blocker (the first draft zeroed
+  api cost on human-deferred rows, per a too-literal reading of §4.2 — fixed to the
+  incurred-spend semantics above; numerically inert for these all-answered baselines,
+  verified by leaf-level diff: 0 numeric changes across all 12 outputs) and drove
+  hardening: per-receipt token/slug/pricing-snapshot recomputation gates (all 16,500
+  committed receipts re-derive at abs delta 0.0 vs tol 1e-12), a join-keyed-on-
+  complaint_id test (sum- and recompute-invisible permutation failure mode),
+  artifact-vs-run-record provenance gate (run_id, config/split hashes,
+  prompt_bundle_sha256), finite-parameter config validation, empty `--all` = hard
+  failure, and atomic score-all-then-write batch output. Outputs carry
+  `schema_version: "cost-v1"`; the shared-index resampling that makes component CI
+  bands decompose the total band is a public, contract-tested API
+  (`resample_means_per_1k`).
+- **Result:** 36 new tests; full suite 226 passed. `--all` scored all 12 non-smoke
+  artifacts; all 7 Tier C runs pass `cost_sum_check` (max abs delta 6.2e-15 vs tol 1e-6).
+  Policy `single_tier_all_answered`, cost config v1:
+
+  | config | split | n | acc | total $/1k [95% CI] | misroute/1k | api/1k |
+  |---|---|---|---|---|---|---|
+  | tier_a_cnb_wordchar_cal | cal | 86,972 | 0.8063 | 1162.24 [1146.23, 1177.98] | 1162.24 | 0.00 |
+  | tier_a_logreg_word_cal | cal | 86,972 | 0.8264 | 1041.78 [1026.88, 1056.48] | 1041.78 | 0.00 |
+  | tier_a_logreg_wordchar_cal | cal | 86,972 | 0.8193 | 1084.14 [1068.68, 1099.12] | 1084.14 | 0.00 |
+  | tier_c_haiku_ablation_fewshot_cal | cal | 1,500 | 0.8413 | 954.61 [850.61, 1070.62] | 952.00 | 2.61 |
+  | tier_c_haiku_ablation_zeroshot_cal | cal | 1,500 | 0.8360 | 985.31 [877.31, 1097.42] | 984.00 | 1.31 |
+  | tier_a_cnb_test_iid | test_iid | 104,443 | 0.8279 | 1032.39 [1019.75, 1046.19] | 1032.39 | 0.00 |
+  | tier_a_logreg_test_iid | test_iid | 104,443 | 0.8444 | 933.41 [920.94, 946.45] | 933.41 | 0.00 |
+  | tier_c_haiku_zeroshot_test_iid | test_iid | 5,000 | 0.8474 | 916.92 [859.32, 980.51] | 915.60 | 1.32 |
+  | tier_c_sonnet_zeroshot_test_iid | test_iid | 1,500 | 0.8413 | 955.66 [847.66, 1071.63] | 952.00 | 3.66 |
+  | tier_c_haiku_zeroshot_test_postcutoff | test_postcutoff | 5,000 | 0.7374 | 1576.97 [1504.94, 1653.80] | 1575.60 | 1.37 |
+  | tier_c_sonnet_zeroshot_test_postcutoff | test_postcutoff | 1,500 | 0.8013 | 1195.85 [1071.72, 1315.85] | 1192.00 | 3.85 |
+  | tier_c_sonnet_zeroshot_v2params_test_postcutoff | test_postcutoff | 1,500 | 0.8087 | 1151.87 [1035.88, 1272.03] | 1148.00 | 3.87 |
+
+  (human/1k = $0 by construction for these all-answered baselines; the component is still
+  bootstrapped so router rows will be schema-comparable. TEST-* rows are derived analyses
+  of already-final frozen runs, not new evaluations; cross-run cost comparisons are
+  like-for-like only within a split at equal n — the Tier A vs Tier C TEST-IID rows differ
+  in n and are NOT paired.)
+- **Findings:**
+  - **HYPOTHESIS PARTLY WRONG (the interesting part):** at the v1 defaults, measured API
+    cost is $1.31–$3.87 per 1k — 0.1–0.4% of total — so misroute dominates by ~3 orders
+    of magnitude and `total/1k ≈ 6000 × (1 − acc)`. The single-tier cost ranking is
+    effectively the accuracy ranking wearing a dollar sign: all-Haiku on TEST-IID
+    ($916.92/1k, n=5,000) comes out cheaper than all-LogReg ($933.41/1k, n=104,443) at
+    these defaults (unpaired; CIs overlap). Any "router beats every tier on cost" claim
+    at c_misroute=$6.00 is an accuracy claim in disguise; the real economic tension is in
+    the human-queue arm (c_human $2.50 vs c_misroute $6.00) and in cost-parameter
+    sensitivity — the frontier chapter must expose that sensitivity rather than assert
+    one operating point.
+  - **Cascade accounting seam (found, fixed):** a literal per-term reading of §4.2 would
+    drop already-paid API spend on human-deferred rows and undercount every
+    paid-call-then-defer route. Flagged by the implementer, confirmed blocker by the
+    Codex review, fixed as incurred-spend semantics (above) before first commit; the
+    router simulator (task 4) must pass accumulated per-stage spend per row.
+- **Verdict:** cost-model machinery in place and receipt-verified; §4.2 implemented
+  verbatim with parameters versioned + hashed for the demo's user-adjustable sliders.
+  The misroute-dominance finding reframes the router's headline: the frontier story at
+  default parameters is driven by accuracy and the human-queue trade-off, not raw API
+  spend — carry into threshold optimization (task 3) and the frontier claims.
+- **Repro:** `make cost-model` (= `uv run python -m triage_lab.cost_model --all`);
+  tests: `uv run pytest tests/test_cost_model.py -q`.

@@ -1,0 +1,71 @@
+{
+  "accuracy": 0.8474,
+  "api_cost": {
+    "charged": "unconditionally (incurred spend, including examples sent to a human)",
+    "evidence_class": "measured",
+    "mean_per_example_usd": 0.0013150172,
+    "mode": "measured_receipts",
+    "note": "Per-example USD joined on complaint_id from the run's own committed per-call receipts (results/tier_c_raw/<run>/<ts>/calls.jsonl, field computed_cost_usd = real prompt/completion token counts x published per-MTok prices). MEASURED. The joined per-example sum is cross-checked against the run record's cost_usd at 1e-6 and reported as cost_sum_check; a mismatch fails the run.",
+    "total_usd": 6.575086
+  },
+  "bootstrap": {
+    "method": "percentile [2.5, 97.5] over resampled example indices (one integers(0, n, size=n) draw per replicate)",
+    "n_resamples": 1000,
+    "seed": 20260805
+  },
+  "config_name": "tier_c_haiku_zeroshot_test_iid",
+  "config_sha256": "32a286d7169cc5619533cc574f600c5ecc359aed4242d901b7045b75e960b7ee",
+  "cost_config": {
+    "evidence_class": {
+      "api_cost.tier_a": "estimated",
+      "api_cost.tier_c": "measured",
+      "params.c_human_usd": "estimated",
+      "params.c_misroute_usd": "estimated"
+    },
+    "params": {
+      "c_human_usd": 2.5,
+      "c_misroute_usd": 6.0
+    },
+    "path": "configs/cost_model_v1.yaml",
+    "sha256": "f76ad15a87457db64f50392d3a7bdd9ea65a581fa06478b6759538d16b5143d0",
+    "version": "v1"
+  },
+  "cost_sum_check": {
+    "abs_delta": 0.0,
+    "joined_cost_usd": 6.575086,
+    "logged_cost_usd": 6.575086,
+    "ok": true,
+    "tol": 1e-06
+  },
+  "expected_cost_per_1k": {
+    "api": {
+      "ci_hi": 1.323680365,
+      "ci_lo": 1.30664824,
+      "point": 1.3150172
+    },
+    "human": {
+      "ci_hi": 0.0,
+      "ci_lo": 0.0,
+      "point": 0.0
+    },
+    "misroute": {
+      "ci_hi": 979.2,
+      "ci_lo": 858.0,
+      "point": 915.6
+    },
+    "total": {
+      "ci_hi": 980.51471589,
+      "ci_lo": 859.319216675,
+      "point": 916.9150172
+    }
+  },
+  "human_assumption": "Examples routed to the human queue pay c_human and are not charged the misroute cost: human resolution is assumed correct (P(error|human)=0). That is optimistic toward the human queue \u2014 a real analyst error rate would raise the all-human arm's true cost \u2014 so router-vs-all-human comparisons are conservative in the human arm's favor. API cost is INCURRED spend and is charged unconditionally: a policy that defers to a human after paying for a model call still pays for that call, and a policy that defers before any paid call passes api_cost_usd = 0.0 for that example.",
+  "n_examples": 5000,
+  "n_to_human": 0,
+  "policy": "single_tier_all_answered",
+  "run_id": "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e",
+  "schema_version": "cost-v1",
+  "split": "test_iid",
+  "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2",
+  "tier": "tier_c"
+}

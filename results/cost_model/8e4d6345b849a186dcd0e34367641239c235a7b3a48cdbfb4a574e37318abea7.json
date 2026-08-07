@@ -1,0 +1,65 @@
+{
+  "accuracy": 0.8444318911,
+  "api_cost": {
+    "charged": "unconditionally (incurred spend, including examples sent to a human)",
+    "evidence_class": "estimated",
+    "mean_per_example_usd": 0.0,
+    "mode": "amortized_zero",
+    "note": "TF-IDF + calibrated linear model inference runs on CPU in <1 ms/example with no per-call vendor charge; the amortized compute cost per complaint rounds to $0 at any volume this router operates at. Recorded as an ESTIMATE (a modeling choice to charge zero), not a measurement, so the router's cost advantage is never credited to an unmeasured Tier A expense.",
+    "total_usd": 0.0
+  },
+  "bootstrap": {
+    "method": "percentile [2.5, 97.5] over resampled example indices (one integers(0, n, size=n) draw per replicate)",
+    "n_resamples": 1000,
+    "seed": 20260805
+  },
+  "config_name": "tier_a_logreg_test_iid",
+  "config_sha256": "b22be1e963760c2f277562c4afa89eb1014dd6bc0fd1cb86fd588c12d6f3b8c0",
+  "cost_config": {
+    "evidence_class": {
+      "api_cost.tier_a": "estimated",
+      "api_cost.tier_c": "measured",
+      "params.c_human_usd": "estimated",
+      "params.c_misroute_usd": "estimated"
+    },
+    "params": {
+      "c_human_usd": 2.5,
+      "c_misroute_usd": 6.0
+    },
+    "path": "configs/cost_model_v1.yaml",
+    "sha256": "f76ad15a87457db64f50392d3a7bdd9ea65a581fa06478b6759538d16b5143d0",
+    "version": "v1"
+  },
+  "cost_sum_check": null,
+  "expected_cost_per_1k": {
+    "api": {
+      "ci_hi": 0.0,
+      "ci_lo": 0.0,
+      "point": 0.0
+    },
+    "human": {
+      "ci_hi": 0.0,
+      "ci_lo": 0.0,
+      "point": 0.0
+    },
+    "misroute": {
+      "ci_hi": 946.4506955947,
+      "ci_lo": 920.9367789129,
+      "point": 933.4086535239
+    },
+    "total": {
+      "ci_hi": 946.4506955947,
+      "ci_lo": 920.9367789129,
+      "point": 933.4086535239
+    }
+  },
+  "human_assumption": "Examples routed to the human queue pay c_human and are not charged the misroute cost: human resolution is assumed correct (P(error|human)=0). That is optimistic toward the human queue \u2014 a real analyst error rate would raise the all-human arm's true cost \u2014 so router-vs-all-human comparisons are conservative in the human arm's favor. API cost is INCURRED spend and is charged unconditionally: a policy that defers to a human after paying for a model call still pays for that call, and a policy that defers before any paid call passes api_cost_usd = 0.0 for that example.",
+  "n_examples": 104443,
+  "n_to_human": 0,
+  "policy": "single_tier_all_answered",
+  "run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+  "schema_version": "cost-v1",
+  "split": "test_iid",
+  "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2",
+  "tier": "tier_a"
+}
