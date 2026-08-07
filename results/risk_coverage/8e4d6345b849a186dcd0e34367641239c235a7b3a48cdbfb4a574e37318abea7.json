@@ -1,0 +1,3637 @@
+{
+  "class_labels": [
+    "card",
+    "credit_reporting",
+    "debt_collection",
+    "deposit_account",
+    "money_service",
+    "mortgage",
+    "payday_personal_loan",
+    "student_loan",
+    "vehicle_loan"
+  ],
+  "config_sha256": "b22be1e963760c2f277562c4afa89eb1014dd6bc0fd1cb86fd588c12d6f3b8c0",
+  "coverages": [
+    0.5,
+    0.8,
+    0.9,
+    0.95
+  ],
+  "n_examples": 104443,
+  "run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+  "split": "test_iid",
+  "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2",
+  "summary": {
+    "acc_at_cov::0.50": {
+      "ci_hi": 0.9654168741,
+      "ci_lo": 0.9622185094,
+      "point": 0.9638466547
+    },
+    "acc_at_cov::0.80": {
+      "ci_hi": 0.9166899049,
+      "ci_lo": 0.9127158758,
+      "point": 0.9147387948
+    },
+    "acc_at_cov::0.90": {
+      "ci_hi": 0.8868182108,
+      "ci_lo": 0.8826665709,
+      "point": 0.8847647315
+    },
+    "acc_at_cov::0.95": {
+      "ci_hi": 0.8688891465,
+      "ci_lo": 0.8645843622,
+      "point": 0.8667620766
+    },
+    "aurc": {
+      "ci_hi": 0.0511734185,
+      "ci_lo": 0.048740326,
+      "point": 0.0499703075
+    }
+  },
+  "threshold_table": [
+    {
+      "coverage": 9.5746e-06,
+      "n_covered": 1,
+      "selective_accuracy": 1.0,
+      "selective_risk": 0.0,
+      "tau": 0.9791095352
+    },
+    {
+      "coverage": 0.0019627931,
+      "n_covered": 205,
+      "selective_accuracy": 0.9902439024,
+      "selective_risk": 0.0097560976,
+      "tau": 0.9676407025
+    },
+    {
+      "coverage": 0.0039255862,
+      "n_covered": 410,
+      "selective_accuracy": 0.9951219512,
+      "selective_risk": 0.0048780488,
+      "tau": 0.9646108653
+    },
+    {
+      "coverage": 0.0058788047,
+      "n_covered": 614,
+      "selective_accuracy": 0.9918566775,
+      "selective_risk": 0.0081433225,
+      "tau": 0.9623137221
+    },
+    {
+      "coverage": 0.0078320232,
+      "n_covered": 818,
+      "selective_accuracy": 0.9926650367,
+      "selective_risk": 0.0073349633,
+      "tau": 0.9600413635
+    },
+    {
+      "coverage": 0.0097852417,
+      "n_covered": 1022,
+      "selective_accuracy": 0.9931506849,
+      "selective_risk": 0.0068493151,
+      "tau": 0.9578345353
+    },
+    {
+      "coverage": 0.0117480348,
+      "n_covered": 1227,
+      "selective_accuracy": 0.9942950285,
+      "selective_risk": 0.0057049715,
+      "tau": 0.9558290434
+    },
+    {
+      "coverage": 0.0137012533,
+      "n_covered": 1431,
+      "selective_accuracy": 0.9923130678,
+      "selective_risk": 0.0076869322,
+      "tau": 0.9536308139
+    },
+    {
+      "coverage": 0.0156544718,
+      "n_covered": 1635,
+      "selective_accuracy": 0.9920489297,
+      "selective_risk": 0.0079510703,
+      "tau": 0.9518284631
+    },
+    {
+      "coverage": 0.0176076903,
+      "n_covered": 1839,
+      "selective_accuracy": 0.9907558456,
+      "selective_risk": 0.0092441544,
+      "tau": 0.9502407094
+    },
+    {
+      "coverage": 0.019580058,
+      "n_covered": 2045,
+      "selective_accuracy": 0.9916870416,
+      "selective_risk": 0.0083129584,
+      "tau": 0.9490033112
+    },
+    {
+      "coverage": 0.0215332765,
+      "n_covered": 2249,
+      "selective_accuracy": 0.9911071587,
+      "selective_risk": 0.0088928413,
+      "tau": 0.9478221233
+    },
+    {
+      "coverage": 0.023486495,
+      "n_covered": 2453,
+      "selective_accuracy": 0.9914390542,
+      "selective_risk": 0.0085609458,
+      "tau": 0.9468607292
+    },
+    {
+      "coverage": 0.0254397135,
+      "n_covered": 2657,
+      "selective_accuracy": 0.9913436206,
+      "selective_risk": 0.0086563794,
+      "tau": 0.9459888755
+    },
+    {
+      "coverage": 0.0274120812,
+      "n_covered": 2863,
+      "selective_accuracy": 0.9919664687,
+      "selective_risk": 0.0080335313,
+      "tau": 0.945207271
+    },
+    {
+      "coverage": 0.0293652997,
+      "n_covered": 3067,
+      "selective_accuracy": 0.9918487121,
+      "selective_risk": 0.0081512879,
+      "tau": 0.9444374699
+    },
+    {
+      "coverage": 0.0313280928,
+      "n_covered": 3272,
+      "selective_accuracy": 0.9917481663,
+      "selective_risk": 0.0082518337,
+      "tau": 0.9436894277
+    },
+    {
+      "coverage": 0.0332908859,
+      "n_covered": 3477,
+      "selective_accuracy": 0.9913718723,
+      "selective_risk": 0.0086281277,
+      "tau": 0.9429892092
+    },
+    {
+      "coverage": 0.0352441044,
+      "n_covered": 3681,
+      "selective_accuracy": 0.9915783754,
+      "selective_risk": 0.0084216246,
+      "tau": 0.9422334668
+    },
+    {
+      "coverage": 0.0371973229,
+      "n_covered": 3885,
+      "selective_accuracy": 0.992020592,
+      "selective_risk": 0.007979408,
+      "tau": 0.9415042483
+    },
+    {
+      "coverage": 0.0391505414,
+      "n_covered": 4089,
+      "selective_accuracy": 0.9924186843,
+      "selective_risk": 0.0075813157,
+      "tau": 0.9407794616
+    },
+    {
+      "coverage": 0.0411133345,
+      "n_covered": 4294,
+      "selective_accuracy": 0.9923148579,
+      "selective_risk": 0.0076851421,
+      "tau": 0.9400140209
+    },
+    {
+      "coverage": 0.043066553,
+      "n_covered": 4498,
+      "selective_accuracy": 0.9922187639,
+      "selective_risk": 0.0077812361,
+      "tau": 0.9393129786
+    },
+    {
+      "coverage": 0.0450197716,
+      "n_covered": 4702,
+      "selective_accuracy": 0.9921310081,
+      "selective_risk": 0.0078689919,
+      "tau": 0.938557278
+    },
+    {
+      "coverage": 0.0469729901,
+      "n_covered": 4906,
+      "selective_accuracy": 0.9924582144,
+      "selective_risk": 0.0075417856,
+      "tau": 0.937842291
+    },
+    {
+      "coverage": 0.0489357832,
+      "n_covered": 5111,
+      "selective_accuracy": 0.9917824301,
+      "selective_risk": 0.0082175699,
+      "tau": 0.9371329919
+    },
+    {
+      "coverage": 0.0508890017,
+      "n_covered": 5315,
+      "selective_accuracy": 0.9919096896,
+      "selective_risk": 0.0080903104,
+      "tau": 0.9364519582
+    },
+    {
+      "coverage": 0.0528422202,
+      "n_covered": 5519,
+      "selective_accuracy": 0.9916651567,
+      "selective_risk": 0.0083348433,
+      "tau": 0.9356989095
+    },
+    {
+      "coverage": 0.0548050133,
+      "n_covered": 5724,
+      "selective_accuracy": 0.9914395528,
+      "selective_risk": 0.0085604472,
+      "tau": 0.935016395
+    },
+    {
+      "coverage": 0.0567582318,
+      "n_covered": 5928,
+      "selective_accuracy": 0.9907219973,
+      "selective_risk": 0.0092780027,
+      "tau": 0.9344099735
+    },
+    {
+      "coverage": 0.0587114503,
+      "n_covered": 6132,
+      "selective_accuracy": 0.9903783431,
+      "selective_risk": 0.0096216569,
+      "tau": 0.933753732
+    },
+    {
+      "coverage": 0.0606646688,
+      "n_covered": 6336,
+      "selective_accuracy": 0.9903724747,
+      "selective_risk": 0.0096275253,
+      "tau": 0.9331845427
+    },
+    {
+      "coverage": 0.0626274619,
+      "n_covered": 6541,
+      "selective_accuracy": 0.9900626815,
+      "selective_risk": 0.0099373185,
+      "tau": 0.9325757601
+    },
+    {
+      "coverage": 0.0645806804,
+      "n_covered": 6745,
+      "selective_accuracy": 0.9899184581,
+      "selective_risk": 0.0100815419,
+      "tau": 0.9319870481
+    },
+    {
+      "coverage": 0.0665434735,
+      "n_covered": 6950,
+      "selective_accuracy": 0.989352518,
+      "selective_risk": 0.010647482,
+      "tau": 0.9314357554
+    },
+    {
+      "coverage": 0.068496692,
+      "n_covered": 7154,
+      "selective_accuracy": 0.9896561364,
+      "selective_risk": 0.0103438636,
+      "tau": 0.9309191044
+    },
+    {
+      "coverage": 0.0704690597,
+      "n_covered": 7360,
+      "selective_accuracy": 0.9898097826,
+      "selective_risk": 0.0101902174,
+      "tau": 0.9304287139
+    },
+    {
+      "coverage": 0.0724222782,
+      "n_covered": 7564,
+      "selective_accuracy": 0.9899524061,
+      "selective_risk": 0.0100475939,
+      "tau": 0.9298571557
+    },
+    {
+      "coverage": 0.0743754967,
+      "n_covered": 7768,
+      "selective_accuracy": 0.9897013388,
+      "selective_risk": 0.0102986612,
+      "tau": 0.9293116125
+    },
+    {
+      "coverage": 0.0763382898,
+      "n_covered": 7973,
+      "selective_accuracy": 0.9898407124,
+      "selective_risk": 0.0101592876,
+      "tau": 0.9287684423
+    },
+    {
+      "coverage": 0.0783010829,
+      "n_covered": 8178,
+      "selective_accuracy": 0.9898508193,
+      "selective_risk": 0.0101491807,
+      "tau": 0.9282370945
+    },
+    {
+      "coverage": 0.080263876,
+      "n_covered": 8383,
+      "selective_accuracy": 0.9896218538,
+      "selective_risk": 0.0103781462,
+      "tau": 0.927792868
+    },
+    {
+      "coverage": 0.0822170945,
+      "n_covered": 8587,
+      "selective_accuracy": 0.9898684057,
+      "selective_risk": 0.0101315943,
+      "tau": 0.9272570484
+    },
+    {
+      "coverage": 0.0841798876,
+      "n_covered": 8792,
+      "selective_accuracy": 0.9897634213,
+      "selective_risk": 0.0102365787,
+      "tau": 0.9267455068
+    },
+    {
+      "coverage": 0.0861331061,
+      "n_covered": 8996,
+      "selective_accuracy": 0.9897732325,
+      "selective_risk": 0.0102267675,
+      "tau": 0.9262000601
+    },
+    {
+      "coverage": 0.0880863246,
+      "n_covered": 9200,
+      "selective_accuracy": 0.9894565217,
+      "selective_risk": 0.0105434783,
+      "tau": 0.9257065006
+    },
+    {
+      "coverage": 0.0900491177,
+      "n_covered": 9405,
+      "selective_accuracy": 0.9892610314,
+      "selective_risk": 0.0107389686,
+      "tau": 0.9251253032
+    },
+    {
+      "coverage": 0.0920119108,
+      "n_covered": 9610,
+      "selective_accuracy": 0.9893860562,
+      "selective_risk": 0.0106139438,
+      "tau": 0.9245934997
+    },
+    {
+      "coverage": 0.0939651293,
+      "n_covered": 9814,
+      "selective_accuracy": 0.9893009986,
+      "selective_risk": 0.0106990014,
+      "tau": 0.924006077
+    },
+    {
+      "coverage": 0.095937497,
+      "n_covered": 10020,
+      "selective_accuracy": 0.9892215569,
+      "selective_risk": 0.0107784431,
+      "tau": 0.9234352883
+    },
+    {
+      "coverage": 0.0978907155,
+      "n_covered": 10224,
+      "selective_accuracy": 0.9891431925,
+      "selective_risk": 0.0108568075,
+      "tau": 0.9228330987
+    },
+    {
+      "coverage": 0.0998535086,
+      "n_covered": 10429,
+      "selective_accuracy": 0.9892607153,
+      "selective_risk": 0.0107392847,
+      "tau": 0.9221778842
+    },
+    {
+      "coverage": 0.1018067271,
+      "n_covered": 10633,
+      "selective_accuracy": 0.9893727076,
+      "selective_risk": 0.0106272924,
+      "tau": 0.9215940108
+    },
+    {
+      "coverage": 0.1037599456,
+      "n_covered": 10837,
+      "selective_accuracy": 0.9892036541,
+      "selective_risk": 0.0107963459,
+      "tau": 0.9209863671
+    },
+    {
+      "coverage": 0.1057227387,
+      "n_covered": 11042,
+      "selective_accuracy": 0.9890418402,
+      "selective_risk": 0.0109581598,
+      "tau": 0.9204153742
+    },
+    {
+      "coverage": 0.1077142556,
+      "n_covered": 11250,
+      "selective_accuracy": 0.9891555556,
+      "selective_risk": 0.0108444444,
+      "tau": 0.9198453976
+    },
+    {
+      "coverage": 0.1096674741,
+      "n_covered": 11454,
+      "selective_accuracy": 0.9890867819,
+      "selective_risk": 0.0109132181,
+      "tau": 0.9193051685
+    },
+    {
+      "coverage": 0.1116302672,
+      "n_covered": 11659,
+      "selective_accuracy": 0.9889355862,
+      "selective_risk": 0.0110644138,
+      "tau": 0.9188127056
+    },
+    {
+      "coverage": 0.1135930603,
+      "n_covered": 11864,
+      "selective_accuracy": 0.9889581929,
+      "selective_risk": 0.0110418071,
+      "tau": 0.9182547202
+    },
+    {
+      "coverage": 0.1155462788,
+      "n_covered": 12068,
+      "selective_accuracy": 0.9889791183,
+      "selective_risk": 0.0110208817,
+      "tau": 0.9177138991
+    },
+    {
+      "coverage": 0.1174994973,
+      "n_covered": 12272,
+      "selective_accuracy": 0.9889178618,
+      "selective_risk": 0.0110821382,
+      "tau": 0.9171664586
+    },
+    {
+      "coverage": 0.1194527158,
+      "n_covered": 12476,
+      "selective_accuracy": 0.9888586085,
+      "selective_risk": 0.0111413915,
+      "tau": 0.9166726701
+    },
+    {
+      "coverage": 0.1214155089,
+      "n_covered": 12681,
+      "selective_accuracy": 0.9887232868,
+      "selective_risk": 0.0112767132,
+      "tau": 0.9161836183
+    },
+    {
+      "coverage": 0.1233687274,
+      "n_covered": 12885,
+      "selective_accuracy": 0.9885137757,
+      "selective_risk": 0.0114862243,
+      "tau": 0.9156981929
+    },
+    {
+      "coverage": 0.1253315205,
+      "n_covered": 13090,
+      "selective_accuracy": 0.9885408709,
+      "selective_risk": 0.0114591291,
+      "tau": 0.9151264494
+    },
+    {
+      "coverage": 0.127284739,
+      "n_covered": 13294,
+      "selective_accuracy": 0.9884910486,
+      "selective_risk": 0.0115089514,
+      "tau": 0.9146526159
+    },
+    {
+      "coverage": 0.1292571067,
+      "n_covered": 13500,
+      "selective_accuracy": 0.9883703704,
+      "selective_risk": 0.0116296296,
+      "tau": 0.9140904504
+    },
+    {
+      "coverage": 0.1312103252,
+      "n_covered": 13704,
+      "selective_accuracy": 0.9883975482,
+      "selective_risk": 0.0116024518,
+      "tau": 0.9135754136
+    },
+    {
+      "coverage": 0.1331635438,
+      "n_covered": 13908,
+      "selective_accuracy": 0.9884239287,
+      "selective_risk": 0.0115760713,
+      "tau": 0.9130939509
+    },
+    {
+      "coverage": 0.1351263369,
+      "n_covered": 14113,
+      "selective_accuracy": 0.9881669383,
+      "selective_risk": 0.0118330617,
+      "tau": 0.9125691637
+    },
+    {
+      "coverage": 0.13708913,
+      "n_covered": 14318,
+      "selective_accuracy": 0.9881268334,
+      "selective_risk": 0.0118731666,
+      "tau": 0.9120549414
+    },
+    {
+      "coverage": 0.1390423485,
+      "n_covered": 14522,
+      "selective_accuracy": 0.9880870404,
+      "selective_risk": 0.0119129596,
+      "tau": 0.911536001
+    },
+    {
+      "coverage": 0.140995567,
+      "n_covered": 14726,
+      "selective_accuracy": 0.9879804428,
+      "selective_risk": 0.0120195572,
+      "tau": 0.9110264558
+    },
+    {
+      "coverage": 0.1429679347,
+      "n_covered": 14932,
+      "selective_accuracy": 0.9878114117,
+      "selective_risk": 0.0121885883,
+      "tau": 0.9105493215
+    },
+    {
+      "coverage": 0.1449211532,
+      "n_covered": 15136,
+      "selective_accuracy": 0.9877114165,
+      "selective_risk": 0.0122885835,
+      "tau": 0.9100560805
+    },
+    {
+      "coverage": 0.1468839463,
+      "n_covered": 15341,
+      "selective_accuracy": 0.9878756274,
+      "selective_risk": 0.0121243726,
+      "tau": 0.9095198091
+    },
+    {
+      "coverage": 0.1488371648,
+      "n_covered": 15545,
+      "selective_accuracy": 0.987713091,
+      "selective_risk": 0.012286909,
+      "tau": 0.9090161341
+    },
+    {
+      "coverage": 0.1507999579,
+      "n_covered": 15750,
+      "selective_accuracy": 0.9876190476,
+      "selective_risk": 0.0123809524,
+      "tau": 0.9084316432
+    },
+    {
+      "coverage": 0.1527531764,
+      "n_covered": 15954,
+      "selective_accuracy": 0.9875893193,
+      "selective_risk": 0.0124106807,
+      "tau": 0.9078792475
+    },
+    {
+      "coverage": 0.1547063949,
+      "n_covered": 16158,
+      "selective_accuracy": 0.9876222305,
+      "selective_risk": 0.0123777695,
+      "tau": 0.9073644031
+    },
+    {
+      "coverage": 0.1566787626,
+      "n_covered": 16364,
+      "selective_accuracy": 0.9874725006,
+      "selective_risk": 0.0125274994,
+      "tau": 0.9068344332
+    },
+    {
+      "coverage": 0.1586415557,
+      "n_covered": 16569,
+      "selective_accuracy": 0.9872050214,
+      "selective_risk": 0.0127949786,
+      "tau": 0.9063433805
+    },
+    {
+      "coverage": 0.1605947742,
+      "n_covered": 16773,
+      "selective_accuracy": 0.9868836821,
+      "selective_risk": 0.0131163179,
+      "tau": 0.9058425379
+    },
+    {
+      "coverage": 0.1625479927,
+      "n_covered": 16977,
+      "selective_accuracy": 0.9866878718,
+      "selective_risk": 0.0133121282,
+      "tau": 0.9053171744
+    },
+    {
+      "coverage": 0.1645107858,
+      "n_covered": 17182,
+      "selective_accuracy": 0.9866720987,
+      "selective_risk": 0.0133279013,
+      "tau": 0.9048047319
+    },
+    {
+      "coverage": 0.1664640043,
+      "n_covered": 17386,
+      "selective_accuracy": 0.9863683423,
+      "selective_risk": 0.0136316577,
+      "tau": 0.9042625358
+    },
+    {
+      "coverage": 0.1684172228,
+      "n_covered": 17590,
+      "selective_accuracy": 0.986469585,
+      "selective_risk": 0.013530415,
+      "tau": 0.9037099775
+    },
+    {
+      "coverage": 0.1703704413,
+      "n_covered": 17794,
+      "selective_accuracy": 0.9864561088,
+      "selective_risk": 0.0135438912,
+      "tau": 0.9031822806
+    },
+    {
+      "coverage": 0.1723332344,
+      "n_covered": 17999,
+      "selective_accuracy": 0.98649925,
+      "selective_risk": 0.01350075,
+      "tau": 0.9026446659
+    },
+    {
+      "coverage": 0.1742864529,
+      "n_covered": 18203,
+      "selective_accuracy": 0.9863758721,
+      "selective_risk": 0.0136241279,
+      "tau": 0.90212001
+    },
+    {
+      "coverage": 0.176249246,
+      "n_covered": 18408,
+      "selective_accuracy": 0.9863102999,
+      "selective_risk": 0.0136897001,
+      "tau": 0.9015438467
+    },
+    {
+      "coverage": 0.1782024645,
+      "n_covered": 18612,
+      "selective_accuracy": 0.9861917043,
+      "selective_risk": 0.0138082957,
+      "tau": 0.9009628835
+    },
+    {
+      "coverage": 0.1801652576,
+      "n_covered": 18817,
+      "selective_accuracy": 0.9860764203,
+      "selective_risk": 0.0139235797,
+      "tau": 0.900427182
+    },
+    {
+      "coverage": 0.1821184761,
+      "n_covered": 19021,
+      "selective_accuracy": 0.9860154566,
+      "selective_risk": 0.0139845434,
+      "tau": 0.8998464206
+    },
+    {
+      "coverage": 0.1840716946,
+      "n_covered": 19225,
+      "selective_accuracy": 0.9859557867,
+      "selective_risk": 0.0140442133,
+      "tau": 0.8993100657
+    },
+    {
+      "coverage": 0.1860249131,
+      "n_covered": 19429,
+      "selective_accuracy": 0.9858973699,
+      "selective_risk": 0.0141026301,
+      "tau": 0.8987921417
+    },
+    {
+      "coverage": 0.1879877062,
+      "n_covered": 19634,
+      "selective_accuracy": 0.985586228,
+      "selective_risk": 0.014413772,
+      "tau": 0.8982129074
+    },
+    {
+      "coverage": 0.1899409247,
+      "n_covered": 19838,
+      "selective_accuracy": 0.9853311826,
+      "selective_risk": 0.0146688174,
+      "tau": 0.8976923586
+    },
+    {
+      "coverage": 0.1918941432,
+      "n_covered": 20042,
+      "selective_accuracy": 0.9852809101,
+      "selective_risk": 0.0147190899,
+      "tau": 0.8970883893
+    },
+    {
+      "coverage": 0.1938569363,
+      "n_covered": 20247,
+      "selective_accuracy": 0.9853311602,
+      "selective_risk": 0.0146688398,
+      "tau": 0.896495304
+    },
+    {
+      "coverage": 0.1958101548,
+      "n_covered": 20451,
+      "selective_accuracy": 0.9851840986,
+      "selective_risk": 0.0148159014,
+      "tau": 0.8958760066
+    },
+    {
+      "coverage": 0.1977633733,
+      "n_covered": 20655,
+      "selective_accuracy": 0.9849915275,
+      "selective_risk": 0.0150084725,
+      "tau": 0.8952073547
+    },
+    {
+      "coverage": 0.1997165918,
+      "n_covered": 20859,
+      "selective_accuracy": 0.9848986049,
+      "selective_risk": 0.0151013951,
+      "tau": 0.8946269428
+    },
+    {
+      "coverage": 0.2016793849,
+      "n_covered": 21064,
+      "selective_accuracy": 0.9848082036,
+      "selective_risk": 0.0151917964,
+      "tau": 0.8940328162
+    },
+    {
+      "coverage": 0.203642178,
+      "n_covered": 21269,
+      "selective_accuracy": 0.9847195449,
+      "selective_risk": 0.0152804551,
+      "tau": 0.8934244024
+    },
+    {
+      "coverage": 0.2055953965,
+      "n_covered": 21473,
+      "selective_accuracy": 0.984538723,
+      "selective_risk": 0.015461277,
+      "tau": 0.8927927958
+    },
+    {
+      "coverage": 0.207548615,
+      "n_covered": 21677,
+      "selective_accuracy": 0.9844997001,
+      "selective_risk": 0.0155002999,
+      "tau": 0.8921724851
+    },
+    {
+      "coverage": 0.2095114081,
+      "n_covered": 21882,
+      "selective_accuracy": 0.9844164153,
+      "selective_risk": 0.0155835847,
+      "tau": 0.891591052
+    },
+    {
+      "coverage": 0.2114646266,
+      "n_covered": 22086,
+      "selective_accuracy": 0.9842886897,
+      "selective_risk": 0.0157113103,
+      "tau": 0.8911040437
+    },
+    {
+      "coverage": 0.2134178451,
+      "n_covered": 22290,
+      "selective_accuracy": 0.9842530283,
+      "selective_risk": 0.0157469717,
+      "tau": 0.8905201223
+    },
+    {
+      "coverage": 0.2153710636,
+      "n_covered": 22494,
+      "selective_accuracy": 0.9839512759,
+      "selective_risk": 0.0160487241,
+      "tau": 0.8899302405
+    },
+    {
+      "coverage": 0.2173338567,
+      "n_covered": 22699,
+      "selective_accuracy": 0.9838318869,
+      "selective_risk": 0.0161681131,
+      "tau": 0.8893478553
+    },
+    {
+      "coverage": 0.2192966498,
+      "n_covered": 22904,
+      "selective_accuracy": 0.9838456165,
+      "selective_risk": 0.0161543835,
+      "tau": 0.8887664775
+    },
+    {
+      "coverage": 0.2212498683,
+      "n_covered": 23108,
+      "selective_accuracy": 0.983815129,
+      "selective_risk": 0.016184871,
+      "tau": 0.8882401124
+    },
+    {
+      "coverage": 0.2232126615,
+      "n_covered": 23313,
+      "selective_accuracy": 0.983742976,
+      "selective_risk": 0.016257024,
+      "tau": 0.8877160237
+    },
+    {
+      "coverage": 0.22516588,
+      "n_covered": 23517,
+      "selective_accuracy": 0.9835863418,
+      "selective_risk": 0.0164136582,
+      "tau": 0.8871775568
+    },
+    {
+      "coverage": 0.2271286731,
+      "n_covered": 23722,
+      "selective_accuracy": 0.983475255,
+      "selective_risk": 0.016524745,
+      "tau": 0.8866712242
+    },
+    {
+      "coverage": 0.2290818916,
+      "n_covered": 23926,
+      "selective_accuracy": 0.983323581,
+      "selective_risk": 0.016676419,
+      "tau": 0.8861662436
+    },
+    {
+      "coverage": 0.2310446847,
+      "n_covered": 24131,
+      "selective_accuracy": 0.9830922879,
+      "selective_risk": 0.0169077121,
+      "tau": 0.8856258135
+    },
+    {
+      "coverage": 0.2329979032,
+      "n_covered": 24335,
+      "selective_accuracy": 0.9830696528,
+      "selective_risk": 0.0169303472,
+      "tau": 0.8850688822
+    },
+    {
+      "coverage": 0.2349894201,
+      "n_covered": 24543,
+      "selective_accuracy": 0.9829686672,
+      "selective_risk": 0.0170313328,
+      "tau": 0.8845363213
+    },
+    {
+      "coverage": 0.2369522132,
+      "n_covered": 24748,
+      "selective_accuracy": 0.982948117,
+      "selective_risk": 0.017051883,
+      "tau": 0.8839795402
+    },
+    {
+      "coverage": 0.2389150063,
+      "n_covered": 24953,
+      "selective_accuracy": 0.9829279045,
+      "selective_risk": 0.0170720955,
+      "tau": 0.8833950985
+    },
+    {
+      "coverage": 0.2408682248,
+      "n_covered": 25157,
+      "selective_accuracy": 0.9826688397,
+      "selective_risk": 0.0173311603,
+      "tau": 0.8826800369
+    },
+    {
+      "coverage": 0.2428214433,
+      "n_covered": 25361,
+      "selective_accuracy": 0.9826505264,
+      "selective_risk": 0.0173494736,
+      "tau": 0.882111121
+    },
+    {
+      "coverage": 0.2447842364,
+      "n_covered": 25566,
+      "selective_accuracy": 0.9825940702,
+      "selective_risk": 0.0174059298,
+      "tau": 0.8814655456
+    },
+    {
+      "coverage": 0.2467374549,
+      "n_covered": 25770,
+      "selective_accuracy": 0.9824990299,
+      "selective_risk": 0.0175009701,
+      "tau": 0.880851887
+    },
+    {
+      "coverage": 0.2486906734,
+      "n_covered": 25974,
+      "selective_accuracy": 0.9823284823,
+      "selective_risk": 0.0176715177,
+      "tau": 0.880262057
+    },
+    {
+      "coverage": 0.2506534665,
+      "n_covered": 26179,
+      "selective_accuracy": 0.9823522671,
+      "selective_risk": 0.0176477329,
+      "tau": 0.8796293207
+    },
+    {
+      "coverage": 0.2526162596,
+      "n_covered": 26384,
+      "selective_accuracy": 0.982261977,
+      "selective_risk": 0.017738023,
+      "tau": 0.8789703772
+    },
+    {
+      "coverage": 0.2545694781,
+      "n_covered": 26588,
+      "selective_accuracy": 0.9820971867,
+      "selective_risk": 0.0179028133,
+      "tau": 0.878405537
+    },
+    {
+      "coverage": 0.2565226966,
+      "n_covered": 26792,
+      "selective_accuracy": 0.9820842042,
+      "selective_risk": 0.0179157958,
+      "tau": 0.8777564928
+    },
+    {
+      "coverage": 0.2584759151,
+      "n_covered": 26996,
+      "selective_accuracy": 0.9820343755,
+      "selective_risk": 0.0179656245,
+      "tau": 0.8770733071
+    },
+    {
+      "coverage": 0.2604387082,
+      "n_covered": 27201,
+      "selective_accuracy": 0.9820962465,
+      "selective_risk": 0.0179037535,
+      "tau": 0.876469174
+    },
+    {
+      "coverage": 0.2623919267,
+      "n_covered": 27405,
+      "selective_accuracy": 0.9817551542,
+      "selective_risk": 0.0182448458,
+      "tau": 0.875924804
+    },
+    {
+      "coverage": 0.2643451452,
+      "n_covered": 27609,
+      "selective_accuracy": 0.9816364229,
+      "selective_risk": 0.0183635771,
+      "tau": 0.8753833009
+    },
+    {
+      "coverage": 0.2662983637,
+      "n_covered": 27813,
+      "selective_accuracy": 0.9815194334,
+      "selective_risk": 0.0184805666,
+      "tau": 0.8747718765
+    },
+    {
+      "coverage": 0.2682611568,
+      "n_covered": 28018,
+      "selective_accuracy": 0.9815475766,
+      "selective_risk": 0.0184524234,
+      "tau": 0.8740972759
+    },
+    {
+      "coverage": 0.2702143753,
+      "n_covered": 28222,
+      "selective_accuracy": 0.9812557579,
+      "selective_risk": 0.0187442421,
+      "tau": 0.8735032345
+    },
+    {
+      "coverage": 0.2721675938,
+      "n_covered": 28426,
+      "selective_accuracy": 0.9812143812,
+      "selective_risk": 0.0187856188,
+      "tau": 0.8728722475
+    },
+    {
+      "coverage": 0.2741303869,
+      "n_covered": 28631,
+      "selective_accuracy": 0.9811393245,
+      "selective_risk": 0.0188606755,
+      "tau": 0.8721086538
+    },
+    {
+      "coverage": 0.2760836054,
+      "n_covered": 28835,
+      "selective_accuracy": 0.9810646783,
+      "selective_risk": 0.0189353217,
+      "tau": 0.8715003249
+    },
+    {
+      "coverage": 0.2780368239,
+      "n_covered": 29039,
+      "selective_accuracy": 0.9807500258,
+      "selective_risk": 0.0192499742,
+      "tau": 0.8709326808
+    },
+    {
+      "coverage": 0.2799900424,
+      "n_covered": 29243,
+      "selective_accuracy": 0.9807475293,
+      "selective_risk": 0.0192524707,
+      "tau": 0.8702825241
+    },
+    {
+      "coverage": 0.2819528355,
+      "n_covered": 29448,
+      "selective_accuracy": 0.9806438468,
+      "selective_risk": 0.0193561532,
+      "tau": 0.8695456694
+    },
+    {
+      "coverage": 0.283906054,
+      "n_covered": 29652,
+      "selective_accuracy": 0.9805072171,
+      "selective_risk": 0.0194927829,
+      "tau": 0.8688159994
+    },
+    {
+      "coverage": 0.2858688471,
+      "n_covered": 29857,
+      "selective_accuracy": 0.9804066048,
+      "selective_risk": 0.0195933952,
+      "tau": 0.8680707319
+    },
+    {
+      "coverage": 0.2878220656,
+      "n_covered": 30061,
+      "selective_accuracy": 0.9803732411,
+      "selective_risk": 0.0196267589,
+      "tau": 0.8673298589
+    },
+    {
+      "coverage": 0.2897848587,
+      "n_covered": 30266,
+      "selective_accuracy": 0.980374017,
+      "selective_risk": 0.019625983,
+      "tau": 0.8666288418
+    },
+    {
+      "coverage": 0.2917380772,
+      "n_covered": 30470,
+      "selective_accuracy": 0.9803413193,
+      "selective_risk": 0.0196586807,
+      "tau": 0.8658842349
+    },
+    {
+      "coverage": 0.2936912957,
+      "n_covered": 30674,
+      "selective_accuracy": 0.9803416574,
+      "selective_risk": 0.0196583426,
+      "tau": 0.8651712841
+    },
+    {
+      "coverage": 0.2956540888,
+      "n_covered": 30879,
+      "selective_accuracy": 0.9801807053,
+      "selective_risk": 0.0198192947,
+      "tau": 0.8644767247
+    },
+    {
+      "coverage": 0.2976168819,
+      "n_covered": 31084,
+      "selective_accuracy": 0.980086218,
+      "selective_risk": 0.019913782,
+      "tau": 0.8638210054
+    },
+    {
+      "coverage": 0.2995701004,
+      "n_covered": 31288,
+      "selective_accuracy": 0.9800882127,
+      "selective_risk": 0.0199117873,
+      "tau": 0.8631728766
+    },
+    {
+      "coverage": 0.3015233189,
+      "n_covered": 31492,
+      "selective_accuracy": 0.9800266734,
+      "selective_risk": 0.0199733266,
+      "tau": 0.862559151
+    },
+    {
+      "coverage": 0.3034956866,
+      "n_covered": 31698,
+      "selective_accuracy": 0.9799356426,
+      "selective_risk": 0.0200643574,
+      "tau": 0.8618532209
+    },
+    {
+      "coverage": 0.3054489051,
+      "n_covered": 31902,
+      "selective_accuracy": 0.9799385618,
+      "selective_risk": 0.0200614382,
+      "tau": 0.8611970942
+    },
+    {
+      "coverage": 0.3074021236,
+      "n_covered": 32106,
+      "selective_accuracy": 0.979754563,
+      "selective_risk": 0.020245437,
+      "tau": 0.8604312
+    },
+    {
+      "coverage": 0.3093744913,
+      "n_covered": 32312,
+      "selective_accuracy": 0.979574152,
+      "selective_risk": 0.020425848,
+      "tau": 0.8597014255
+    },
+    {
+      "coverage": 0.3113372845,
+      "n_covered": 32517,
+      "selective_accuracy": 0.9794568995,
+      "selective_risk": 0.0205431005,
+      "tau": 0.85890186
+    },
+    {
+      "coverage": 0.3133000776,
+      "n_covered": 32722,
+      "selective_accuracy": 0.9791883137,
+      "selective_risk": 0.0208116863,
+      "tau": 0.8582472369
+    },
+    {
+      "coverage": 0.3152532961,
+      "n_covered": 32926,
+      "selective_accuracy": 0.9789831744,
+      "selective_risk": 0.0210168256,
+      "tau": 0.8575425838
+    },
+    {
+      "coverage": 0.3172160892,
+      "n_covered": 33131,
+      "selective_accuracy": 0.9789019347,
+      "selective_risk": 0.0210980653,
+      "tau": 0.8568622825
+    },
+    {
+      "coverage": 0.3191884569,
+      "n_covered": 33337,
+      "selective_accuracy": 0.9787623361,
+      "selective_risk": 0.0212376639,
+      "tau": 0.856172986
+    },
+    {
+      "coverage": 0.3211416754,
+      "n_covered": 33541,
+      "selective_accuracy": 0.9787424346,
+      "selective_risk": 0.0212575654,
+      "tau": 0.8554988141
+    },
+    {
+      "coverage": 0.3230948939,
+      "n_covered": 33745,
+      "selective_accuracy": 0.9786931397,
+      "selective_risk": 0.0213068603,
+      "tau": 0.8547879477
+    },
+    {
+      "coverage": 0.325057687,
+      "n_covered": 33950,
+      "selective_accuracy": 0.9783799705,
+      "selective_risk": 0.0216200295,
+      "tau": 0.8540082027
+    },
+    {
+      "coverage": 0.3270109055,
+      "n_covered": 34154,
+      "selective_accuracy": 0.9782748726,
+      "selective_risk": 0.0217251274,
+      "tau": 0.8533179063
+    },
+    {
+      "coverage": 0.328964124,
+      "n_covered": 34358,
+      "selective_accuracy": 0.9782292334,
+      "selective_risk": 0.0217707666,
+      "tau": 0.8525755034
+    },
+    {
+      "coverage": 0.3309173425,
+      "n_covered": 34562,
+      "selective_accuracy": 0.9781841329,
+      "selective_risk": 0.0218158671,
+      "tau": 0.8517307284
+    },
+    {
+      "coverage": 0.3328801356,
+      "n_covered": 34767,
+      "selective_accuracy": 0.9780251388,
+      "selective_risk": 0.0219748612,
+      "tau": 0.8509436302
+    },
+    {
+      "coverage": 0.3348333541,
+      "n_covered": 34971,
+      "selective_accuracy": 0.9778387807,
+      "selective_risk": 0.0221612193,
+      "tau": 0.8502478472
+    },
+    {
+      "coverage": 0.3367865726,
+      "n_covered": 35175,
+      "selective_accuracy": 0.9777398721,
+      "selective_risk": 0.0222601279,
+      "tau": 0.8492998795
+    },
+    {
+      "coverage": 0.3387397911,
+      "n_covered": 35379,
+      "selective_accuracy": 0.977557308,
+      "selective_risk": 0.022442692,
+      "tau": 0.8485054999
+    },
+    {
+      "coverage": 0.3407121588,
+      "n_covered": 35585,
+      "selective_accuracy": 0.9774905157,
+      "selective_risk": 0.0225094843,
+      "tau": 0.8475755532
+    },
+    {
+      "coverage": 0.3426653773,
+      "n_covered": 35789,
+      "selective_accuracy": 0.9773114644,
+      "selective_risk": 0.0226885356,
+      "tau": 0.8467560447
+    },
+    {
+      "coverage": 0.3446185958,
+      "n_covered": 35993,
+      "selective_accuracy": 0.9772177923,
+      "selective_risk": 0.0227822077,
+      "tau": 0.8459130776
+    },
+    {
+      "coverage": 0.3465718143,
+      "n_covered": 36197,
+      "selective_accuracy": 0.9771251761,
+      "selective_risk": 0.0228748239,
+      "tau": 0.8451602685
+    },
+    {
+      "coverage": 0.3485346074,
+      "n_covered": 36402,
+      "selective_accuracy": 0.977171584,
+      "selective_risk": 0.022828416,
+      "tau": 0.8442576438
+    },
+    {
+      "coverage": 0.3504878259,
+      "n_covered": 36606,
+      "selective_accuracy": 0.9770256242,
+      "selective_risk": 0.0229743758,
+      "tau": 0.8433041081
+    },
+    {
+      "coverage": 0.352450619,
+      "n_covered": 36811,
+      "selective_accuracy": 0.9768547445,
+      "selective_risk": 0.0231452555,
+      "tau": 0.8424720091
+    },
+    {
+      "coverage": 0.3544229867,
+      "n_covered": 37017,
+      "selective_accuracy": 0.9766593727,
+      "selective_risk": 0.0233406273,
+      "tau": 0.8415855149
+    },
+    {
+      "coverage": 0.3563857798,
+      "n_covered": 37222,
+      "selective_accuracy": 0.9764386653,
+      "selective_risk": 0.0235613347,
+      "tau": 0.8407227601
+    },
+    {
+      "coverage": 0.3583389983,
+      "n_covered": 37426,
+      "selective_accuracy": 0.9762197403,
+      "selective_risk": 0.0237802597,
+      "tau": 0.8398104697
+    },
+    {
+      "coverage": 0.3602922168,
+      "n_covered": 37630,
+      "selective_accuracy": 0.9760031889,
+      "selective_risk": 0.0239968111,
+      "tau": 0.8388476318
+    },
+    {
+      "coverage": 0.3622550099,
+      "n_covered": 37835,
+      "selective_accuracy": 0.9758424739,
+      "selective_risk": 0.0241575261,
+      "tau": 0.8379108846
+    },
+    {
+      "coverage": 0.3642082284,
+      "n_covered": 38039,
+      "selective_accuracy": 0.9756039854,
+      "selective_risk": 0.0243960146,
+      "tau": 0.8369590165
+    },
+    {
+      "coverage": 0.3661614469,
+      "n_covered": 38243,
+      "selective_accuracy": 0.9753680412,
+      "selective_risk": 0.0246319588,
+      "tau": 0.8360503331
+    },
+    {
+      "coverage": 0.3681146654,
+      "n_covered": 38447,
+      "selective_accuracy": 0.9750825812,
+      "selective_risk": 0.0249174188,
+      "tau": 0.8351345078
+    },
+    {
+      "coverage": 0.3700774585,
+      "n_covered": 38652,
+      "selective_accuracy": 0.9749818897,
+      "selective_risk": 0.0250181103,
+      "tau": 0.8342528392
+    },
+    {
+      "coverage": 0.372030677,
+      "n_covered": 38856,
+      "selective_accuracy": 0.9747014618,
+      "selective_risk": 0.0252985382,
+      "tau": 0.8333527498
+    },
+    {
+      "coverage": 0.3739934701,
+      "n_covered": 39061,
+      "selective_accuracy": 0.9746806277,
+      "selective_risk": 0.0253193723,
+      "tau": 0.8324564413
+    },
+    {
+      "coverage": 0.3759466886,
+      "n_covered": 39265,
+      "selective_accuracy": 0.974557494,
+      "selective_risk": 0.025442506,
+      "tau": 0.8316359271
+    },
+    {
+      "coverage": 0.3779094817,
+      "n_covered": 39470,
+      "selective_accuracy": 0.9743602736,
+      "selective_risk": 0.0256397264,
+      "tau": 0.8308542766
+    },
+    {
+      "coverage": 0.3798627002,
+      "n_covered": 39674,
+      "selective_accuracy": 0.9741140293,
+      "selective_risk": 0.0258859707,
+      "tau": 0.8300333049
+    },
+    {
+      "coverage": 0.3818159187,
+      "n_covered": 39878,
+      "selective_accuracy": 0.9739706104,
+      "selective_risk": 0.0260293896,
+      "tau": 0.8292814884
+    },
+    {
+      "coverage": 0.3837787118,
+      "n_covered": 40083,
+      "selective_accuracy": 0.9738542524,
+      "selective_risk": 0.0261457476,
+      "tau": 0.8284641542
+    },
+    {
+      "coverage": 0.3857319303,
+      "n_covered": 40287,
+      "selective_accuracy": 0.9737880706,
+      "selective_risk": 0.0262119294,
+      "tau": 0.8277792631
+    },
+    {
+      "coverage": 0.3876851488,
+      "n_covered": 40491,
+      "selective_accuracy": 0.9737472525,
+      "selective_risk": 0.0262527475,
+      "tau": 0.8270347076
+    },
+    {
+      "coverage": 0.3896383673,
+      "n_covered": 40695,
+      "selective_accuracy": 0.9736576975,
+      "selective_risk": 0.0263423025,
+      "tau": 0.8262922064
+    },
+    {
+      "coverage": 0.3916011604,
+      "n_covered": 40900,
+      "selective_accuracy": 0.9734963325,
+      "selective_risk": 0.0265036675,
+      "tau": 0.8255731229
+    },
+    {
+      "coverage": 0.3935543789,
+      "n_covered": 41104,
+      "selective_accuracy": 0.9733115998,
+      "selective_risk": 0.0266884002,
+      "tau": 0.8247811399
+    },
+    {
+      "coverage": 0.3955075974,
+      "n_covered": 41308,
+      "selective_accuracy": 0.9732013169,
+      "selective_risk": 0.0267986831,
+      "tau": 0.8238410095
+    },
+    {
+      "coverage": 0.3974608159,
+      "n_covered": 41512,
+      "selective_accuracy": 0.9730198497,
+      "selective_risk": 0.0269801503,
+      "tau": 0.8229920223
+    },
+    {
+      "coverage": 0.399423609,
+      "n_covered": 41717,
+      "selective_accuracy": 0.9728408083,
+      "selective_risk": 0.0271591917,
+      "tau": 0.8221746802
+    },
+    {
+      "coverage": 0.4013768276,
+      "n_covered": 41921,
+      "selective_accuracy": 0.9726628659,
+      "selective_risk": 0.0273371341,
+      "tau": 0.8213599389
+    },
+    {
+      "coverage": 0.4033300461,
+      "n_covered": 42125,
+      "selective_accuracy": 0.9724866469,
+      "selective_risk": 0.0275133531,
+      "tau": 0.8205305626
+    },
+    {
+      "coverage": 0.4053024138,
+      "n_covered": 42331,
+      "selective_accuracy": 0.9723134346,
+      "selective_risk": 0.0276865654,
+      "tau": 0.8195497054
+    },
+    {
+      "coverage": 0.4072652069,
+      "n_covered": 42536,
+      "selective_accuracy": 0.9721177356,
+      "selective_risk": 0.0278822644,
+      "tau": 0.8186659353
+    },
+    {
+      "coverage": 0.4092184254,
+      "n_covered": 42740,
+      "selective_accuracy": 0.9718764623,
+      "selective_risk": 0.0281235377,
+      "tau": 0.8178856515
+    },
+    {
+      "coverage": 0.4111716439,
+      "n_covered": 42944,
+      "selective_accuracy": 0.9716374814,
+      "selective_risk": 0.0283625186,
+      "tau": 0.8169706325
+    },
+    {
+      "coverage": 0.4131440116,
+      "n_covered": 43150,
+      "selective_accuracy": 0.9714484357,
+      "selective_risk": 0.0285515643,
+      "tau": 0.8161052054
+    },
+    {
+      "coverage": 0.4150972301,
+      "n_covered": 43354,
+      "selective_accuracy": 0.9713290584,
+      "selective_risk": 0.0286709416,
+      "tau": 0.8152621394
+    },
+    {
+      "coverage": 0.4170504486,
+      "n_covered": 43558,
+      "selective_accuracy": 0.9711648836,
+      "selective_risk": 0.0288351164,
+      "tau": 0.8145690622
+    },
+    {
+      "coverage": 0.4190036671,
+      "n_covered": 43762,
+      "selective_accuracy": 0.9710250903,
+      "selective_risk": 0.0289749097,
+      "tau": 0.8137458393
+    },
+    {
+      "coverage": 0.4209664602,
+      "n_covered": 43967,
+      "selective_accuracy": 0.970796279,
+      "selective_risk": 0.029203721,
+      "tau": 0.8129066003
+    },
+    {
+      "coverage": 0.4229196787,
+      "n_covered": 44171,
+      "selective_accuracy": 0.9705915646,
+      "selective_risk": 0.0294084354,
+      "tau": 0.8120251778
+    },
+    {
+      "coverage": 0.4248728972,
+      "n_covered": 44375,
+      "selective_accuracy": 0.9704338028,
+      "selective_risk": 0.0295661972,
+      "tau": 0.8112377124
+    },
+    {
+      "coverage": 0.4268261157,
+      "n_covered": 44579,
+      "selective_accuracy": 0.9703223491,
+      "selective_risk": 0.0296776509,
+      "tau": 0.8105363872
+    },
+    {
+      "coverage": 0.4287889088,
+      "n_covered": 44784,
+      "selective_accuracy": 0.9703242229,
+      "selective_risk": 0.0296757771,
+      "tau": 0.8097428433
+    },
+    {
+      "coverage": 0.4307421273,
+      "n_covered": 44988,
+      "selective_accuracy": 0.9702365075,
+      "selective_risk": 0.0297634925,
+      "tau": 0.8088775161
+    },
+    {
+      "coverage": 0.4326953458,
+      "n_covered": 45192,
+      "selective_accuracy": 0.9700610728,
+      "selective_risk": 0.0299389272,
+      "tau": 0.8079943513
+    },
+    {
+      "coverage": 0.4346581389,
+      "n_covered": 45397,
+      "selective_accuracy": 0.9698658502,
+      "selective_risk": 0.0301341498,
+      "tau": 0.8071634339
+    },
+    {
+      "coverage": 0.4366113574,
+      "n_covered": 45601,
+      "selective_accuracy": 0.969496283,
+      "selective_risk": 0.030503717,
+      "tau": 0.806242829
+    },
+    {
+      "coverage": 0.4385645759,
+      "n_covered": 45805,
+      "selective_accuracy": 0.9694356511,
+      "selective_risk": 0.0305643489,
+      "tau": 0.8053600617
+    },
+    {
+      "coverage": 0.4405177944,
+      "n_covered": 46009,
+      "selective_accuracy": 0.9693103523,
+      "selective_risk": 0.0306896477,
+      "tau": 0.8043617544
+    },
+    {
+      "coverage": 0.4424805875,
+      "n_covered": 46214,
+      "selective_accuracy": 0.969165188,
+      "selective_risk": 0.030834812,
+      "tau": 0.8033965286
+    },
+    {
+      "coverage": 0.444433806,
+      "n_covered": 46418,
+      "selective_accuracy": 0.9690421819,
+      "selective_risk": 0.0309578181,
+      "tau": 0.8022431748
+    },
+    {
+      "coverage": 0.4463870245,
+      "n_covered": 46622,
+      "selective_accuracy": 0.9687272103,
+      "selective_risk": 0.0312727897,
+      "tau": 0.8013965058
+    },
+    {
+      "coverage": 0.448340243,
+      "n_covered": 46826,
+      "selective_accuracy": 0.9685431171,
+      "selective_risk": 0.0314568829,
+      "tau": 0.8004411469
+    },
+    {
+      "coverage": 0.4503030361,
+      "n_covered": 47031,
+      "selective_accuracy": 0.9682762433,
+      "selective_risk": 0.0317237567,
+      "tau": 0.799530499
+    },
+    {
+      "coverage": 0.4522562546,
+      "n_covered": 47235,
+      "selective_accuracy": 0.9680321795,
+      "selective_risk": 0.0319678205,
+      "tau": 0.7985247754
+    },
+    {
+      "coverage": 0.4542094731,
+      "n_covered": 47439,
+      "selective_accuracy": 0.9678745336,
+      "selective_risk": 0.0321254664,
+      "tau": 0.7975858393
+    },
+    {
+      "coverage": 0.4561626916,
+      "n_covered": 47643,
+      "selective_accuracy": 0.9676552694,
+      "selective_risk": 0.0323447306,
+      "tau": 0.796646274
+    },
+    {
+      "coverage": 0.4581254847,
+      "n_covered": 47848,
+      "selective_accuracy": 0.9674803545,
+      "selective_risk": 0.0325196455,
+      "tau": 0.7956165463
+    },
+    {
+      "coverage": 0.4600787032,
+      "n_covered": 48052,
+      "selective_accuracy": 0.9673894947,
+      "selective_risk": 0.0326105053,
+      "tau": 0.7946123423
+    },
+    {
+      "coverage": 0.4620319217,
+      "n_covered": 48256,
+      "selective_accuracy": 0.9672165119,
+      "selective_risk": 0.0327834881,
+      "tau": 0.7937220462
+    },
+    {
+      "coverage": 0.4640042894,
+      "n_covered": 48462,
+      "selective_accuracy": 0.9669638067,
+      "selective_risk": 0.0330361933,
+      "tau": 0.792665766
+    },
+    {
+      "coverage": 0.4659575079,
+      "n_covered": 48666,
+      "selective_accuracy": 0.9667940657,
+      "selective_risk": 0.0332059343,
+      "tau": 0.7917235132
+    },
+    {
+      "coverage": 0.4679107264,
+      "n_covered": 48870,
+      "selective_accuracy": 0.9666666667,
+      "selective_risk": 0.0333333333,
+      "tau": 0.7907533082
+    },
+    {
+      "coverage": 0.4698639449,
+      "n_covered": 49074,
+      "selective_accuracy": 0.9664995721,
+      "selective_risk": 0.0335004279,
+      "tau": 0.7898017343
+    },
+    {
+      "coverage": 0.471826738,
+      "n_covered": 49279,
+      "selective_accuracy": 0.9663751294,
+      "selective_risk": 0.0336248706,
+      "tau": 0.7887235299
+    },
+    {
+      "coverage": 0.4737799565,
+      "n_covered": 49483,
+      "selective_accuracy": 0.966109573,
+      "selective_risk": 0.033890427,
+      "tau": 0.7876969393
+    },
+    {
+      "coverage": 0.475733175,
+      "n_covered": 49687,
+      "selective_accuracy": 0.9659870791,
+      "selective_risk": 0.0340129209,
+      "tau": 0.786666987
+    },
+    {
+      "coverage": 0.4776863935,
+      "n_covered": 49891,
+      "selective_accuracy": 0.9659257181,
+      "selective_risk": 0.0340742819,
+      "tau": 0.7855630064
+    },
+    {
+      "coverage": 0.4796491866,
+      "n_covered": 50096,
+      "selective_accuracy": 0.9658056531,
+      "selective_risk": 0.0341943469,
+      "tau": 0.7845175956
+    },
+    {
+      "coverage": 0.4816024051,
+      "n_covered": 50300,
+      "selective_accuracy": 0.9656461233,
+      "selective_risk": 0.0343538767,
+      "tau": 0.7835762678
+    },
+    {
+      "coverage": 0.4835556236,
+      "n_covered": 50504,
+      "selective_accuracy": 0.965527483,
+      "selective_risk": 0.034472517,
+      "tau": 0.782470752
+    },
+    {
+      "coverage": 0.4855088421,
+      "n_covered": 50708,
+      "selective_accuracy": 0.9653703558,
+      "selective_risk": 0.0346296442,
+      "tau": 0.7814177474
+    },
+    {
+      "coverage": 0.4874716352,
+      "n_covered": 50913,
+      "selective_accuracy": 0.9650580402,
+      "selective_risk": 0.0349419598,
+      "tau": 0.7804067682
+    },
+    {
+      "coverage": 0.4894248537,
+      "n_covered": 51117,
+      "selective_accuracy": 0.9649236066,
+      "selective_risk": 0.0350763934,
+      "tau": 0.7794268632
+    },
+    {
+      "coverage": 0.4913780722,
+      "n_covered": 51321,
+      "selective_accuracy": 0.9646928158,
+      "selective_risk": 0.0353071842,
+      "tau": 0.7784156522
+    },
+    {
+      "coverage": 0.4933408654,
+      "n_covered": 51526,
+      "selective_accuracy": 0.9645421729,
+      "selective_risk": 0.0354578271,
+      "tau": 0.7774396906
+    },
+    {
+      "coverage": 0.4952940839,
+      "n_covered": 51730,
+      "selective_accuracy": 0.9643727044,
+      "selective_risk": 0.0356272956,
+      "tau": 0.7763859606
+    },
+    {
+      "coverage": 0.4972473024,
+      "n_covered": 51934,
+      "selective_accuracy": 0.9640505257,
+      "selective_risk": 0.0359494743,
+      "tau": 0.7754877294
+    },
+    {
+      "coverage": 0.4992005209,
+      "n_covered": 52138,
+      "selective_accuracy": 0.9639418466,
+      "selective_risk": 0.0360581534,
+      "tau": 0.7744590499
+    },
+    {
+      "coverage": 0.501163314,
+      "n_covered": 52343,
+      "selective_accuracy": 0.9637582867,
+      "selective_risk": 0.0362417133,
+      "tau": 0.7733980373
+    },
+    {
+      "coverage": 0.5031452563,
+      "n_covered": 52550,
+      "selective_accuracy": 0.9636346337,
+      "selective_risk": 0.0363653663,
+      "tau": 0.7723099594
+    },
+    {
+      "coverage": 0.5050984748,
+      "n_covered": 52754,
+      "selective_accuracy": 0.9634909201,
+      "selective_risk": 0.0365090799,
+      "tau": 0.7713140274
+    },
+    {
+      "coverage": 0.5070516933,
+      "n_covered": 52958,
+      "selective_accuracy": 0.9632538993,
+      "selective_risk": 0.0367461007,
+      "tau": 0.7702515721
+    },
+    {
+      "coverage": 0.5090144864,
+      "n_covered": 53163,
+      "selective_accuracy": 0.9630946335,
+      "selective_risk": 0.0369053665,
+      "tau": 0.7692396222
+    },
+    {
+      "coverage": 0.5109677049,
+      "n_covered": 53367,
+      "selective_accuracy": 0.9628422059,
+      "selective_risk": 0.0371577941,
+      "tau": 0.7683038171
+    },
+    {
+      "coverage": 0.5129209234,
+      "n_covered": 53571,
+      "selective_accuracy": 0.9624983667,
+      "selective_risk": 0.0375016333,
+      "tau": 0.767248952
+    },
+    {
+      "coverage": 0.5148837165,
+      "n_covered": 53776,
+      "selective_accuracy": 0.9622880095,
+      "selective_risk": 0.0377119905,
+      "tau": 0.766119225
+    },
+    {
+      "coverage": 0.516836935,
+      "n_covered": 53980,
+      "selective_accuracy": 0.9619859207,
+      "selective_risk": 0.0380140793,
+      "tau": 0.765082884
+    },
+    {
+      "coverage": 0.5187901535,
+      "n_covered": 54184,
+      "selective_accuracy": 0.9617968404,
+      "selective_risk": 0.0382031596,
+      "tau": 0.7638252073
+    },
+    {
+      "coverage": 0.520743372,
+      "n_covered": 54388,
+      "selective_accuracy": 0.9615724057,
+      "selective_risk": 0.0384275943,
+      "tau": 0.7627255404
+    },
+    {
+      "coverage": 0.5227061651,
+      "n_covered": 54593,
+      "selective_accuracy": 0.9613503563,
+      "selective_risk": 0.0386496437,
+      "tau": 0.7615871319
+    },
+    {
+      "coverage": 0.5246593836,
+      "n_covered": 54797,
+      "selective_accuracy": 0.9611840064,
+      "selective_risk": 0.0388159936,
+      "tau": 0.7604122746
+    },
+    {
+      "coverage": 0.5266126021,
+      "n_covered": 55001,
+      "selective_accuracy": 0.9609279831,
+      "selective_risk": 0.0390720169,
+      "tau": 0.7592782177
+    },
+    {
+      "coverage": 0.5285658206,
+      "n_covered": 55205,
+      "selective_accuracy": 0.9606195091,
+      "selective_risk": 0.0393804909,
+      "tau": 0.7582319314
+    },
+    {
+      "coverage": 0.5305381883,
+      "n_covered": 55411,
+      "selective_accuracy": 0.9604410677,
+      "selective_risk": 0.0395589323,
+      "tau": 0.7571245283
+    },
+    {
+      "coverage": 0.5324914068,
+      "n_covered": 55615,
+      "selective_accuracy": 0.9601546345,
+      "selective_risk": 0.0398453655,
+      "tau": 0.7557982162
+    },
+    {
+      "coverage": 0.5344446253,
+      "n_covered": 55819,
+      "selective_accuracy": 0.9599957004,
+      "selective_risk": 0.0400042996,
+      "tau": 0.7546928731
+    },
+    {
+      "coverage": 0.5363978438,
+      "n_covered": 56023,
+      "selective_accuracy": 0.9598557735,
+      "selective_risk": 0.0401442265,
+      "tau": 0.7535507937
+    },
+    {
+      "coverage": 0.5383606369,
+      "n_covered": 56228,
+      "selective_accuracy": 0.95961087,
+      "selective_risk": 0.04038913,
+      "tau": 0.7524668742
+    },
+    {
+      "coverage": 0.5403138554,
+      "n_covered": 56432,
+      "selective_accuracy": 0.9592784236,
+      "selective_risk": 0.0407215764,
+      "tau": 0.7511702063
+    },
+    {
+      "coverage": 0.5422670739,
+      "n_covered": 56636,
+      "selective_accuracy": 0.959089625,
+      "selective_risk": 0.040910375,
+      "tau": 0.7500601709
+    },
+    {
+      "coverage": 0.544229867,
+      "n_covered": 56841,
+      "selective_accuracy": 0.9587621611,
+      "selective_risk": 0.0412378389,
+      "tau": 0.7490083776
+    },
+    {
+      "coverage": 0.5461830855,
+      "n_covered": 57045,
+      "selective_accuracy": 0.9586116224,
+      "selective_risk": 0.0413883776,
+      "tau": 0.7478765269
+    },
+    {
+      "coverage": 0.548136304,
+      "n_covered": 57249,
+      "selective_accuracy": 0.9584272214,
+      "selective_risk": 0.0415727786,
+      "tau": 0.7466742239
+    },
+    {
+      "coverage": 0.5500895225,
+      "n_covered": 57453,
+      "selective_accuracy": 0.9582267245,
+      "selective_risk": 0.0417732755,
+      "tau": 0.7455465134
+    },
+    {
+      "coverage": 0.5520523156,
+      "n_covered": 57658,
+      "selective_accuracy": 0.9580804051,
+      "selective_risk": 0.0419195949,
+      "tau": 0.7444485429
+    },
+    {
+      "coverage": 0.5540055341,
+      "n_covered": 57862,
+      "selective_accuracy": 0.9578134181,
+      "selective_risk": 0.0421865819,
+      "tau": 0.743179948
+    },
+    {
+      "coverage": 0.5559587526,
+      "n_covered": 58066,
+      "selective_accuracy": 0.9576688596,
+      "selective_risk": 0.0423311404,
+      "tau": 0.7420384086
+    },
+    {
+      "coverage": 0.5579119711,
+      "n_covered": 58270,
+      "selective_accuracy": 0.9575424747,
+      "selective_risk": 0.0424575253,
+      "tau": 0.7409392711
+    },
+    {
+      "coverage": 0.5598843388,
+      "n_covered": 58476,
+      "selective_accuracy": 0.9572645188,
+      "selective_risk": 0.0427354812,
+      "tau": 0.7397902618
+    },
+    {
+      "coverage": 0.5618375573,
+      "n_covered": 58680,
+      "selective_accuracy": 0.9570552147,
+      "selective_risk": 0.0429447853,
+      "tau": 0.7387319902
+    },
+    {
+      "coverage": 0.5637907758,
+      "n_covered": 58884,
+      "selective_accuracy": 0.9566096053,
+      "selective_risk": 0.0433903947,
+      "tau": 0.7376544009
+    },
+    {
+      "coverage": 0.5657439943,
+      "n_covered": 59088,
+      "selective_accuracy": 0.956505551,
+      "selective_risk": 0.043494449,
+      "tau": 0.7364118646
+    },
+    {
+      "coverage": 0.5677067874,
+      "n_covered": 59293,
+      "selective_accuracy": 0.9562848903,
+      "selective_risk": 0.0437151097,
+      "tau": 0.7353294104
+    },
+    {
+      "coverage": 0.5696600059,
+      "n_covered": 59497,
+      "selective_accuracy": 0.9560650117,
+      "selective_risk": 0.0439349883,
+      "tau": 0.7342850208
+    },
+    {
+      "coverage": 0.5716132244,
+      "n_covered": 59701,
+      "selective_accuracy": 0.9559303864,
+      "selective_risk": 0.0440696136,
+      "tau": 0.7331393478
+    },
+    {
+      "coverage": 0.5735760175,
+      "n_covered": 59906,
+      "selective_accuracy": 0.9557306447,
+      "selective_risk": 0.0442693553,
+      "tau": 0.7319869887
+    },
+    {
+      "coverage": 0.575529236,
+      "n_covered": 60110,
+      "selective_accuracy": 0.9553984362,
+      "selective_risk": 0.0446015638,
+      "tau": 0.7308401771
+    },
+    {
+      "coverage": 0.5774824545,
+      "n_covered": 60314,
+      "selective_accuracy": 0.9550518951,
+      "selective_risk": 0.0449481049,
+      "tau": 0.7297465106
+    },
+    {
+      "coverage": 0.579435673,
+      "n_covered": 60518,
+      "selective_accuracy": 0.9548398823,
+      "selective_risk": 0.0451601177,
+      "tau": 0.7286202301
+    },
+    {
+      "coverage": 0.5813984661,
+      "n_covered": 60723,
+      "selective_accuracy": 0.954679446,
+      "selective_risk": 0.045320554,
+      "tau": 0.7273967721
+    },
+    {
+      "coverage": 0.5833516847,
+      "n_covered": 60927,
+      "selective_accuracy": 0.9543223858,
+      "selective_risk": 0.0456776142,
+      "tau": 0.7260697212
+    },
+    {
+      "coverage": 0.5853049032,
+      "n_covered": 61131,
+      "selective_accuracy": 0.9539186338,
+      "selective_risk": 0.0460813662,
+      "tau": 0.7248573262
+    },
+    {
+      "coverage": 0.5872581217,
+      "n_covered": 61335,
+      "selective_accuracy": 0.9537458221,
+      "selective_risk": 0.0462541779,
+      "tau": 0.7237463594
+    },
+    {
+      "coverage": 0.5892209148,
+      "n_covered": 61540,
+      "selective_accuracy": 0.9534611635,
+      "selective_risk": 0.0465388365,
+      "tau": 0.7225298925
+    },
+    {
+      "coverage": 0.5911932825,
+      "n_covered": 61746,
+      "selective_accuracy": 0.9531629579,
+      "selective_risk": 0.0468370421,
+      "tau": 0.7212764679
+    },
+    {
+      "coverage": 0.593146501,
+      "n_covered": 61950,
+      "selective_accuracy": 0.9528652139,
+      "selective_risk": 0.0471347861,
+      "tau": 0.7202518239
+    },
+    {
+      "coverage": 0.5951092941,
+      "n_covered": 62155,
+      "selective_accuracy": 0.9526184539,
+      "selective_risk": 0.0473815461,
+      "tau": 0.7189917925
+    },
+    {
+      "coverage": 0.5970625126,
+      "n_covered": 62359,
+      "selective_accuracy": 0.9522763354,
+      "selective_risk": 0.0477236646,
+      "tau": 0.7177437734
+    },
+    {
+      "coverage": 0.5990157311,
+      "n_covered": 62563,
+      "selective_accuracy": 0.9520163675,
+      "selective_risk": 0.0479836325,
+      "tau": 0.7164894976
+    },
+    {
+      "coverage": 0.6009689496,
+      "n_covered": 62767,
+      "selective_accuracy": 0.9517580894,
+      "selective_risk": 0.0482419106,
+      "tau": 0.7151563304
+    },
+    {
+      "coverage": 0.6029317427,
+      "n_covered": 62972,
+      "selective_accuracy": 0.9514387347,
+      "selective_risk": 0.0485612653,
+      "tau": 0.7139093228
+    },
+    {
+      "coverage": 0.6048849612,
+      "n_covered": 63176,
+      "selective_accuracy": 0.9512631379,
+      "selective_risk": 0.0487368621,
+      "tau": 0.7126017022
+    },
+    {
+      "coverage": 0.6068381797,
+      "n_covered": 63380,
+      "selective_accuracy": 0.9510255601,
+      "selective_risk": 0.0489744399,
+      "tau": 0.7112988696
+    },
+    {
+      "coverage": 0.6087913982,
+      "n_covered": 63584,
+      "selective_accuracy": 0.9507265979,
+      "selective_risk": 0.0492734021,
+      "tau": 0.7100174462
+    },
+    {
+      "coverage": 0.6107541913,
+      "n_covered": 63789,
+      "selective_accuracy": 0.9504930317,
+      "selective_risk": 0.0495069683,
+      "tau": 0.7087247718
+    },
+    {
+      "coverage": 0.6127074098,
+      "n_covered": 63993,
+      "selective_accuracy": 0.950244558,
+      "selective_risk": 0.049755442,
+      "tau": 0.7073089433
+    },
+    {
+      "coverage": 0.6146606283,
+      "n_covered": 64197,
+      "selective_accuracy": 0.9498886241,
+      "selective_risk": 0.0501113759,
+      "tau": 0.7060246136
+    },
+    {
+      "coverage": 0.6166138468,
+      "n_covered": 64401,
+      "selective_accuracy": 0.9495970559,
+      "selective_risk": 0.0504029441,
+      "tau": 0.704760174
+    },
+    {
+      "coverage": 0.6185766399,
+      "n_covered": 64606,
+      "selective_accuracy": 0.9493081138,
+      "selective_risk": 0.0506918862,
+      "tau": 0.7035280494
+    },
+    {
+      "coverage": 0.6205298584,
+      "n_covered": 64810,
+      "selective_accuracy": 0.9489893535,
+      "selective_risk": 0.0510106465,
+      "tau": 0.702256038
+    },
+    {
+      "coverage": 0.6224830769,
+      "n_covered": 65014,
+      "selective_accuracy": 0.9486879749,
+      "selective_risk": 0.0513120251,
+      "tau": 0.701021818
+    },
+    {
+      "coverage": 0.62444587,
+      "n_covered": 65219,
+      "selective_accuracy": 0.9484966038,
+      "selective_risk": 0.0515033962,
+      "tau": 0.6998143903
+    },
+    {
+      "coverage": 0.6263990885,
+      "n_covered": 65423,
+      "selective_accuracy": 0.9482597863,
+      "selective_risk": 0.0517402137,
+      "tau": 0.6986237579
+    },
+    {
+      "coverage": 0.628352307,
+      "n_covered": 65627,
+      "selective_accuracy": 0.9477958767,
+      "selective_risk": 0.0522041233,
+      "tau": 0.6974407791
+    },
+    {
+      "coverage": 0.6303055255,
+      "n_covered": 65831,
+      "selective_accuracy": 0.9475019368,
+      "selective_risk": 0.0524980632,
+      "tau": 0.6962045747
+    },
+    {
+      "coverage": 0.6322683186,
+      "n_covered": 66036,
+      "selective_accuracy": 0.9470894664,
+      "selective_risk": 0.0529105336,
+      "tau": 0.6947464693
+    },
+    {
+      "coverage": 0.6342215371,
+      "n_covered": 66240,
+      "selective_accuracy": 0.9469655797,
+      "selective_risk": 0.0530344203,
+      "tau": 0.6933908061
+    },
+    {
+      "coverage": 0.6361747556,
+      "n_covered": 66444,
+      "selective_accuracy": 0.9466468003,
+      "selective_risk": 0.0533531997,
+      "tau": 0.6919895264
+    },
+    {
+      "coverage": 0.6381279741,
+      "n_covered": 66648,
+      "selective_accuracy": 0.9464049934,
+      "selective_risk": 0.0535950066,
+      "tau": 0.6906517513
+    },
+    {
+      "coverage": 0.6400907672,
+      "n_covered": 66853,
+      "selective_accuracy": 0.9461505093,
+      "selective_risk": 0.0538494907,
+      "tau": 0.6894178633
+    },
+    {
+      "coverage": 0.6420439857,
+      "n_covered": 67057,
+      "selective_accuracy": 0.9457625602,
+      "selective_risk": 0.0542374398,
+      "tau": 0.6881905681
+    },
+    {
+      "coverage": 0.6439972042,
+      "n_covered": 67261,
+      "selective_accuracy": 0.9454513016,
+      "selective_risk": 0.0545486984,
+      "tau": 0.6868129831
+    },
+    {
+      "coverage": 0.6459504227,
+      "n_covered": 67465,
+      "selective_accuracy": 0.9452456829,
+      "selective_risk": 0.0547543171,
+      "tau": 0.685476296
+    },
+    {
+      "coverage": 0.6479132158,
+      "n_covered": 67670,
+      "selective_accuracy": 0.944938673,
+      "selective_risk": 0.055061327,
+      "tau": 0.684502259
+    },
+    {
+      "coverage": 0.6498664343,
+      "n_covered": 67874,
+      "selective_accuracy": 0.9446179686,
+      "selective_risk": 0.0553820314,
+      "tau": 0.6832799651
+    },
+    {
+      "coverage": 0.6518196528,
+      "n_covered": 68078,
+      "selective_accuracy": 0.9442257411,
+      "selective_risk": 0.0557742589,
+      "tau": 0.6819635428
+    },
+    {
+      "coverage": 0.6537824459,
+      "n_covered": 68283,
+      "selective_accuracy": 0.9439684841,
+      "selective_risk": 0.0560315159,
+      "tau": 0.6805349833
+    },
+    {
+      "coverage": 0.6557356644,
+      "n_covered": 68487,
+      "selective_accuracy": 0.943697344,
+      "selective_risk": 0.056302656,
+      "tau": 0.6790581105
+    },
+    {
+      "coverage": 0.6576888829,
+      "n_covered": 68691,
+      "selective_accuracy": 0.9432967929,
+      "selective_risk": 0.0567032071,
+      "tau": 0.6776865786
+    },
+    {
+      "coverage": 0.6596421014,
+      "n_covered": 68895,
+      "selective_accuracy": 0.9429276435,
+      "selective_risk": 0.0570723565,
+      "tau": 0.6763856868
+    },
+    {
+      "coverage": 0.6616048945,
+      "n_covered": 69100,
+      "selective_accuracy": 0.9426193922,
+      "selective_risk": 0.0573806078,
+      "tau": 0.6750817387
+    },
+    {
+      "coverage": 0.663558113,
+      "n_covered": 69304,
+      "selective_accuracy": 0.9422977029,
+      "selective_risk": 0.0577022971,
+      "tau": 0.6737830201
+    },
+    {
+      "coverage": 0.6655113315,
+      "n_covered": 69508,
+      "selective_accuracy": 0.9419922887,
+      "selective_risk": 0.0580077113,
+      "tau": 0.6723642517
+    },
+    {
+      "coverage": 0.66746455,
+      "n_covered": 69712,
+      "selective_accuracy": 0.9416456277,
+      "selective_risk": 0.0583543723,
+      "tau": 0.6710800581
+    },
+    {
+      "coverage": 0.6694273431,
+      "n_covered": 69917,
+      "selective_accuracy": 0.9413304347,
+      "selective_risk": 0.0586695653,
+      "tau": 0.6696772012
+    },
+    {
+      "coverage": 0.6713805616,
+      "n_covered": 70121,
+      "selective_accuracy": 0.9410590265,
+      "selective_risk": 0.0589409735,
+      "tau": 0.6682008614
+    },
+    {
+      "coverage": 0.6733337801,
+      "n_covered": 70325,
+      "selective_accuracy": 0.9406896552,
+      "selective_risk": 0.0593103448,
+      "tau": 0.6669427266
+    },
+    {
+      "coverage": 0.6752965733,
+      "n_covered": 70530,
+      "selective_accuracy": 0.9403374451,
+      "selective_risk": 0.0596625549,
+      "tau": 0.665616848
+    },
+    {
+      "coverage": 0.6772593664,
+      "n_covered": 70735,
+      "selective_accuracy": 0.9401851983,
+      "selective_risk": 0.0598148017,
+      "tau": 0.6642740247
+    },
+    {
+      "coverage": 0.6792125849,
+      "n_covered": 70939,
+      "selective_accuracy": 0.9397933436,
+      "selective_risk": 0.0602066564,
+      "tau": 0.6628713664
+    },
+    {
+      "coverage": 0.6811658034,
+      "n_covered": 71143,
+      "selective_accuracy": 0.9393615675,
+      "selective_risk": 0.0606384325,
+      "tau": 0.6614808687
+    },
+    {
+      "coverage": 0.6831381711,
+      "n_covered": 71349,
+      "selective_accuracy": 0.9390320817,
+      "selective_risk": 0.0609679183,
+      "tau": 0.660168303
+    },
+    {
+      "coverage": 0.6850913896,
+      "n_covered": 71553,
+      "selective_accuracy": 0.9386608528,
+      "selective_risk": 0.0613391472,
+      "tau": 0.6586593527
+    },
+    {
+      "coverage": 0.6870446081,
+      "n_covered": 71757,
+      "selective_accuracy": 0.9383753501,
+      "selective_risk": 0.0616246499,
+      "tau": 0.6571422475
+    },
+    {
+      "coverage": 0.6889978266,
+      "n_covered": 71961,
+      "selective_accuracy": 0.9380358805,
+      "selective_risk": 0.0619641195,
+      "tau": 0.6556680593
+    },
+    {
+      "coverage": 0.6909606197,
+      "n_covered": 72166,
+      "selective_accuracy": 0.9376991935,
+      "selective_risk": 0.0623008065,
+      "tau": 0.6541612641
+    },
+    {
+      "coverage": 0.6929138382,
+      "n_covered": 72370,
+      "selective_accuracy": 0.937183916,
+      "selective_risk": 0.062816084,
+      "tau": 0.6527253711
+    },
+    {
+      "coverage": 0.6948670567,
+      "n_covered": 72574,
+      "selective_accuracy": 0.9367817676,
+      "selective_risk": 0.0632182324,
+      "tau": 0.6513380765
+    },
+    {
+      "coverage": 0.6968202752,
+      "n_covered": 72778,
+      "selective_accuracy": 0.9363543928,
+      "selective_risk": 0.0636456072,
+      "tau": 0.6498379459
+    },
+    {
+      "coverage": 0.6987830683,
+      "n_covered": 72983,
+      "selective_accuracy": 0.9360261979,
+      "selective_risk": 0.0639738021,
+      "tau": 0.6484732954
+    },
+    {
+      "coverage": 0.7007362868,
+      "n_covered": 73187,
+      "selective_accuracy": 0.9355896539,
+      "selective_risk": 0.0644103461,
+      "tau": 0.6470192949
+    },
+    {
+      "coverage": 0.7026895053,
+      "n_covered": 73391,
+      "selective_accuracy": 0.9350601572,
+      "selective_risk": 0.0649398428,
+      "tau": 0.6455867954
+    },
+    {
+      "coverage": 0.7046522984,
+      "n_covered": 73596,
+      "selective_accuracy": 0.9345888363,
+      "selective_risk": 0.0654111637,
+      "tau": 0.644287513
+    },
+    {
+      "coverage": 0.7066055169,
+      "n_covered": 73800,
+      "selective_accuracy": 0.9342682927,
+      "selective_risk": 0.0657317073,
+      "tau": 0.6429399138
+    },
+    {
+      "coverage": 0.7085587354,
+      "n_covered": 74004,
+      "selective_accuracy": 0.9339224907,
+      "selective_risk": 0.0660775093,
+      "tau": 0.6416123942
+    },
+    {
+      "coverage": 0.7105119539,
+      "n_covered": 74208,
+      "selective_accuracy": 0.9336055412,
+      "selective_risk": 0.0663944588,
+      "tau": 0.640232714
+    },
+    {
+      "coverage": 0.712474747,
+      "n_covered": 74413,
+      "selective_accuracy": 0.9331971564,
+      "selective_risk": 0.0668028436,
+      "tau": 0.6386627805
+    },
+    {
+      "coverage": 0.7144279655,
+      "n_covered": 74617,
+      "selective_accuracy": 0.9327499095,
+      "selective_risk": 0.0672500905,
+      "tau": 0.6372175958
+    },
+    {
+      "coverage": 0.716381184,
+      "n_covered": 74821,
+      "selective_accuracy": 0.9323852929,
+      "selective_risk": 0.0676147071,
+      "tau": 0.6356773649
+    },
+    {
+      "coverage": 0.7183344025,
+      "n_covered": 75025,
+      "selective_accuracy": 0.9319293569,
+      "selective_risk": 0.0680706431,
+      "tau": 0.6343022765
+    },
+    {
+      "coverage": 0.7202971956,
+      "n_covered": 75230,
+      "selective_accuracy": 0.9315033896,
+      "selective_risk": 0.0684966104,
+      "tau": 0.6329721664
+    },
+    {
+      "coverage": 0.7222504141,
+      "n_covered": 75434,
+      "selective_accuracy": 0.9311185937,
+      "selective_risk": 0.0688814063,
+      "tau": 0.6316075797
+    },
+    {
+      "coverage": 0.7242036326,
+      "n_covered": 75638,
+      "selective_accuracy": 0.9308019778,
+      "selective_risk": 0.0691980222,
+      "tau": 0.6303490075
+    },
+    {
+      "coverage": 0.7261568511,
+      "n_covered": 75842,
+      "selective_accuracy": 0.9304870652,
+      "selective_risk": 0.0695129348,
+      "tau": 0.6289321967
+    },
+    {
+      "coverage": 0.7281196442,
+      "n_covered": 76047,
+      "selective_accuracy": 0.9300958618,
+      "selective_risk": 0.0699041382,
+      "tau": 0.6274776035
+    },
+    {
+      "coverage": 0.7300728627,
+      "n_covered": 76251,
+      "selective_accuracy": 0.9297451837,
+      "selective_risk": 0.0702548163,
+      "tau": 0.6260760611
+    },
+    {
+      "coverage": 0.7320260812,
+      "n_covered": 76455,
+      "selective_accuracy": 0.9293440586,
+      "selective_risk": 0.0706559414,
+      "tau": 0.6246092756
+    },
+    {
+      "coverage": 0.7339984489,
+      "n_covered": 76661,
+      "selective_accuracy": 0.928973011,
+      "selective_risk": 0.071026989,
+      "tau": 0.6232443756
+    },
+    {
+      "coverage": 0.7359516674,
+      "n_covered": 76865,
+      "selective_accuracy": 0.9286020946,
+      "selective_risk": 0.0713979054,
+      "tau": 0.6218050359
+    },
+    {
+      "coverage": 0.7379144605,
+      "n_covered": 77070,
+      "selective_accuracy": 0.9282340729,
+      "selective_risk": 0.0717659271,
+      "tau": 0.6203745549
+    },
+    {
+      "coverage": 0.739867679,
+      "n_covered": 77274,
+      "selective_accuracy": 0.9280353029,
+      "selective_risk": 0.0719646971,
+      "tau": 0.6188368241
+    },
+    {
+      "coverage": 0.7418304721,
+      "n_covered": 77479,
+      "selective_accuracy": 0.9277352573,
+      "selective_risk": 0.0722647427,
+      "tau": 0.617201607
+    },
+    {
+      "coverage": 0.7437836906,
+      "n_covered": 77683,
+      "selective_accuracy": 0.9273200057,
+      "selective_risk": 0.0726799943,
+      "tau": 0.615836384
+    },
+    {
+      "coverage": 0.7457369091,
+      "n_covered": 77887,
+      "selective_accuracy": 0.9269197684,
+      "selective_risk": 0.0730802316,
+      "tau": 0.6144603464
+    },
+    {
+      "coverage": 0.7476901276,
+      "n_covered": 78091,
+      "selective_accuracy": 0.9264575943,
+      "selective_risk": 0.0735424057,
+      "tau": 0.6129794943
+    },
+    {
+      "coverage": 0.7496529207,
+      "n_covered": 78296,
+      "selective_accuracy": 0.9261137223,
+      "selective_risk": 0.0738862777,
+      "tau": 0.6115612743
+    },
+    {
+      "coverage": 0.7516061392,
+      "n_covered": 78500,
+      "selective_accuracy": 0.9256433121,
+      "selective_risk": 0.0743566879,
+      "tau": 0.6103365357
+    },
+    {
+      "coverage": 0.7535593577,
+      "n_covered": 78704,
+      "selective_accuracy": 0.925289693,
+      "selective_risk": 0.074710307,
+      "tau": 0.608733982
+    },
+    {
+      "coverage": 0.7555125762,
+      "n_covered": 78908,
+      "selective_accuracy": 0.9247351346,
+      "selective_risk": 0.0752648654,
+      "tau": 0.6072761446
+    },
+    {
+      "coverage": 0.7574753693,
+      "n_covered": 79113,
+      "selective_accuracy": 0.9243360762,
+      "selective_risk": 0.0756639238,
+      "tau": 0.6056617671
+    },
+    {
+      "coverage": 0.7594381624,
+      "n_covered": 79318,
+      "selective_accuracy": 0.9238508283,
+      "selective_risk": 0.0761491717,
+      "tau": 0.6042402994
+    },
+    {
+      "coverage": 0.7613913809,
+      "n_covered": 79522,
+      "selective_accuracy": 0.9234299942,
+      "selective_risk": 0.0765700058,
+      "tau": 0.6027787474
+    },
+    {
+      "coverage": 0.763354174,
+      "n_covered": 79727,
+      "selective_accuracy": 0.9230248222,
+      "selective_risk": 0.0769751778,
+      "tau": 0.601332364
+    },
+    {
+      "coverage": 0.7653073925,
+      "n_covered": 79931,
+      "selective_accuracy": 0.9224581201,
+      "selective_risk": 0.0775418799,
+      "tau": 0.5996818678
+    },
+    {
+      "coverage": 0.7672606111,
+      "n_covered": 80135,
+      "selective_accuracy": 0.9220440507,
+      "selective_risk": 0.0779559493,
+      "tau": 0.5982217542
+    },
+    {
+      "coverage": 0.7692138296,
+      "n_covered": 80339,
+      "selective_accuracy": 0.9215076115,
+      "selective_risk": 0.0784923885,
+      "tau": 0.5968557901
+    },
+    {
+      "coverage": 0.7711766227,
+      "n_covered": 80544,
+      "selective_accuracy": 0.9211983512,
+      "selective_risk": 0.0788016488,
+      "tau": 0.5956092708
+    },
+    {
+      "coverage": 0.7731298412,
+      "n_covered": 80748,
+      "selective_accuracy": 0.920802992,
+      "selective_risk": 0.079197008,
+      "tau": 0.5942938827
+    },
+    {
+      "coverage": 0.7750830597,
+      "n_covered": 80952,
+      "selective_accuracy": 0.9203725665,
+      "selective_risk": 0.0796274335,
+      "tau": 0.5930070812
+    },
+    {
+      "coverage": 0.7770362782,
+      "n_covered": 81156,
+      "selective_accuracy": 0.9200059145,
+      "selective_risk": 0.0799940855,
+      "tau": 0.5915540805
+    },
+    {
+      "coverage": 0.7789990713,
+      "n_covered": 81361,
+      "selective_accuracy": 0.9195314709,
+      "selective_risk": 0.0804685291,
+      "tau": 0.5900643652
+    },
+    {
+      "coverage": 0.7809522898,
+      "n_covered": 81565,
+      "selective_accuracy": 0.9190706798,
+      "selective_risk": 0.0809293202,
+      "tau": 0.5887678334
+    },
+    {
+      "coverage": 0.7829055083,
+      "n_covered": 81769,
+      "selective_accuracy": 0.9186733359,
+      "selective_risk": 0.0813266641,
+      "tau": 0.5872725702
+    },
+    {
+      "coverage": 0.7848683014,
+      "n_covered": 81974,
+      "selective_accuracy": 0.9183155635,
+      "selective_risk": 0.0816844365,
+      "tau": 0.5856334987
+    },
+    {
+      "coverage": 0.7868215199,
+      "n_covered": 82178,
+      "selective_accuracy": 0.9178125532,
+      "selective_risk": 0.0821874468,
+      "tau": 0.5842388815
+    },
+    {
+      "coverage": 0.7887747384,
+      "n_covered": 82382,
+      "selective_accuracy": 0.9174576971,
+      "selective_risk": 0.0825423029,
+      "tau": 0.5827394657
+    },
+    {
+      "coverage": 0.7907279569,
+      "n_covered": 82586,
+      "selective_accuracy": 0.9169108566,
+      "selective_risk": 0.0830891434,
+      "tau": 0.5813377635
+    },
+    {
+      "coverage": 0.79269075,
+      "n_covered": 82791,
+      "selective_accuracy": 0.9165609789,
+      "selective_risk": 0.0834390211,
+      "tau": 0.5797791988
+    },
+    {
+      "coverage": 0.7946439685,
+      "n_covered": 82995,
+      "selective_accuracy": 0.9161274776,
+      "selective_risk": 0.0838725224,
+      "tau": 0.5785072646
+    },
+    {
+      "coverage": 0.796597187,
+      "n_covered": 83199,
+      "selective_accuracy": 0.9156480246,
+      "selective_risk": 0.0843519754,
+      "tau": 0.5768723896
+    },
+    {
+      "coverage": 0.7985504055,
+      "n_covered": 83403,
+      "selective_accuracy": 0.9151109672,
+      "selective_risk": 0.0848890328,
+      "tau": 0.5754982061
+    },
+    {
+      "coverage": 0.8005131986,
+      "n_covered": 83608,
+      "selective_accuracy": 0.9145536312,
+      "selective_risk": 0.0854463688,
+      "tau": 0.5741866889
+    },
+    {
+      "coverage": 0.8024664171,
+      "n_covered": 83812,
+      "selective_accuracy": 0.9140695843,
+      "selective_risk": 0.0859304157,
+      "tau": 0.5727763954
+    },
+    {
+      "coverage": 0.8044196356,
+      "n_covered": 84016,
+      "selective_accuracy": 0.913635498,
+      "selective_risk": 0.086364502,
+      "tau": 0.571356553
+    },
+    {
+      "coverage": 0.8063728541,
+      "n_covered": 84220,
+      "selective_accuracy": 0.9130372833,
+      "selective_risk": 0.0869627167,
+      "tau": 0.5698536056
+    },
+    {
+      "coverage": 0.8083356472,
+      "n_covered": 84425,
+      "selective_accuracy": 0.9124785312,
+      "selective_risk": 0.0875214688,
+      "tau": 0.5683554283
+    },
+    {
+      "coverage": 0.8102888657,
+      "n_covered": 84629,
+      "selective_accuracy": 0.9119687105,
+      "selective_risk": 0.0880312895,
+      "tau": 0.5667226404
+    },
+    {
+      "coverage": 0.8122420842,
+      "n_covered": 84833,
+      "selective_accuracy": 0.911437766,
+      "selective_risk": 0.088562234,
+      "tau": 0.5654322658
+    },
+    {
+      "coverage": 0.8142048773,
+      "n_covered": 85038,
+      "selective_accuracy": 0.9108398598,
+      "selective_risk": 0.0891601402,
+      "tau": 0.5639912326
+    },
+    {
+      "coverage": 0.8161580958,
+      "n_covered": 85242,
+      "selective_accuracy": 0.9102555078,
+      "selective_risk": 0.0897444922,
+      "tau": 0.5625466033
+    },
+    {
+      "coverage": 0.8181113143,
+      "n_covered": 85446,
+      "selective_accuracy": 0.9096856494,
+      "selective_risk": 0.0903143506,
+      "tau": 0.5608800928
+    },
+    {
+      "coverage": 0.8200645328,
+      "n_covered": 85650,
+      "selective_accuracy": 0.9090951547,
+      "selective_risk": 0.0909048453,
+      "tau": 0.5591934765
+    },
+    {
+      "coverage": 0.8220273259,
+      "n_covered": 85855,
+      "selective_accuracy": 0.9085318269,
+      "selective_risk": 0.0914681731,
+      "tau": 0.5575964008
+    },
+    {
+      "coverage": 0.8239805444,
+      "n_covered": 86059,
+      "selective_accuracy": 0.9079701135,
+      "selective_risk": 0.0920298865,
+      "tau": 0.5563032659
+    },
+    {
+      "coverage": 0.8259337629,
+      "n_covered": 86263,
+      "selective_accuracy": 0.9074574267,
+      "selective_risk": 0.0925425733,
+      "tau": 0.5548419418
+    },
+    {
+      "coverage": 0.8278869814,
+      "n_covered": 86467,
+      "selective_accuracy": 0.9067158569,
+      "selective_risk": 0.0932841431,
+      "tau": 0.5535410908
+    },
+    {
+      "coverage": 0.8298497745,
+      "n_covered": 86672,
+      "selective_accuracy": 0.9061865424,
+      "selective_risk": 0.0938134576,
+      "tau": 0.5521426854
+    },
+    {
+      "coverage": 0.831802993,
+      "n_covered": 86876,
+      "selective_accuracy": 0.9057161932,
+      "selective_risk": 0.0942838068,
+      "tau": 0.5507023267
+    },
+    {
+      "coverage": 0.8337562115,
+      "n_covered": 87080,
+      "selective_accuracy": 0.9051217271,
+      "selective_risk": 0.0948782729,
+      "tau": 0.5492246507
+    },
+    {
+      "coverage": 0.83570943,
+      "n_covered": 87284,
+      "selective_accuracy": 0.904518583,
+      "selective_risk": 0.095481417,
+      "tau": 0.5478327924
+    },
+    {
+      "coverage": 0.8376722231,
+      "n_covered": 87489,
+      "selective_accuracy": 0.9039307799,
+      "selective_risk": 0.0960692201,
+      "tau": 0.5465674661
+    },
+    {
+      "coverage": 0.8396254416,
+      "n_covered": 87693,
+      "selective_accuracy": 0.9032305885,
+      "selective_risk": 0.0967694115,
+      "tau": 0.5453126137
+    },
+    {
+      "coverage": 0.8415786601,
+      "n_covered": 87897,
+      "selective_accuracy": 0.9028066942,
+      "selective_risk": 0.0971933058,
+      "tau": 0.5439597065
+    },
+    {
+      "coverage": 0.8435414532,
+      "n_covered": 88102,
+      "selective_accuracy": 0.9022156137,
+      "selective_risk": 0.0977843863,
+      "tau": 0.542535329
+    },
+    {
+      "coverage": 0.8454946717,
+      "n_covered": 88306,
+      "selective_accuracy": 0.9016488121,
+      "selective_risk": 0.0983511879,
+      "tau": 0.5410249291
+    },
+    {
+      "coverage": 0.8474478902,
+      "n_covered": 88510,
+      "selective_accuracy": 0.9011750085,
+      "selective_risk": 0.0988249915,
+      "tau": 0.5394483644
+    },
+    {
+      "coverage": 0.8494011087,
+      "n_covered": 88714,
+      "selective_accuracy": 0.9007259283,
+      "selective_risk": 0.0992740717,
+      "tau": 0.5381246409
+    },
+    {
+      "coverage": 0.8513639018,
+      "n_covered": 88919,
+      "selective_accuracy": 0.9001113373,
+      "selective_risk": 0.0998886627,
+      "tau": 0.5368289938
+    },
+    {
+      "coverage": 0.8533171203,
+      "n_covered": 89123,
+      "selective_accuracy": 0.8995545482,
+      "selective_risk": 0.1004454518,
+      "tau": 0.5355017181
+    },
+    {
+      "coverage": 0.8552703388,
+      "n_covered": 89327,
+      "selective_accuracy": 0.8988771592,
+      "selective_risk": 0.1011228408,
+      "tau": 0.5341622988
+    },
+    {
+      "coverage": 0.8572235573,
+      "n_covered": 89531,
+      "selective_accuracy": 0.8983368889,
+      "selective_risk": 0.1016631111,
+      "tau": 0.5326670574
+    },
+    {
+      "coverage": 0.8591863504,
+      "n_covered": 89736,
+      "selective_accuracy": 0.8975996256,
+      "selective_risk": 0.1024003744,
+      "tau": 0.531348385
+    },
+    {
+      "coverage": 0.861139569,
+      "n_covered": 89940,
+      "selective_accuracy": 0.8970647098,
+      "selective_risk": 0.1029352902,
+      "tau": 0.5299369056
+    },
+    {
+      "coverage": 0.8630927875,
+      "n_covered": 90144,
+      "selective_accuracy": 0.8964434682,
+      "selective_risk": 0.1035565318,
+      "tau": 0.528719858
+    },
+    {
+      "coverage": 0.8650555806,
+      "n_covered": 90349,
+      "selective_accuracy": 0.8959036625,
+      "selective_risk": 0.1040963375,
+      "tau": 0.5274287742
+    },
+    {
+      "coverage": 0.8670087991,
+      "n_covered": 90553,
+      "selective_accuracy": 0.8952988857,
+      "selective_risk": 0.1047011143,
+      "tau": 0.5261731667
+    },
+    {
+      "coverage": 0.8689620176,
+      "n_covered": 90757,
+      "selective_accuracy": 0.8948070121,
+      "selective_risk": 0.1051929879,
+      "tau": 0.5248888756
+    },
+    {
+      "coverage": 0.8709152361,
+      "n_covered": 90961,
+      "selective_accuracy": 0.8941304515,
+      "selective_risk": 0.1058695485,
+      "tau": 0.5235699785
+    },
+    {
+      "coverage": 0.8728780292,
+      "n_covered": 91166,
+      "selective_accuracy": 0.8935129325,
+      "selective_risk": 0.1064870675,
+      "tau": 0.5222470621
+    },
+    {
+      "coverage": 0.8748312477,
+      "n_covered": 91370,
+      "selective_accuracy": 0.8929517347,
+      "selective_risk": 0.1070482653,
+      "tau": 0.5210574491
+    },
+    {
+      "coverage": 0.8767844662,
+      "n_covered": 91574,
+      "selective_accuracy": 0.8923275165,
+      "selective_risk": 0.1076724835,
+      "tau": 0.5196773909
+    },
+    {
+      "coverage": 0.8787376847,
+      "n_covered": 91778,
+      "selective_accuracy": 0.8915099479,
+      "selective_risk": 0.1084900521,
+      "tau": 0.5183869582
+    },
+    {
+      "coverage": 0.8807004778,
+      "n_covered": 91983,
+      "selective_accuracy": 0.8908385245,
+      "selective_risk": 0.1091614755,
+      "tau": 0.5170988236
+    },
+    {
+      "coverage": 0.8826536963,
+      "n_covered": 92187,
+      "selective_accuracy": 0.8903099135,
+      "selective_risk": 0.1096900865,
+      "tau": 0.5157033917
+    },
+    {
+      "coverage": 0.8846069148,
+      "n_covered": 92391,
+      "selective_accuracy": 0.8898269312,
+      "selective_risk": 0.1101730688,
+      "tau": 0.5143338544
+    },
+    {
+      "coverage": 0.8865601333,
+      "n_covered": 92595,
+      "selective_accuracy": 0.8892164804,
+      "selective_risk": 0.1107835196,
+      "tau": 0.5130120302
+    },
+    {
+      "coverage": 0.8885229264,
+      "n_covered": 92800,
+      "selective_accuracy": 0.8887068966,
+      "selective_risk": 0.1112931034,
+      "tau": 0.5117281469
+    },
+    {
+      "coverage": 0.8904761449,
+      "n_covered": 93004,
+      "selective_accuracy": 0.8881661004,
+      "selective_risk": 0.1118338996,
+      "tau": 0.5104798159
+    },
+    {
+      "coverage": 0.8924293634,
+      "n_covered": 93208,
+      "selective_accuracy": 0.8874989271,
+      "selective_risk": 0.1125010729,
+      "tau": 0.5092261195
+    },
+    {
+      "coverage": 0.8943921565,
+      "n_covered": 93413,
+      "selective_accuracy": 0.8869322257,
+      "selective_risk": 0.1130677743,
+      "tau": 0.5078805587
+    },
+    {
+      "coverage": 0.896345375,
+      "n_covered": 93617,
+      "selective_accuracy": 0.8861745196,
+      "selective_risk": 0.1138254804,
+      "tau": 0.5065442862
+    },
+    {
+      "coverage": 0.8982985935,
+      "n_covered": 93821,
+      "selective_accuracy": 0.8854414257,
+      "selective_risk": 0.1145585743,
+      "tau": 0.5051827576
+    },
+    {
+      "coverage": 0.900251812,
+      "n_covered": 94025,
+      "selective_accuracy": 0.8846796065,
+      "selective_risk": 0.1153203935,
+      "tau": 0.5038919087
+    },
+    {
+      "coverage": 0.9022146051,
+      "n_covered": 94230,
+      "selective_accuracy": 0.8839329301,
+      "selective_risk": 0.1160670699,
+      "tau": 0.502554701
+    },
+    {
+      "coverage": 0.9041678236,
+      "n_covered": 94434,
+      "selective_accuracy": 0.8832517949,
+      "selective_risk": 0.1167482051,
+      "tau": 0.5011952005
+    },
+    {
+      "coverage": 0.9061210421,
+      "n_covered": 94638,
+      "selective_accuracy": 0.8826369957,
+      "selective_risk": 0.1173630043,
+      "tau": 0.499961218
+    },
+    {
+      "coverage": 0.9080742606,
+      "n_covered": 94842,
+      "selective_accuracy": 0.8819404905,
+      "selective_risk": 0.1180595095,
+      "tau": 0.4985010585
+    },
+    {
+      "coverage": 0.9100370537,
+      "n_covered": 95047,
+      "selective_accuracy": 0.8812797879,
+      "selective_risk": 0.1187202121,
+      "tau": 0.4971935352
+    },
+    {
+      "coverage": 0.9119902722,
+      "n_covered": 95251,
+      "selective_accuracy": 0.8805366873,
+      "selective_risk": 0.1194633127,
+      "tau": 0.4959112045
+    },
+    {
+      "coverage": 0.9139434907,
+      "n_covered": 95455,
+      "selective_accuracy": 0.879880572,
+      "selective_risk": 0.120119428,
+      "tau": 0.4945940313
+    },
+    {
+      "coverage": 0.9158967092,
+      "n_covered": 95659,
+      "selective_accuracy": 0.8792272551,
+      "selective_risk": 0.1207727449,
+      "tau": 0.4931264896
+    },
+    {
+      "coverage": 0.9178595023,
+      "n_covered": 95864,
+      "selective_accuracy": 0.8785258283,
+      "selective_risk": 0.1214741717,
+      "tau": 0.4915434624
+    },
+    {
+      "coverage": 0.9198127208,
+      "n_covered": 96068,
+      "selective_accuracy": 0.8777948953,
+      "selective_risk": 0.1222051047,
+      "tau": 0.4900353836
+    },
+    {
+      "coverage": 0.9217659393,
+      "n_covered": 96272,
+      "selective_accuracy": 0.8770982217,
+      "selective_risk": 0.1229017783,
+      "tau": 0.4883897906
+    },
+    {
+      "coverage": 0.9237287324,
+      "n_covered": 96477,
+      "selective_accuracy": 0.876436871,
+      "selective_risk": 0.123563129,
+      "tau": 0.486719952
+    },
+    {
+      "coverage": 0.9256819509,
+      "n_covered": 96681,
+      "selective_accuracy": 0.8756529204,
+      "selective_risk": 0.1243470796,
+      "tau": 0.4849603802
+    },
+    {
+      "coverage": 0.9276351694,
+      "n_covered": 96885,
+      "selective_accuracy": 0.8749961294,
+      "selective_risk": 0.1250038706,
+      "tau": 0.4830213537
+    },
+    {
+      "coverage": 0.9295883879,
+      "n_covered": 97089,
+      "selective_accuracy": 0.8742905993,
+      "selective_risk": 0.1257094007,
+      "tau": 0.4812047374
+    },
+    {
+      "coverage": 0.931551181,
+      "n_covered": 97294,
+      "selective_accuracy": 0.8735893272,
+      "selective_risk": 0.1264106728,
+      "tau": 0.479363831
+    },
+    {
+      "coverage": 0.9335043995,
+      "n_covered": 97498,
+      "selective_accuracy": 0.8729204702,
+      "selective_risk": 0.1270795298,
+      "tau": 0.4773421297
+    },
+    {
+      "coverage": 0.935457618,
+      "n_covered": 97702,
+      "selective_accuracy": 0.8723362879,
+      "selective_risk": 0.1276637121,
+      "tau": 0.4750582197
+    },
+    {
+      "coverage": 0.9374108365,
+      "n_covered": 97906,
+      "selective_accuracy": 0.8715706903,
+      "selective_risk": 0.1284293097,
+      "tau": 0.4729049788
+    },
+    {
+      "coverage": 0.9393736296,
+      "n_covered": 98111,
+      "selective_accuracy": 0.8707688231,
+      "selective_risk": 0.1292311769,
+      "tau": 0.4705102014
+    },
+    {
+      "coverage": 0.9413268481,
+      "n_covered": 98315,
+      "selective_accuracy": 0.8700198342,
+      "selective_risk": 0.1299801658,
+      "tau": 0.4679379108
+    },
+    {
+      "coverage": 0.9432800666,
+      "n_covered": 98519,
+      "selective_accuracy": 0.8693145485,
+      "selective_risk": 0.1306854515,
+      "tau": 0.4656715156
+    },
+    {
+      "coverage": 0.9452332851,
+      "n_covered": 98723,
+      "selective_accuracy": 0.8685716601,
+      "selective_risk": 0.1314283399,
+      "tau": 0.4631232514
+    },
+    {
+      "coverage": 0.9471960782,
+      "n_covered": 98928,
+      "selective_accuracy": 0.8678331716,
+      "selective_risk": 0.1321668284,
+      "tau": 0.460833422
+    },
+    {
+      "coverage": 0.9491492967,
+      "n_covered": 99132,
+      "selective_accuracy": 0.8670963967,
+      "selective_risk": 0.1329036033,
+      "tau": 0.4581528168
+    },
+    {
+      "coverage": 0.9511025152,
+      "n_covered": 99336,
+      "selective_accuracy": 0.8662921801,
+      "selective_risk": 0.1337078199,
+      "tau": 0.4552883629
+    },
+    {
+      "coverage": 0.9530653084,
+      "n_covered": 99541,
+      "selective_accuracy": 0.8655528878,
+      "selective_risk": 0.1344471122,
+      "tau": 0.4524396995
+    },
+    {
+      "coverage": 0.9550185269,
+      "n_covered": 99745,
+      "selective_accuracy": 0.8648453557,
+      "selective_risk": 0.1351546443,
+      "tau": 0.449284411
+    },
+    {
+      "coverage": 0.9569717454,
+      "n_covered": 99949,
+      "selective_accuracy": 0.8639906352,
+      "selective_risk": 0.1360093648,
+      "tau": 0.4461098741
+    },
+    {
+      "coverage": 0.9589249639,
+      "n_covered": 100153,
+      "selective_accuracy": 0.8632492287,
+      "selective_risk": 0.1367507713,
+      "tau": 0.4426897368
+    },
+    {
+      "coverage": 0.960887757,
+      "n_covered": 100358,
+      "selective_accuracy": 0.8625919209,
+      "selective_risk": 0.1374080791,
+      "tau": 0.4392833032
+    },
+    {
+      "coverage": 0.9628409755,
+      "n_covered": 100562,
+      "selective_accuracy": 0.8619060878,
+      "selective_risk": 0.1380939122,
+      "tau": 0.4355683784
+    },
+    {
+      "coverage": 0.964794194,
+      "n_covered": 100766,
+      "selective_accuracy": 0.86099478,
+      "selective_risk": 0.13900522,
+      "tau": 0.4319785215
+    },
+    {
+      "coverage": 0.9667474125,
+      "n_covered": 100970,
+      "selective_accuracy": 0.8602159057,
+      "selective_risk": 0.1397840943,
+      "tau": 0.4281499824
+    },
+    {
+      "coverage": 0.9687102056,
+      "n_covered": 101175,
+      "selective_accuracy": 0.8593624907,
+      "selective_risk": 0.1406375093,
+      "tau": 0.4236971444
+    },
+    {
+      "coverage": 0.9706634241,
+      "n_covered": 101379,
+      "selective_accuracy": 0.8585604514,
+      "selective_risk": 0.1414395486,
+      "tau": 0.4191398711
+    },
+    {
+      "coverage": 0.9726166426,
+      "n_covered": 101583,
+      "selective_accuracy": 0.8577124125,
+      "selective_risk": 0.1422875875,
+      "tau": 0.4145276256
+    },
+    {
+      "coverage": 0.9745794357,
+      "n_covered": 101788,
+      "selective_accuracy": 0.8568200574,
+      "selective_risk": 0.1431799426,
+      "tau": 0.4099877519
+    },
+    {
+      "coverage": 0.9765326542,
+      "n_covered": 101992,
+      "selective_accuracy": 0.8559789003,
+      "selective_risk": 0.1440210997,
+      "tau": 0.4046966618
+    },
+    {
+      "coverage": 0.9784858727,
+      "n_covered": 102196,
+      "selective_accuracy": 0.8551606717,
+      "selective_risk": 0.1448393283,
+      "tau": 0.3990787997
+    },
+    {
+      "coverage": 0.9804390912,
+      "n_covered": 102400,
+      "selective_accuracy": 0.8543359375,
+      "selective_risk": 0.1456640625,
+      "tau": 0.3940419001
+    },
+    {
+      "coverage": 0.9824018843,
+      "n_covered": 102605,
+      "selective_accuracy": 0.8535256566,
+      "selective_risk": 0.1464743434,
+      "tau": 0.3877923524
+    },
+    {
+      "coverage": 0.9843551028,
+      "n_covered": 102809,
+      "selective_accuracy": 0.85261018,
+      "selective_risk": 0.14738982,
+      "tau": 0.3808337057
+    },
+    {
+      "coverage": 0.9863083213,
+      "n_covered": 103013,
+      "selective_accuracy": 0.8517662819,
+      "selective_risk": 0.1482337181,
+      "tau": 0.3733220475
+    },
+    {
+      "coverage": 0.9882615398,
+      "n_covered": 103217,
+      "selective_accuracy": 0.8507125764,
+      "selective_risk": 0.1492874236,
+      "tau": 0.3644167565
+    },
+    {
+      "coverage": 0.9902243329,
+      "n_covered": 103422,
+      "selective_accuracy": 0.8496741506,
+      "selective_risk": 0.1503258494,
+      "tau": 0.3553986894
+    },
+    {
+      "coverage": 0.9921775514,
+      "n_covered": 103626,
+      "selective_accuracy": 0.8487445236,
+      "selective_risk": 0.1512554764,
+      "tau": 0.3434717829
+    },
+    {
+      "coverage": 0.9941307699,
+      "n_covered": 103830,
+      "selective_accuracy": 0.8477415005,
+      "selective_risk": 0.1522584995,
+      "tau": 0.3302842769
+    },
+    {
+      "coverage": 0.9960839884,
+      "n_covered": 104034,
+      "selective_accuracy": 0.8467808601,
+      "selective_risk": 0.1532191399,
+      "tau": 0.3122089654
+    },
+    {
+      "coverage": 0.9980467815,
+      "n_covered": 104239,
+      "selective_accuracy": 0.8456719654,
+      "selective_risk": 0.1543280346,
+      "tau": 0.2870878027
+    },
+    {
+      "coverage": 1.0,
+      "n_covered": 104443,
+      "selective_accuracy": 0.8444318911,
+      "selective_risk": 0.1555681089,
+      "tau": 0.1862743424
+    }
+  ]
+}

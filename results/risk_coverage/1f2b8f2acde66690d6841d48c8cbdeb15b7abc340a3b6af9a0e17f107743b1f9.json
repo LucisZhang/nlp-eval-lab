@@ -1,0 +1,60 @@
+{
+  "class_labels": [
+    "card",
+    "credit_reporting",
+    "debt_collection",
+    "deposit_account",
+    "money_service",
+    "mortgage",
+    "payday_personal_loan",
+    "student_loan",
+    "vehicle_loan"
+  ],
+  "config_sha256": "538418ee589fc7b76f7dec04f163c02610e3ea8eb7227e33616bc966b291320a",
+  "coverages": [
+    0.5,
+    0.8,
+    0.9,
+    0.95
+  ],
+  "n_examples": 1500,
+  "run_id": "1f2b8f2acde66690d6841d48c8cbdeb15b7abc340a3b6af9a0e17f107743b1f9",
+  "split": "test_postcutoff",
+  "split_sha256": "ccbd779deff812e8b41dc6aba8c8d9c5c1cf0dcb294063cda0ef6af50dcdc530",
+  "summary": {
+    "acc_at_cov::0.50": {
+      "ci_hi": 0.8360333333,
+      "ci_lo": 0.78,
+      "point": 0.7973333333
+    },
+    "acc_at_cov::0.80": {
+      "ci_hi": 0.8308333333,
+      "ci_lo": 0.7874791667,
+      "point": 0.8158333333
+    },
+    "acc_at_cov::0.90": {
+      "ci_hi": 0.8296296296,
+      "ci_lo": 0.7881481481,
+      "point": 0.8066666667
+    },
+    "acc_at_cov::0.95": {
+      "ci_hi": 0.8287719298,
+      "ci_lo": 0.7880701754,
+      "point": 0.8077192982
+    },
+    "aurc": {
+      "ci_hi": 0.2205832122,
+      "ci_lo": 0.164478459,
+      "point": 0.1870474828
+    }
+  },
+  "threshold_table": [
+    {
+      "coverage": 1.0,
+      "n_covered": 1500,
+      "selective_accuracy": 0.8086666667,
+      "selective_risk": 0.1913333333,
+      "tau": 1.0
+    }
+  ]
+}

@@ -654,4 +654,5 @@ def tier_c_runner(config: dict) -> RunnerResult:
         dataset=dataset,
         cost_usd=computed_cost,
         extra=extra,
+        ids=np.asarray(ids, dtype=np.int64),
     )

@@ -396,3 +396,68 @@ reported runs. Every portfolio-bound number carries its reproduction command
   `uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_sonnet_zeroshot_v2params_test_postcutoff/20260807T040553Z/calls.jsonl results/tier_c_raw/tier_c_sonnet_zeroshot_test_postcutoff/20260807T020907Z/calls.jsonl --split test_postcutoff`
   then the same v2 receipts vs the Haiku POSTCUTOFF receipts filtered to the shared 1,500
   ids (filter snippet as in step 6's repro block).
+
+## 2026-08-07 — Phase 4 task 1: per-example prediction artifacts + risk-coverage evidence (all runs)
+
+- **Method:** every eval run now auto-persists a per-example Parquet artifact
+  (`data/preds/<run_id>.parquet`, schema `preds-v2`, DuckDB-only I/O) carrying
+  `complaint_id / y_true / y_pred / p_max / prob::<label>…` plus bound provenance
+  (run_id, config_sha256, split + split_sha256, class_labels, git_sha, dataset
+  input_sha256, and prompt_bundle_sha256 for Tier C). A backfill CLI
+  (`python -m triage_lab.predictions`) regenerated artifacts for all **12 non-smoke
+  historical runs** (Tier A: deterministic offline refit, appends nothing; Tier C:
+  offline reconstruction from committed receipts reusing the runner's own subset
+  selection and parse/fallback code paths; the 2 smoke runs are `skip-smoke` by
+  design). `results/risk_coverage/<run_id>.json` (committed, derived, regenerable —
+  not covered by the runs.jsonl append-only rule) holds per-run threshold tables and
+  bootstrap-CI'd AURC / acc@coverage summaries.
+- **Verification gate:** every artifact must reproduce the run's logged point metrics
+  (accuracy, macro-F1, AURC, acc@cov::{0.50,0.80,0.90,0.95}) at 1e-9 **and** pass
+  structural checks: id uniqueness/non-null, id membership in the frozen split,
+  row-by-row `y_true` agreement with the frozen split (catches wrong-ID row mapping,
+  which aggregate metrics cannot), `p_max == max(probs)`, `y_pred == argmax(probs)`
+  (Tier A/B) or exact one-hot (Tier C). The gate was hardened after an external Codex
+  review (2026-08-07) flagged the original aggregate-only gate as a blocker; the same
+  review drove backfill hash validation (recomputed config hash and Tier C prompt
+  bundle hash must equal the record's — hard fail, never silently stamp historical
+  hashes onto data from different inputs), a duplicate-receipt hard error, and a
+  coverage-domain guard (acc@coverage requires 0 < c ≤ 1). All 12 artifacts pass:
+  every logged metric reproduces at **abs delta 0.00e+00**.
+- **Result** (point estimates; AURC with 95% bootstrap CI, n=1,000, fixed seed):
+
+  | split | config | run | n | AURC [95% CI] | acc@50% | acc@80% | acc@90% | acc@95% |
+  |---|---|---|---|---|---|---|---|---|
+  | cal | tier_a_cnb_wordchar_cal | c78c9d07 | 86,972 | 0.0740 [0.0722, 0.0759] | 0.9374 | 0.8771 | 0.8471 | 0.8292 |
+  | cal | tier_a_logreg_word_cal | d35c23d2 | 86,972 | 0.0664 [0.0645, 0.0681] | 0.9458 | 0.8962 | 0.8662 | 0.8486 |
+  | cal | tier_a_logreg_wordchar_cal | abcadd53 | 86,972 | 0.0678 [0.0660, 0.0696] | 0.9447 | 0.8921 | 0.8601 | 0.8420 |
+  | cal | tier_c_haiku_ablation_fewshot_cal | c7598f84 | 1,500 | 0.1744 [0.1351, 0.1852] | 0.8320 | 0.8350 | 0.8378 | 0.8407 |
+  | cal | tier_c_haiku_ablation_zeroshot_cal | 3f310951 | 1,500 | 0.1734 [0.1390, 0.1915] | 0.8227 | 0.8333 | 0.8341 | 0.8351 |
+  | test_iid | tier_a_cnb_test_iid | c20cd14a | 104,443 | 0.0589 [0.0575, 0.0603] | 0.9543 | 0.8991 | 0.8678 | 0.8502 |
+  | test_iid | tier_a_logreg_test_iid | 8e4d6345 | 104,443 | 0.0500 [0.0487, 0.0512] | 0.9638 | 0.9147 | 0.8848 | 0.8668 |
+  | test_iid | tier_c_haiku_zeroshot_test_iid | 70a1b0c4 | 5,000 | 0.1495 [0.1393, 0.1663] | 0.8548 | 0.8470 | 0.8493 | 0.8488 |
+  | test_iid | tier_c_sonnet_zeroshot_test_iid | e1503146 | 1,500 | 0.1619 [0.1333, 0.1860] | 0.8373 | 0.8408 | 0.8452 | 0.8421 |
+  | test_postcutoff | tier_c_haiku_zeroshot_test_postcutoff | 82af4e01 | 5,000 | 0.2713 [0.2461, 0.2794] | 0.7232 | 0.7348 | 0.7349 | 0.7373 |
+  | test_postcutoff | tier_c_sonnet_zeroshot_test_postcutoff | d1c42d7d | 1,500 | 0.1924 [0.1711, 0.2265] | 0.7933 | 0.8083 | 0.7985 | 0.7986 |
+  | test_postcutoff | tier_c_sonnet_zeroshot_v2params_test_postcutoff | 1f2b8f2a | 1,500 | 0.1870 [0.1645, 0.2206] | 0.7973 | 0.8158 | 0.8067 | 0.8077 |
+
+  (n = the run's own eval slice: Tier A full splits; Tier C its frozen 5,000/1,500-row
+  subsets. Cross-run AURC comparisons are only like-for-like within a split at equal n.)
+- **Findings:**
+  - **Tier A confidence genuinely ranks errors.** LogReg TEST-IID walks 0.8668 @ 95%
+    coverage → 0.9638 @ 50%; AURC 0.0500 [0.0487, 0.0512]. LogReg beats CNB on AURC
+    on both CAL and TEST-IID — consistent with the Phase 1 accuracy ordering.
+  - **Tier C self-confidence is degenerate by construction** (structured-output runner
+    logs a one-hot; `p_max ≡ 1.0`, threshold table has a single row): acc-vs-coverage
+    is flat (Haiku TEST-IID 0.847–0.855 across all four coverages) and AURC reduces to
+    a rescaled error rate with no ranking power. **A confidence-cascade router cannot
+    use Tier C p_max as an escalation signal** — Tier C escalation must come from other
+    signals (e.g. parse-failure, per Phase 3 step 6). Structural property, not a bug;
+    logged here so Phase 4 router design starts from it.
+  - Drift echo at the confidence level: Haiku AURC 0.1495 (IID) → 0.2713 (POSTCUTOFF).
+- **Verdict:** substrate for Phase 4 calibration + router is in place — one frozen,
+  self-describing per-example source of truth per run, gate-verified bit-identical to
+  the logged metrics, with committed risk-coverage evidence JSONs downstream numbers
+  can be traced to.
+- **Repro:** `make preds` (add `--force` to regenerate over existing artifacts:
+  `uv run python -m triage_lab.predictions --all --force`), then `make risk-coverage`;
+  tests: `uv run pytest tests/test_predictions.py tests/test_risk_coverage.py -q`.

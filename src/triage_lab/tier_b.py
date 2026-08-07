@@ -153,6 +153,33 @@ def _verify_integrity(split: str, path: Path, splits_stats_path: Path) -> None:
         )
 
 
+def _load_ids(path, order_column: str) -> np.ndarray:
+    """Load the split's order column (complaint_id) in the same order as load_split_frame,
+    so ids stay aligned to texts/labels for the per-example predictions artifact."""
+    con = duckdb.connect()
+    try:
+        con.execute("SET threads=1")
+        con.execute("SET preserve_insertion_order=true")
+        rows = con.execute(
+            f'SELECT "{order_column}" FROM read_parquet(\'{path}\') '
+            f'ORDER BY "{order_column}"'
+        ).fetchall()
+    finally:
+        con.close()
+    return np.array([r[0] for r in rows], dtype=np.int64)
+
+
+def subsample_indices(n: int, cap: int | None, seed: int) -> np.ndarray:
+    """Deterministic re-sorted subsample index vector (shared by texts/labels/ids).
+
+    `cap=None`/`cap>=n` -> full identity range; else a seeded `default_rng(seed)`
+    permutation of the first `cap` rows, re-sorted so row order stays stable.
+    """
+    if cap is None or cap >= n:
+        return np.arange(n)
+    return np.sort(np.random.default_rng(seed).permutation(n)[:cap])
+
+
 def subsample_eval(texts, labels, cap: int | None, seed: int):
     """Seeded in-memory subsample of an already-loaded eval split (frozen file untouched).
 
@@ -161,10 +188,9 @@ def subsample_eval(texts, labels, cap: int | None, seed: int):
     stays stable. The full frozen parquet's sha256 is still verified upstream — only the
     in-memory view is thinned, never the file on disk.
     """
-    n = len(texts)
-    if cap is None or cap >= n:
+    idx = subsample_indices(len(texts), cap, seed)
+    if len(idx) == len(texts) and np.array_equal(idx, np.arange(len(texts))):
         return texts, labels
-    idx = np.sort(np.random.default_rng(seed).permutation(n)[:cap])
     return [texts[i] for i in idx], labels[idx]
 
 
@@ -231,7 +257,11 @@ def tier_b_runner(config: dict) -> RunnerResult:
     eval_rows_cap = data.get("eval_rows_cap")
     seed = int(config.get("seed", 20260805))
     x_eval, y_eval = load_split_frame(eval_path, text_col, label_col, order_col)
-    x_eval, y_eval = subsample_eval(x_eval, y_eval, eval_rows_cap, seed)
+    ids_eval = _load_ids(eval_path, order_col)
+    sub_idx = subsample_indices(len(x_eval), eval_rows_cap, seed)
+    x_eval = [x_eval[i] for i in sub_idx]
+    y_eval = y_eval[sub_idx]
+    ids_eval = ids_eval[sub_idx]
     eval_logits = _infer_logits(model, tokenizer, x_eval, max_len, batch_size, device)
 
     temperature = 1.0
@@ -274,4 +304,5 @@ def tier_b_runner(config: dict) -> RunnerResult:
         dataset=dataset,
         cost_usd=None,
         extra=extra,
+        ids=np.asarray(ids_eval, dtype=np.int64),
     )

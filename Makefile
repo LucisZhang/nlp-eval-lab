@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage
 
 setup:
 	uv sync --frozen
@@ -80,3 +80,15 @@ tier-c-exemplars-verify:
 tier-c-smoke:
 	uv run --extra tierc python -m triage_lab.harness configs/tier_c_haiku_smoke_fewshot_cal.yaml
 	uv run --extra tierc python -m triage_lab.harness configs/tier_c_haiku_smoke_zeroshot_cal.yaml
+
+# Per-example prediction artifacts (Phase 4): regenerate data/preds/<run_id>.parquet for
+# every non-smoke run and verify each against its logged point metrics (✓/✗, nonzero exit
+# on mismatch). Artifacts are gitignored (data/) and regenerable; runs.jsonl is untouched.
+# The slow LogReg re-fit is isolated with --only for a separate background launch.
+preds:
+	uv run python -m triage_lab.predictions --all
+
+# Risk-coverage evidence JSONs (Phase 4): committed, deterministic operating-point tables
+# + CI'd AURC / acc@coverage summaries, one per artifact, for the router phase and demo.
+risk-coverage:
+	uv run python -m triage_lab.risk_coverage --all

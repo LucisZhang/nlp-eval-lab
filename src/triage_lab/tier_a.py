@@ -257,10 +257,32 @@ def fit_predict(config: dict):
 # Registered runner
 # ---------------------------------------------------------------------------
 
+def load_eval_ids(config: dict) -> np.ndarray:
+    """Load the eval split's `order_column` (complaint_id) in the same order fit_predict
+    evaluates, so ids are aligned to the returned y_true/y_pred/probs. A separate small
+    read keeps `fit_predict`'s 4-tuple contract (and its tests) untouched."""
+    data = config.get("data", {})
+    order_col = data.get("order_column", _DEFAULT_ORDER_COLUMN)
+    eval_split = data["split"]
+    eval_path = _splits_dir(config) / f"{eval_split}.parquet"
+    con = duckdb.connect()
+    try:
+        con.execute("SET threads=1")
+        con.execute("SET preserve_insertion_order=true")
+        rows = con.execute(
+            f'SELECT "{order_col}" FROM read_parquet(\'{eval_path}\') '
+            f'ORDER BY "{order_col}"'
+        ).fetchall()
+    finally:
+        con.close()
+    return np.array([r[0] for r in rows], dtype=np.int64)
+
+
 @register_runner("tier_a")
 def tier_a_runner(config: dict) -> RunnerResult:
     """Config-driven Tier A runner (see module docstring)."""
     y_true, y_pred, probs, class_labels = fit_predict(config)
+    ids = load_eval_ids(config)
     eval_split = config["data"]["split"]
     stats_path = _splits_dir(config) / "splits_stats.yaml"
     dataset = dataset_info(eval_split, stats_path)
@@ -271,4 +293,5 @@ def tier_a_runner(config: dict) -> RunnerResult:
         class_labels=class_labels,
         dataset=dataset,
         cost_usd=None,
+        ids=ids,
     )

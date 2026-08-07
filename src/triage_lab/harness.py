@@ -50,6 +50,9 @@ from triage_lab.snapshot import sha256_file
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RESULTS_PATH = REPO_ROOT / "results" / "runs.jsonl"
 DEFAULT_SPLITS_STATS_PATH = REPO_ROOT / "data" / "splits" / "splits_stats.yaml"
+# Per-example prediction artifacts land here (data/ is gitignored; artifacts are
+# regenerable via `python -m triage_lab.predictions`, never committed).
+DEFAULT_PREDS_DIR = REPO_ROOT / "data" / "preds"
 
 # Frozen bootstrap constants (repo convention: same seed as the Phase-0 split RNG
 # salt; see splits.py SEED). Changing either is a methodology change, not a tweak.
@@ -113,6 +116,11 @@ class RunnerResult:
     dataset: dict
     cost_usd: float | None = None
     extra: dict = field(default_factory=dict)
+    # Optional per-example identifiers (complaint_id), id-aligned to y_true/y_pred/probs.
+    # When a runner supplies these, `run()` persists a per-example predictions artifact
+    # (data/preds/<run_id>.parquet) and records its path under extra.predictions_path.
+    # Absent (None) -> no artifact, record schema unchanged (backward compatible).
+    ids: np.ndarray | None = None
 
 
 def register_runner(name: str) -> Callable[[Callable[[dict], RunnerResult]], Callable]:
@@ -408,11 +416,73 @@ def append_record(results_path, record: dict) -> None:
 # End-to-end run
 # ---------------------------------------------------------------------------
 
-def run(config_path, results_path=DEFAULT_RESULTS_PATH, *, append: bool = True) -> dict:
+def _persist_predictions(record: dict, result: RunnerResult, cfg_hash: str, preds_dir) -> None:
+    """Write the per-example predictions artifact and stamp extra.predictions_path.
+
+    Only called when the runner supplied `ids`. Imported lazily to avoid a module-level
+    cycle (predictions imports harness). The artifact is regenerable and gitignored; its
+    path (relative to the repo when possible) is recorded so the run is self-describing.
+
+    The bound provenance mirrors the record's own: code (git_sha), config bytes, data
+    (split + split_sha256 + snapshot input_sha256) and, for Tier C, the frozen prompt's
+    bundle hash out of the runner's `extra`. Anything a tier does not carry is written as
+    "" by `ArtifactProvenance`.
+    """
+    from triage_lab import predictions
+
+    art_path = Path(preds_dir) / f"{record['run_id']}.parquet"
+    provenance = predictions.ArtifactProvenance(
+        run_id=record["run_id"],
+        config_sha256=cfg_hash,
+        split=result.dataset["split"],
+        split_sha256=result.dataset.get("split_sha256", ""),
+        class_labels=list(result.class_labels),
+        git_sha=record.get("git_sha", ""),
+        input_sha256=result.dataset.get("input_sha256", ""),
+        prompt_bundle_sha256=(result.extra or {}).get("prompt_bundle_sha256", ""),
+    )
+    predictions.write_artifact(
+        art_path,
+        ids=result.ids,
+        y_true=result.y_true,
+        y_pred=result.y_pred,
+        probs=result.probs,
+        class_labels=result.class_labels,
+        provenance=provenance,
+    )
+    try:
+        rel = str(art_path.resolve().relative_to(REPO_ROOT))
+    except ValueError:
+        rel = str(art_path)
+    record.setdefault("extra", {})["predictions_path"] = rel
+
+
+def _resolve_preds_dir(preds_dir, results_path) -> Path:
+    """Where the predictions artifact goes when a runner supplies ids.
+
+    Explicit `preds_dir` wins. Otherwise real runs (default results log) land in
+    `data/preds`; a redirected results log (tests, sandboxes) puts artifacts beside it
+    so those runs never pollute the repo's `data/preds`.
+    """
+    if preds_dir is not None:
+        return Path(preds_dir)
+    if Path(results_path) == DEFAULT_RESULTS_PATH:
+        return DEFAULT_PREDS_DIR
+    return Path(results_path).parent / "preds"
+
+
+def run(
+    config_path,
+    results_path=DEFAULT_RESULTS_PATH,
+    *,
+    append: bool = True,
+    preds_dir=None,
+) -> dict:
     """Resolve the runner from config, time it, evaluate + CI, (optionally) append.
 
     `append=False` (CLI `--no-append`) returns the built record without writing it —
-    used for smoke/pipeline proofs that must never touch the append-only results log.
+    used for smoke/pipeline proofs that must never touch the append-only results log; a
+    dry-run also writes no predictions artifact.
     """
     config_path = Path(config_path)
     config = load_config(config_path)
@@ -440,6 +510,11 @@ def run(config_path, results_path=DEFAULT_RESULTS_PATH, *, append: bool = True) 
         result.cost_usd,
         extra=result.extra,
     )
+    # Auto-persist the per-example artifact for real (appended) runs whose runner
+    # supplied ids. Dry-runs (--no-append) and id-less runners leave the log/schema
+    # untouched (backward compatible).
+    if append and getattr(result, "ids", None) is not None:
+        _persist_predictions(record, result, cfg_hash, _resolve_preds_dir(preds_dir, results_path))
     if append:
         append_record(results_path, record)
     return record
