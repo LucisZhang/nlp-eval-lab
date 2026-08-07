@@ -204,3 +204,48 @@ reported runs. Every portfolio-bound number carries its reproduction command
 - **Repro:**
   `uv run --extra tierc python -m triage_lab.harness configs/tier_c_haiku_zeroshot_test_iid.yaml`
   then same with `..._test_postcutoff.yaml` (live API; receipts under `results/tier_c_raw/`).
+
+## 2026-08-07 — Phase 3 step 5: Sonnet 5 zero-shot paired subsample on TEST-IID + TEST-POSTCUTOFF
+
+- **Configs:** `configs/tier_c_sonnet_zeroshot_{test_iid,test_postcutoff}.yaml` — mirror the
+  Haiku final configs with exactly three deltas each (`model.name`, `model.slug:
+  anthropic/claude-sonnet-5`, `eval_rows_cap: 1500`); `cap_seed: 20260806` unchanged, so each
+  slice's 1,500 rows are a strict subset of the corresponding Haiku 5,000 (verified on the
+  receipt id sets: 1,500/1,500 overlap on both slices) — the Haiku-vs-Sonnet delta can be
+  paired on these rows. Zero-shot (k=0) per the §4.2 amendment; frozen v1 bundle `f6777a96…`;
+  n=1,500 × 2 slices is the owner-approved sizing (2026-08-06 gate).
+- **Hypothesis:** Sonnet 5 zero-shot beats Haiku 4.5 on macro-F1 on both slices, at ≈2–3× the
+  $/1k (OpenRouter list $2/MTok prompt + $10/MTok completion vs Haiku's $1 + $5).
+- **Result:** (computed cost == OpenRouter-reported both runs; providers per call: IID
+  Bedrock 1,495 + Azure 5, POSTCUTOFF Bedrock 1,493 + Azure 7)
+  - TEST-IID (`run_id e1503146…`): macro-F1 **0.7418** [0.7015, 0.7730], accuracy **0.8413**
+    [0.8220, 0.8593]; **$5.4881** = **$3.659/1k complaints**; p50 3.17 s / p95 5.92 s;
+    2,635,652 prompt + 21,677 completion tokens; **12 parse failures (0.8%)**.
+  - TEST-POSTCUTOFF (`run_id d1c42d7d…`): macro-F1 **0.7876** [0.7672, 0.8085], accuracy
+    **0.8013** [0.7813, 0.8220]; **$5.7795** = **$3.853/1k**; p50 3.12 s / p95 5.27 s;
+    2,779,838 prompt + 21,979 completion tokens; **37 parse failures (2.5%)**.
+  - **Parse failures:** all `finish_reason: "length"` — Sonnet 5 hit the shared
+    `max_tokens: 64` completion cap with mostly empty visible content (consistent with
+    internal reasoning-token burn; Haiku had 0/10,000). Per the frozen protocol these resolve
+    to the fallback label and are kept as measured: config parity with the Haiku finals takes
+    precedence, and any params/prompt change is a new version, not an in-place fix.
+  - **Cross-slice observation (different rows → NOT paired; n=1,500 CIs are wide):** Sonnet's
+    POSTCUTOFF−IID is macro-F1 **+0.0459** / accuracy **−0.0400** — macro-F1 moves in the
+    opposite direction to Haiku's −0.0443, while accuracy drops like Haiku's (−0.1100). The
+    2.5%-vs-0.8% parse-failure asymmetry confounds the accuracy side. No drift claim from
+    this; Phase 5 decomposes it.
+  - vs Haiku same-slice points: on IID Sonnet's 0.7418 sits *below* Haiku's 0.7697 with
+    overlapping CIs (different n); on POSTCUTOFF Sonnet's 0.7876 sits above Haiku's 0.7254
+    with disjoint per-slice CIs. The honest comparison is the paired same-rows delta — next
+    task. Note for it: `triage_lab.tier_c_compare` fails loud on unequal id sets, so the
+    Haiku receipts must first be filtered to the shared 1,500 ids (or the tool gains an
+    explicit intersection mode).
+  - ECE/Brier/AURC remain degenerate one-hot artifacts (see step 2 note), logged only.
+- **Verdict:** **Both Sonnet 5 points established and CI'd; pairing verified.** The headline
+  surprise: no visible Sonnet-over-Haiku gain on TEST-IID at 2.8× the $/1k — judgment
+  reserved for the paired delta. Task spend $11.27 (projected ≈$8 from list prices — actual
+  Sonnet prompt-token counts ran ~40% higher per call than Haiku's for identical prompts);
+  cumulative Tier C spend $30.68 of the approved ≈$48.5 envelope.
+- **Repro:**
+  `uv run --extra tierc python -m triage_lab.harness configs/tier_c_sonnet_zeroshot_test_iid.yaml`
+  then same with `..._test_postcutoff.yaml` (live API; receipts under `results/tier_c_raw/`).

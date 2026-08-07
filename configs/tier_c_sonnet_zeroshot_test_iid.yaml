@@ -1,0 +1,21 @@
+model:
+  runner: tier_c
+  name: tier_c_sonnet_zeroshot_test_iid
+  slug: anthropic/claude-sonnet-5
+  params:
+    temperature: 0.0
+    max_tokens: 64
+    request_timeout_s: 60
+    max_retries: 3
+    max_concurrency: 8
+prompt:
+  version: v1
+  num_exemplars: 0
+data:
+  split: test_iid
+  eval_rows_cap: 1500
+  cap_seed: 20260806
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+seed: 20260806
