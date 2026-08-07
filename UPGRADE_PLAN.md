@@ -140,6 +140,17 @@ CFPB complaints.csv.zip  ──▶  ingest (DuckDB) ──▶ harmonize taxonomy
 
 **Tier C — LLM few-shot, two required frontier points.** **C1: Claude Haiku 4.5 (`claude-haiku-4-5-20251001`)** with a structured-output/tool-use schema forcing one of the harmonized labels, k≈10 few-shot exemplars, fixed prompt hash — the realistic "just call an API" triage candidate. **C2: Claude Sonnet 5 (`claude-sonnet-5`)** on a budgeted subsample (same prompt, same schema) to extend the frontier's upper-right corner and answer the question a hiring manager will actually ask: *"does paying ~4× more per token buy anything on this task?"* Rationale: measuring both honestly (including where they lose to a $0.0001 linear model) *is the story*. Confidence signal for routing: self-reported confidence is untrustworthy → use (a) logit-free proxy: agreement between Tier C and Tier B, and (b) for router purposes, primarily use Tiers A/B calibrated confidence to decide *whether to escalate to* C; report Tier C selective accuracy via answer-consistency (3-sample self-consistency on the escalated subset only, cost-tracked).
 
+> **AMENDMENT (2026-08-07, owner-approved, evidence-based).** All Tier C **finals run zero-shot
+> (`num_exemplars: 0`)**, for both C1 (Haiku 4.5) and C2 (Sonnet 5) — the two models must share
+> the prompt config so the Haiku-vs-Sonnet comparison stays paired and clean. Basis: the CAL
+> ablation (commit `84d79d6`, EXPERIMENT_LOG 2026-08-07; runs `c7598f84…` vs `3f310951…`,
+> n=1,500 paired) found no few-shot gain — paired few−zero deltas accuracy **+0.0053
+> [−0.0060, +0.0167]**, macro-F1 **+0.0107 [−0.0054, +0.0266]**, McNemar p=0.41 — at 2× the
+> per-call cost. The few-shot configuration is **archived, not deleted**: the frozen v1 bundle
+> (`prompts/tier_c/v1/`, bundle `f6777a96…`) retains `exemplars.json` and the `num_exemplars`
+> parameter, so a future probe of whether exemplars matter on the 2025/2026 drift slices needs
+> only a config flip. "k≈10 few-shot" above is superseded for finals accordingly.
+
 **Router — the centerpiece.** Confidence cascade: Tier A answers if `p_max ≥ τ_A`; else escalate to Tier B; if `p_max ≥ τ_B` answer; else escalate to Tier C; below `τ_C`-proxy → human queue. Thresholds (τ_A, τ_B) chosen on the calibration split to minimize expected cost under an explicit, parameterized business cost model: `cost = c_misroute · P(error) + c_api · E[tokens] + c_human · P(human)` with defaults documented and user-adjustable in the demo (e.g., misroute = $6 handling delay, human review = $2.50, API cost measured). Deliverable claim shape: *"At equal accuracy to the all-LLM policy, the router cuts cost per 1,000 complaints by X% (measured); at equal cost to the all-linear policy, it raises macro-F1 by Y points (measured)."*
 
 ### 4.3 Engineering stack
