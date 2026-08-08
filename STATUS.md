@@ -72,7 +72,7 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 ### Phase 5 — Drift protocol  ▶ **NEXT (per §b order — available tiers only)**
 | Task | Status | Evidence |
 |---|---|---|
-| Rolling yearly evals (2023–2026) | **Tier A done** (2026-08-08); **Tier C smoke done + projection logged (2026-08-09) — full runs ⏸ awaiting owner sign-off** (projected ≈$30.94, cumulative ≈$67.84 of ≈$75); Tier B rows **pending Tier B** | EXPERIMENT_LOG 2026-08-08 Phase 5 task 1 (Tier A runs `389d3e69…`/`c1c810e2…`/`cef3a58c…`/`2ae5d8ea…`; macro-F1 0.758→0.748→0.730→0.666, 2026-H1 cliff = credit_reporting prior shift) + 2026-08-09 task 2a (smoke receipts in `results/tier_c_raw/`, 16 configs staged) |
+| Rolling yearly evals (2023–2026) | **Tier A done** (2026-08-08); **Tier C done** (2026-08-09, owner-approved; 8 runs, $30.48 actual vs $30.94 projected, cumulative $67.38 of ≈$75); Tier B rows **pending Tier B** | EXPERIMENT_LOG 2026-08-08 Phase 5 task 1 (Tier A: macro-F1 0.758→0.748→0.730→0.666, 2026-H1 cliff = credit_reporting prior shift) + 2026-08-09 tasks 2a/2b (Tier C: Haiku/Sonnet tied 2023–25 paired CIs ∋ 0; 2026-H1 Sonnet +0.054 F1 paired CI excl. 0, p≈1e-15; Tier C degrades slower than Tier A — 2026-H1: A 0.666 / Haiku 0.728 / Sonnet 0.782) |
 | Prior-shift decomposition | pending | — |
 | OOV tracking | pending | — |
 | Perturbation robustness | pending | — |

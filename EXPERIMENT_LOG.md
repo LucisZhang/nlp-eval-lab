@@ -919,3 +919,55 @@ reported runs. Every portfolio-bound number carries its reproduction command
 - **Repro (smoke):** `uv run --extra tierc python -m triage_lab.harness
   configs/tier_c_haiku_smoke_zeroshot_test_drift_2023.yaml --no-append` (and the
   other 7); receipts are the audit artifact.
+
+## 2026-08-09 — Phase 5 task 2b: Tier C rolling yearly evals (owner-approved full runs)
+
+- **Gate cleared:** owner approved the task-2a projection (2026-08-09); the eight
+  staged configs ran unchanged — Haiku + Sonnet zero-shot (prompt v1 `f6777a96…`,
+  canonical params) on each drift slice, n=1,500, cap_seed 20260806. Eight appends
+  to runs.jsonl (git diff: 8 insertions, 0 modifications). Receipt-verified pairing:
+  Haiku∩Sonnet complaint_id overlap **1500/1500 on all four slices**.
+- **Result (measured, frozen protocol; macro-F1 [95% CI]):**
+
+  | slice | Haiku (run) | Sonnet (run) | Tier A (task 1, full slice) |
+  |---|---|---|---|
+  | 2023 | 0.7357 [0.6994, 0.7692] (`cf190ce2…`) | 0.7544 [0.7188, 0.7863] (`c82988bd…`) | 0.7579 |
+  | 2024 | 0.7617 [0.7274, 0.7918] (`b83b2d0d…`) | 0.7795 [0.7462, 0.8075] (`9d54ec58…`) | 0.7478 |
+  | 2025 | 0.7639 [0.7296, 0.7903] (`446fa236…`) | 0.7634 [0.7273, 0.7906] (`daa58725…`) | 0.7295 |
+  | 2026h1 | 0.7278 [0.7048, 0.7508] (`aa2bc9a0…`) | 0.7821 [0.7587, 0.8046] (`55cffcbe…`) | 0.6656 |
+
+  (Tier A column is the full-20k-slice runs from task 1 — context, not a paired
+  comparison; cross-tier paired deltas on the common 1,500 rows are a follow-on
+  computation from the prediction artifacts.)
+- **Paired Sonnet−Haiku deltas per slice** (tier_c_compare, paired bootstrap +
+  McNemar on the identical 1,500 rows): 2023 ΔF1 +0.019 [−0.008, +0.045] (p=.31),
+  2024 +0.018 [−0.006, +0.043] (p=.54), 2025 −0.001 [−0.026, +0.026] (p=.46) — all
+  CIs include zero, models statistically tied in-distribution. **2026h1: ΔF1
+  +0.054 [+0.036, +0.073], Δacc +0.074 [+0.056, +0.091], McNemar p≈1e-15,
+  discordants 155:44** — the Sonnet advantage concentrates exactly where drift is
+  worst, echoing the Phase 3 POSTCUTOFF paired finding.
+- **Findings:** (1) Tier C degrades far slower than Tier A across the drift years —
+  at 2026-H1, Tier A 0.666 vs Haiku 0.728 vs Sonnet 0.782; Sonnet's 2026-H1 point
+  is statistically indistinguishable from its own 2023 point (CIs overlap
+  broadly), i.e. near-flat over the horizon. (2) Parse failures: Haiku 0/6,000;
+  Sonnet 19/10/16/26 per slice (1.3–1.7%) — stable Sonnet-only failure arm, rate
+  roughly year-invariant. (3) Haiku ECE tracks 1−accuracy (degenerate one-hot
+  self-confidence, known from Phase 4 task 1) — Tier C yearly ECE is not
+  independently meaningful. (4) Providers recorded per receipt: Amazon Bedrock
+  for all Sonnet calls; Haiku 2025/2026h1 partially served by Anthropic (7 and
+  24 calls).
+- **Cost (measured from receipts):** task spend **$30.48** (projected $30.94;
+  −1.5% error). Per-run $1.97–2.04 Haiku, $5.50–5.71 Sonnet. Cumulative Tier C
+  spend **$67.38 of the ≈$75 envelope** (smoke included).
+- **Verdict:** hypothesis half-confirmed, half-overturned in an interesting way —
+  Tier C does not show Tier A's monotone decay; the LLM tier is drift-robust
+  in-distribution-tied but pulls decisively ahead at the 2026-H1 shift, and the
+  spread by model (Haiku dips at 2026-H1, Sonnet doesn't) makes the
+  Sonnet-terminal drift variant the natural escalation story for the router
+  chapter.
+- **Repro:** `uv run --extra tierc python -m triage_lab.harness
+  configs/tier_c_haiku_zeroshot_test_drift_2023.yaml` (and the other 7 configs);
+  paired deltas: `uv run --extra tierc python -m triage_lab.tier_c_compare
+  results/tier_c_raw/tier_c_sonnet_zeroshot_test_drift_2023/<ts>/calls.jsonl
+  results/tier_c_raw/tier_c_haiku_zeroshot_test_drift_2023/<ts>/calls.jsonl
+  --split test_drift_2023` (and per-slice analogues).
