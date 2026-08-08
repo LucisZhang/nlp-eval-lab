@@ -65,7 +65,7 @@ def _write_cost_config(tmp_path, *, name="cost.yaml", **kwargs):
 
 def _write_artifact(tmp_path, run_id, ids, y_true, y_pred, labels, *, split="cal",
                     split_sha256="splithash", config_sha256="cfghash",
-                    prompt_bundle_sha256=""):
+                    prompt_bundle_sha256="", git_sha="gitsha", input_sha256="inputsha"):
     index = {lbl: i for i, lbl in enumerate(labels)}
     probs = np.zeros((len(ids), len(labels)), dtype=np.float64)
     for i, pred in enumerate(y_pred):
@@ -74,6 +74,7 @@ def _write_artifact(tmp_path, run_id, ids, y_true, y_pred, labels, *, split="cal
         run_id=run_id, config_sha256=config_sha256, split=split,
         split_sha256=split_sha256, class_labels=labels,
         prompt_bundle_sha256=prompt_bundle_sha256,
+        git_sha=git_sha, input_sha256=input_sha256,
     )
     path = tmp_path / f"{run_id}.parquet"
     predictions.write_artifact(
@@ -108,12 +109,15 @@ def _write_receipts(path, receipts):
 
 def _record(run_id, config_name, *, cost_usd=None, raw_log_path=None, split="cal",
             split_sha256="splithash", config_sha256="cfghash", model_slug=SLUG,
-            pricing=PRICING, prompt_bundle_sha256=None):
+            pricing=PRICING, prompt_bundle_sha256=None, git_sha="gitsha",
+            input_sha256="inputsha"):
     rec = {
         "run_id": run_id,
         "config_path": f"configs/{config_name}.yaml",
         "config_sha256": config_sha256,
-        "dataset": {"split": split, "split_sha256": split_sha256},
+        "git_sha": git_sha,
+        "dataset": {"split": split, "split_sha256": split_sha256,
+                    "input_sha256": input_sha256},
     }
     if cost_usd is not None:
         rec["cost_usd"] = cost_usd

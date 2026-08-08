@@ -1,0 +1,436 @@
+{
+  "bootstrap": {
+    "method": "percentile [2.5, 97.5] over resampled example indices; one integers(0, n, size=n) draw per replicate, shared across the two systems of a comparison",
+    "n_resamples": 1000,
+    "seed": 20260805
+  },
+  "claims": [
+    {
+      "baseline": "c_only",
+      "claim": "claim_1_vs_all_llm",
+      "cost_per_1k_baseline": 916.9150172,
+      "cost_per_1k_router": 908.436387,
+      "coverage_a": 0.971,
+      "delta_accuracy_system": {
+        "ci_hi": 0.01,
+        "ci_lo": -0.006805,
+        "excludes_zero": false,
+        "point": 0.0012
+      },
+      "delta_cost_per_1k": {
+        "ci_hi": 39.555426165,
+        "ci_lo": -61.27405986,
+        "excludes_zero": false,
+        "point": -8.4786302
+      },
+      "delta_macro_f1_system": {
+        "ci_hi": 0.0190301676,
+        "ci_lo": -0.0142795491,
+        "excludes_zero": false,
+        "point": 0.0024950568
+      },
+      "evaluation_set": "paired_subset",
+      "gate": {
+        "any_adverse": false,
+        "certified": false,
+        "criterion": "Each gated metric is classified from the CI bound facing zero at margin 0: favorable_significant (favourable bound strictly clears zero), not_established (CI spans zero), adverse_significant (whole CI unfavourable). A claim is CERTIFIED only when every gated metric is favorable_significant; anything else is reported as an honest diagnosis carrying the per-metric classification. Note this is STRICTER than UPGRADE_PLAN \u00a74.2's 'at equal accuracy/cost' phrasing: a certified claim here has demonstrated a significant improvement on both axes, not parity on one of them.",
+        "metrics": {
+          "delta_accuracy_system": {
+            "ci_hi": 0.01,
+            "ci_lo": -0.006805,
+            "classification": "not_established",
+            "direction": "higher_is_better",
+            "point": 0.0012
+          },
+          "pct_cost_reduction": {
+            "ci_hi": 6.3482272294,
+            "ci_lo": -4.447006399,
+            "classification": "not_established",
+            "direction": "higher_is_better",
+            "point": 0.9246909518
+          }
+        }
+      },
+      "human_credit": {
+        "baseline_n_to_human": 0,
+        "note": "accuracy_system and macro_f1_system credit every human-routed row as correct (y_pred := y_true), matching the cost model's P(error|human)=0 assumption. That flatters any policy with a human arm, so accuracy_machine and macro_f1_answered are reported alongside over machine-answered rows only, where no assumption applies. Compare policies with different human rates using both.",
+        "router_n_to_human": 0
+      },
+      "macro_f1_answered": {
+        "ci_hi": 0.0190301676,
+        "ci_lo": -0.0142795491,
+        "excludes_zero": false,
+        "paired": true,
+        "point": 0.0024950568
+      },
+      "mcnemar_machine_rows": {
+        "b": 240,
+        "c": 234,
+        "n_both_machine": 5000,
+        "n_discordant": 474,
+        "p_value": 0.8183876568441062
+      },
+      "n_examples": 5000,
+      "pct_cost_reduction": {
+        "ci_hi": 6.3482272294,
+        "ci_lo": -4.447006399,
+        "excludes_zero": false,
+        "point": 0.9246909518
+      },
+      "router": "a_to_c_parsefail_human",
+      "tau": 0.4217123129176118,
+      "verdict": "NOT ESTABLISHED (n=5000 paired_subset): but system accuracy +0.0012 [-0.0068, 0.0100]; percent cost reduction +0.9247% [-4.4470, 6.3482] \u2014 the interval spans zero, so this is directional only, not a claim_1_vs_all_llm claim."
+    },
+    {
+      "baseline": "a_only",
+      "claim": "claim_2_vs_all_linear",
+      "cost_per_1k_baseline": 931.2,
+      "cost_per_1k_router": 908.436387,
+      "coverage_a": 0.971,
+      "delta_accuracy_system": {
+        "ci_hi": 0.007,
+        "ci_lo": 0.0004,
+        "excludes_zero": true,
+        "point": 0.0038
+      },
+      "delta_cost_per_1k": {
+        "ci_hi": -2.369634765,
+        "ci_lo": -41.964095295,
+        "excludes_zero": true,
+        "point": -22.763613
+      },
+      "delta_macro_f1_system": {
+        "ci_hi": 0.0164714151,
+        "ci_lo": -0.0026921993,
+        "excludes_zero": false,
+        "point": 0.0069721603
+      },
+      "evaluation_set": "paired_subset",
+      "gate": {
+        "any_adverse": false,
+        "certified": false,
+        "criterion": "Each gated metric is classified from the CI bound facing zero at margin 0: favorable_significant (favourable bound strictly clears zero), not_established (CI spans zero), adverse_significant (whole CI unfavourable). A claim is CERTIFIED only when every gated metric is favorable_significant; anything else is reported as an honest diagnosis carrying the per-metric classification. Note this is STRICTER than UPGRADE_PLAN \u00a74.2's 'at equal accuracy/cost' phrasing: a certified claim here has demonstrated a significant improvement on both axes, not parity on one of them.",
+        "metrics": {
+          "delta_cost_per_1k": {
+            "ci_hi": -2.369634765,
+            "ci_lo": -41.964095295,
+            "classification": "favorable_significant",
+            "direction": "lower_is_better",
+            "point": -22.763613
+          },
+          "delta_macro_f1_system": {
+            "ci_hi": 0.0164714151,
+            "ci_lo": -0.0026921993,
+            "classification": "not_established",
+            "direction": "higher_is_better",
+            "point": 0.0069721603
+          }
+        }
+      },
+      "human_credit": {
+        "baseline_n_to_human": 0,
+        "note": "accuracy_system and macro_f1_system credit every human-routed row as correct (y_pred := y_true), matching the cost model's P(error|human)=0 assumption. That flatters any policy with a human arm, so accuracy_machine and macro_f1_answered are reported alongside over machine-answered rows only, where no assumption applies. Compare policies with different human rates using both.",
+        "router_n_to_human": 0
+      },
+      "macro_f1_answered": {
+        "ci_hi": 0.0164714151,
+        "ci_lo": -0.0026921993,
+        "excludes_zero": false,
+        "paired": true,
+        "point": 0.0069721603
+      },
+      "mcnemar_machine_rows": {
+        "b": 44,
+        "c": 25,
+        "n_both_machine": 5000,
+        "n_discordant": 69,
+        "p_value": 0.029493493531317288
+      },
+      "n_examples": 5000,
+      "pct_cost_reduction": {
+        "ci_hi": 4.4836637958,
+        "ci_lo": 0.2612635954,
+        "excludes_zero": true,
+        "point": 2.4445460696
+      },
+      "router": "a_to_c_parsefail_human",
+      "tau": 0.4217123129176118,
+      "verdict": "NOT ESTABLISHED (n=5000 paired_subset): favourable and significant on cost per 1,000 complaints -22.7636 [-41.9641, -2.3696]; but system macro-F1 +0.0070 [-0.0027, 0.0165] \u2014 the interval spans zero, so this is directional only, not a claim_2_vs_all_linear claim."
+    },
+    {
+      "baseline": "a_only",
+      "claim": "claim_2_vs_all_linear",
+      "cost_per_1k_baseline": 933.4086535239,
+      "cost_per_1k_router": 872.8110069607,
+      "coverage_a": 0.9053454995,
+      "delta_accuracy_system": {
+        "ci_hi": 0.0509466886,
+        "ci_lo": 0.0482847103,
+        "excludes_zero": true,
+        "point": 0.049538983
+      },
+      "delta_cost_per_1k": {
+        "ci_hi": -54.8811313348,
+        "ci_lo": -66.7933705466,
+        "excludes_zero": true,
+        "point": -60.5976465632
+      },
+      "delta_macro_f1_system": {
+        "ci_hi": 0.0899459144,
+        "ci_lo": 0.084083102,
+        "excludes_zero": true,
+        "point": 0.0869538571
+      },
+      "evaluation_set": "full_test_iid",
+      "gate": {
+        "any_adverse": false,
+        "certified": true,
+        "criterion": "Each gated metric is classified from the CI bound facing zero at margin 0: favorable_significant (favourable bound strictly clears zero), not_established (CI spans zero), adverse_significant (whole CI unfavourable). A claim is CERTIFIED only when every gated metric is favorable_significant; anything else is reported as an honest diagnosis carrying the per-metric classification. Note this is STRICTER than UPGRADE_PLAN \u00a74.2's 'at equal accuracy/cost' phrasing: a certified claim here has demonstrated a significant improvement on both axes, not parity on one of them.",
+        "metrics": {
+          "delta_cost_per_1k": {
+            "ci_hi": -54.8811313348,
+            "ci_lo": -66.7933705466,
+            "classification": "favorable_significant",
+            "direction": "lower_is_better",
+            "point": -60.5976465632
+          },
+          "delta_macro_f1_system": {
+            "ci_hi": 0.0899459144,
+            "ci_lo": 0.084083102,
+            "classification": "favorable_significant",
+            "direction": "higher_is_better",
+            "point": 0.0869538571
+          }
+        }
+      },
+      "human_credit": {
+        "baseline_n_to_human": 0,
+        "note": "accuracy_system and macro_f1_system credit every human-routed row as correct (y_pred := y_true), matching the cost model's P(error|human)=0 assumption. That flatters any policy with a human arm, so accuracy_machine and macro_f1_answered are reported alongside over machine-answered rows only, where no assumption applies. Compare policies with different human rates using both.",
+        "router_n_to_human": 9886
+      },
+      "macro_f1_answered": {
+        "baseline_macro_f1_answered": 0.7605270747,
+        "note": "macro_f1_answered is defined over machine-answered rows only. Two policies with different coverage answer different rows, so no paired CI exists for their difference; in that case the two unpaired point values are reported and paired=false.",
+        "paired": false,
+        "router_macro_f1_answered": 0.8110155527
+      },
+      "mcnemar_machine_rows": {
+        "b": 0,
+        "c": 0,
+        "n_both_machine": 94557,
+        "n_discordant": 0,
+        "p_value": 1.0
+      },
+      "n_examples": 104443,
+      "pct_cost_reduction": {
+        "ci_hi": 7.1091156768,
+        "ci_lo": 5.8990382884,
+        "excludes_zero": true,
+        "point": 6.4920810766
+      },
+      "router": "a_to_human",
+      "tau": 0.500518783264516,
+      "verdict": "At significantly LOWER cost than the all-linear policy (paired cost delta $-60.60/1k [-66.79, -54.88]), the a_to_human router raises system macro-F1 by +0.0870 [0.0841, 0.0899] \u2014 measured on n=104443 full_test_iid."
+    },
+    {
+      "baseline": null,
+      "claim": "claim_1_vs_all_llm",
+      "evaluation_set": "full_test_iid",
+      "reason": "no Tier C policy is defined on the full TEST-IID slice: the Haiku run covers a frozen 5,000-row subsample, so an all-LLM baseline exists only on the paired subset",
+      "router": "a_to_human",
+      "status": "not_applicable"
+    }
+  ],
+  "cost_config": {
+    "evidence_class": {
+      "api_cost.tier_a": "estimated",
+      "api_cost.tier_c": "measured",
+      "params.c_human_usd": "estimated",
+      "params.c_misroute_usd": "estimated"
+    },
+    "params": {
+      "c_human_usd": 2.5,
+      "c_misroute_usd": 6.0
+    },
+    "path": "configs/cost_model_v1.yaml",
+    "sha256": "f76ad15a87457db64f50392d3a7bdd9ea65a581fa06478b6759538d16b5143d0",
+    "version": "v1"
+  },
+  "dominance_census": {
+    "by_router": {
+      "full_test_iid/a_to_human": {
+        "compared_against": [
+          "a_only",
+          "a_only_cnb",
+          "all_human"
+        ],
+        "dominated": [
+          "a_only",
+          "a_only_cnb",
+          "all_human"
+        ],
+        "dominated_model_baselines": [
+          "a_only",
+          "a_only_cnb"
+        ],
+        "n_model_baselines_dominated": 2,
+        "not_dominated": []
+      },
+      "paired_subset/a_to_c_parsefail_human": {
+        "compared_against": [
+          "a_only",
+          "c_only",
+          "a_to_human",
+          "all_human"
+        ],
+        "dominated": [
+          "a_only",
+          "all_human"
+        ],
+        "dominated_model_baselines": [
+          "a_only"
+        ],
+        "n_model_baselines_dominated": 1,
+        "not_dominated": [
+          "a_to_human",
+          "c_only"
+        ]
+      },
+      "paired_subset/a_to_human": {
+        "compared_against": [
+          "a_only"
+        ],
+        "dominated": [
+          "a_only"
+        ],
+        "dominated_model_baselines": [
+          "a_only"
+        ],
+        "n_model_baselines_dominated": 1,
+        "not_dominated": []
+      }
+    },
+    "criterion": "router cheaper than the baseline with a paired bootstrap CI on the cost/1k difference excluding zero",
+    "model_baselines": [
+      "a_only",
+      "a_only_cnb",
+      "c_only"
+    ],
+    "note": "`dominated_model_baselines` counts only competing model systems (a_only, a_only_cnb, c_only). Beating `all_human` is reported but never counted toward a dominance claim: at c_human=$2.50 the all-human policy costs $2,500/1k and any machine policy beats it by construction, so counting it would inflate the claim."
+  },
+  "evidence_classes": {
+    "c_human_usd": "estimated (business default, UPGRADE_PLAN \u00a74.2)",
+    "c_misroute_usd": "estimated (business default, UPGRADE_PLAN \u00a74.2)",
+    "human_resolution_correctness": "assumed (P(error|human) = 0)",
+    "predictions": "measured (frozen prediction artifacts, gate-verified)",
+    "tier_a_api_cost": "estimated (amortized_zero: CPU inference charged $0 by decision)",
+    "tier_c_api_cost": "measured (per-call receipts: real tokens x published prices)"
+  },
+  "inputs": {
+    "tier_a_cnb": {
+      "config_name": "tier_a_cnb_test_iid",
+      "config_sha256": "c0241ec3ca9fefcdbf8357b3dffe5957c4ad258a6c9e656ea408b25bfaa9aa0a",
+      "git_sha": "c61b4641963178c09a69c67f7b440e9d5e813c87",
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "n_examples": 104443,
+      "run_id": "c20cd14a7acd63b33b1a164b2fb56615153c5d595597668063ab3c666ec19781",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "tier_a_logreg": {
+      "config_name": "tier_a_logreg_test_iid",
+      "config_sha256": "b22be1e963760c2f277562c4afa89eb1014dd6bc0fd1cb86fd588c12d6f3b8c0",
+      "git_sha": "c61b4641963178c09a69c67f7b440e9d5e813c87",
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "n_examples": 104443,
+      "run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "tier_c_haiku": {
+      "config_name": "tier_c_haiku_zeroshot_test_iid",
+      "config_sha256": "32a286d7169cc5619533cc574f600c5ecc359aed4242d901b7045b75e960b7ee",
+      "cost_sum_check": {
+        "abs_delta": 0.0,
+        "joined_cost_usd": 6.575086,
+        "logged_cost_usd": 6.575086,
+        "ok": true,
+        "tol": 1e-06
+      },
+      "git_sha": "9812499cb07c23b5a6f615b32d29a5d65d0c4098",
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "logged_cost_usd": 6.575085999999997,
+      "model_slug": "anthropic/claude-haiku-4.5",
+      "n_examples": 5000,
+      "n_parse_failed": 0,
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_iid/20260807T004109Z/calls.jsonl",
+      "receipts_sha256": "6c26f0f9bbf65316a48617a89dacd0f4d92bd97b9cae1d078b2ee902629ff62e",
+      "run_id": "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    }
+  },
+  "notes": {
+    "answered_macro_f1": "macro_f1_answered is defined over machine-answered rows only. Two policies with different coverage answer different rows, so no paired CI exists for their difference; in that case the two unpaired point values are reported and paired=false.",
+    "gate": "Each gated metric is classified from the CI bound facing zero at margin 0: favorable_significant (favourable bound strictly clears zero), not_established (CI spans zero), adverse_significant (whole CI unfavourable). A claim is CERTIFIED only when every gated metric is favorable_significant; anything else is reported as an honest diagnosis carrying the per-metric classification. Note this is STRICTER than UPGRADE_PLAN \u00a74.2's 'at equal accuracy/cost' phrasing: a certified claim here has demonstrated a significant improvement on both axes, not parity on one of them.",
+    "human_credit": "accuracy_system and macro_f1_system credit every human-routed row as correct (y_pred := y_true), matching the cost model's P(error|human)=0 assumption. That flatters any policy with a human arm, so accuracy_machine and macro_f1_answered are reported alongside over machine-answered rows only, where no assumption applies. Compare policies with different human rates using both.",
+    "pairing": "Every delta is router - baseline on identical rows, with one shared bootstrap index draw per replicate (frozen seed), so cost, accuracy and macro-F1 deltas for a given comparison are read off the SAME resamples. Marginal per-policy CIs overlap even under strict dominance and are never used for a comparison.",
+    "parse_failures": "The Tier C -> human arm fires only on receipt parse_failed. Haiku 4.5 logged ZERO parse failures across all 5,000 TEST-IID calls, so the headline cascade's human arm is empty on this slice: its human_rate is 0.0 by measurement, not by construction. The c_human parameter therefore has no effect on the Haiku cascade here; the a_to_human policies are where c_human sensitivity is exercised.",
+    "transfer": "PRIMARY transfer is THRESHOLD TRANSFER: the CAL-fit tau* constant is applied unchanged to the TEST artifact's p_max and the realized coverage is reported as whatever it turns out to be. This is what shipping the constant actually does. The CAL rungs are calibration: none (raw probabilities) while tier_a_logreg_test_iid is calibration: isotonic (fit on CAL), so the tau crosses a probability-space boundary; the realized-vs-target coverage gap below is the direct measurement of that mismatch. The coverage-matched block (tau re-chosen on TEST p_max to hit the CAL target coverage) is SECONDARY sensitivity only \u2014 it uses TEST data to pick tau and so is not a deployable procedure without a held-out calibration slice."
+  },
+  "operating_point_version": "v2-isocal",
+  "pending": [
+    {
+      "blocked_on": "Tier B fine-tunes are not yet trained (UPGRADE_PLAN Phase 2)",
+      "description": "ModernBERT-base single-tier point (3 seeds)",
+      "point": "b1_only",
+      "status": "pending_tier_b"
+    },
+    {
+      "blocked_on": "Tier B fine-tunes are not yet trained (UPGRADE_PLAN Phase 2)",
+      "description": "DistilBERT deployment single-tier point",
+      "point": "b2_only",
+      "status": "pending_tier_b"
+    },
+    {
+      "blocked_on": "Tier B fine-tunes are not yet trained (UPGRADE_PLAN Phase 2)",
+      "description": "Tier A gate -> Tier B terminal cascade",
+      "point": "a_to_b",
+      "status": "pending_tier_b"
+    },
+    {
+      "blocked_on": "Tier B fine-tunes are not yet trained (UPGRADE_PLAN Phase 2)",
+      "description": "Tier A gate -> Tier B gate -> Tier C terminal cascade (full \u00a74.2)",
+      "point": "a_to_b_to_c",
+      "status": "pending_tier_b"
+    }
+  ],
+  "schema_version": "frontier-v1",
+  "thresholds": {
+    "a_to_c_parsefail_human/paired_subset": {
+      "cal_target_coverage_a": 0.96,
+      "source_file": "a_to_c_parsefail_human__paired_subset__40513354__cost-f76ad15a.json",
+      "source_sha256": "90c75af2ac723b05d9ef19903dd6059e834b85060c8bc1484c77d72f8f599f73",
+      "tau_star": 0.4217123129176118,
+      "tier_a_cal_config": "tier_a_logreg_wordchar_isocal_cal",
+      "tier_a_cal_run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc"
+    },
+    "a_to_human/full_cal": {
+      "cal_target_coverage_a": 0.900634687,
+      "source_file": "a_to_human__full_cal__40513354__cost-f76ad15a.json",
+      "source_sha256": "726cf6e2dd9740cb606bcb23aca462561adcd925c700e73a21fbd2cc5eb57107",
+      "tau_star": 0.500518783264516,
+      "tier_a_cal_config": "tier_a_logreg_wordchar_isocal_cal",
+      "tier_a_cal_run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc"
+    },
+    "a_to_human/paired_subset": {
+      "cal_target_coverage_a": 0.8933333333,
+      "source_file": "a_to_human__paired_subset__40513354__cost-f76ad15a.json",
+      "source_sha256": "12c95b66e3b41d5dd9ca9859711154743b59d582bbf1abb61fa9e8915c6aac2e",
+      "tau_star": 0.49680671423332523,
+      "tier_a_cal_config": "tier_a_logreg_wordchar_isocal_cal",
+      "tier_a_cal_run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc"
+    }
+  }
+}

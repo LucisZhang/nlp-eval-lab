@@ -89,11 +89,13 @@ def _probs_for(y_pred, p_max, labels):
 
 
 def _write_artifact(tmp_path, run_id, ids, y_true, y_pred, labels, p_max=None, *,
-                    split="test_iid", split_sha256="splithash", config_sha256="cfghash"):
+                    split="test_iid", split_sha256="splithash", config_sha256="cfghash",
+                    git_sha="gitsha", input_sha256="inputsha"):
     probs = _probs_for(y_pred, p_max, labels)
     prov = predictions.ArtifactProvenance(
         run_id=run_id, config_sha256=config_sha256, split=split,
         split_sha256=split_sha256, class_labels=list(labels),
+        git_sha=git_sha, input_sha256=input_sha256,
     )
     predictions.write_artifact(
         tmp_path / f"{run_id}.parquet", ids=np.asarray(ids, dtype=np.int64),
@@ -215,16 +217,23 @@ def _mini_repo(tmp_path, *, cost_sha256, tau_full=0.83, tau_paired_human=0.83,
         # the CAL run, it only proves the constants came from it.
         {"run_id": CAL_RUN_ID,
          "config_path": f"configs/{threshold_opt.PRIMARY_TIER_A_CONFIG}.yaml",
-         "config_sha256": CAL_CONFIG_SHA,
-         "dataset": {"split": "cal", "split_sha256": "calsplithash"}},
+         "config_sha256": CAL_CONFIG_SHA, "git_sha": "gitsha",
+         "dataset": {"split": "cal", "split_sha256": "calsplithash",
+                     "input_sha256": "inputsha"}},
         {"run_id": a_id, "config_path": str(a_cfg), "config_sha256": shas[a_cfg],
-         "dataset": {"split": "test_iid", "split_sha256": "splithash"},
+         "git_sha": "gitsha",
+         "dataset": {"split": "test_iid", "split_sha256": "splithash",
+                     "input_sha256": "inputsha"},
          "metrics": _metrics_block(Y_TRUE, y_pred_a, a_probs, LABELS)},
         {"run_id": cnb_id, "config_path": str(cnb_cfg), "config_sha256": shas[cnb_cfg],
-         "dataset": {"split": "test_iid", "split_sha256": "splithash"},
+         "git_sha": "gitsha",
+         "dataset": {"split": "test_iid", "split_sha256": "splithash",
+                     "input_sha256": "inputsha"},
          "metrics": _metrics_block(Y_TRUE, y_pred_cnb, cnb_probs, LABELS)},
         {"run_id": c_id, "config_path": str(c_cfg), "config_sha256": shas[c_cfg],
-         "dataset": {"split": "test_iid", "split_sha256": "splithash"},
+         "git_sha": "gitsha",
+         "dataset": {"split": "test_iid", "split_sha256": "splithash",
+                     "input_sha256": "inputsha"},
          "metrics": _metrics_block(c_true, c_pred, c_probs, LABELS),
          "cost_usd": sum(r["computed_cost_usd"] for r in receipts),
          "extra": {"raw_log_path": str(log), "model_slug": SLUG,
@@ -251,9 +260,11 @@ def _mini_repo(tmp_path, *, cost_sha256, tau_full=0.83, tau_paired_human=0.83,
 def _build(tmp_path, **kwargs):
     cfg = _cost_config(tmp_path)
     repo = _mini_repo(tmp_path, cost_sha256=cfg.sha256, **kwargs)
+    # The synthetic repo carries no CAL artifacts, so this exercises the METADATA gate;
+    # the tau-replay gate is covered against the real shipped files further down.
     evaluations = router_sim.build_all(
         cfg, preds_dir=tmp_path, results_path=repo["results"],
-        thresholds_dir=repo["thresholds"], n_resamples=25)
+        thresholds_dir=repo["thresholds"], n_resamples=25, verify_replay=False)
     return repo, cfg, evaluations
 
 
@@ -408,7 +419,8 @@ def test_paired_delta_is_paired_not_two_marginals(tmp_path):
     repo = _mini_repo(tmp_path, cost_sha256=cfg.sha256)
     inputs = router_sim.load_test_inputs(tmp_path, repo["results"])
     cal = router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
-                                         results_path=repo["results"])
+                                         results_path=repo["results"],
+                                         verify_replay=False)
     policies = {p.name: p for p in router_sim.build_paired_policies(inputs, cal)}
     same = router_sim.paired_comparison(policies["a_only"], policies["a_only"], cfg,
                                         n_resamples=20)
@@ -424,10 +436,11 @@ def test_paired_delta_refuses_misaligned_policies(tmp_path):
     repo = _mini_repo(tmp_path, cost_sha256=cfg.sha256)
     inputs = router_sim.load_test_inputs(tmp_path, repo["results"])
     cal = router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
-                                         results_path=repo["results"])
+                                         results_path=repo["results"],
+                                         verify_replay=False)
     full = {p.name: p for p in router_sim.build_full_policies(inputs, cal)}
     paired = {p.name: p for p in router_sim.build_paired_policies(inputs, cal)}
-    with pytest.raises(ValueError, match="their ids differ"):
+    with pytest.raises(ValueError, match="different\n?\\s*numbers of rows"):
         router_sim.paired_comparison(full["a_only"], paired["a_only"], cfg,
                                      n_resamples=5)
 
@@ -463,8 +476,9 @@ def test_non_test_iid_artifact_is_refused(tmp_path):
     run_id = "dd" * 32
     _write_artifact(tmp_path, run_id, [1], ["a"], ["a"], LABELS, [0.9], split="cal")
     record = {"run_id": run_id, "config_path": "configs/x.yaml",
-              "config_sha256": "cfghash",
-              "dataset": {"split": "cal", "split_sha256": "splithash"}}
+              "config_sha256": "cfghash", "git_sha": "gitsha",
+              "dataset": {"split": "cal", "split_sha256": "splithash",
+                          "input_sha256": "inputsha"}}
     with pytest.raises(ValueError, match="outside the allowed set"):
         cost_model.load_artifact_verified(record, tmp_path,
                                           allowed_splits=router_sim.ALLOWED_SPLITS)
@@ -475,14 +489,15 @@ def test_threshold_file_from_a_different_cost_config_is_refused(tmp_path):
     repo = _mini_repo(tmp_path, cost_sha256="0" * 64)
     with pytest.raises(ValueError, match="was fit under cost config"):
         router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
-                                         results_path=repo["results"])
+                                         results_path=repo["results"],
+                                         verify_replay=False)
 
 
 def test_missing_threshold_files_are_a_hard_failure(tmp_path):
     empty = tmp_path / "none"
     empty.mkdir()
-    with pytest.raises(ValueError, match="no primary-rung threshold files"):
-        router_sim.load_cal_thresholds(empty)
+    with pytest.raises(ValueError, match="no primary-rung .* threshold files"):
+        router_sim.load_cal_thresholds(empty, verify_replay=False)
 
 
 # ---------------------------------------------------------------------------
@@ -620,7 +635,7 @@ def test_cli_is_byte_deterministic(tmp_path):
         assert router_sim.main([
             "--preds-dir", str(tmp_path), "--out-dir", str(out_dir),
             "--results", str(repo["results"]), "--cost-config", str(tmp_path / "cost.yaml"),
-            "--thresholds-dir", str(repo["thresholds"]),
+            "--thresholds-dir", str(repo["thresholds"]), "--no-verify-replay",
         ]) == 0
         outs.append(out_dir)
     files = sorted(p.name for p in outs[0].glob("*.json"))
@@ -654,12 +669,17 @@ def test_shipped_router_files_replay_exactly():
     """
     cfg = cost_model.load_cost_config()
     inputs = router_sim.load_test_inputs()
-    cal = router_sim.load_cal_thresholds(cost_sha256=cfg.sha256)
+    cals = {}   # one threshold set per operating-point version present on disk
     builders = {router_sim.EVAL_FULL: router_sim.build_full_policies,
                 router_sim.EVAL_PAIRED: router_sim.build_paired_policies}
 
     for path in _REAL_ROUTER_FILES:
         obj = json.loads(path.read_text())
+        op_version = obj.get("operating_point_version", router_sim.OP_V1)
+        if op_version not in cals:
+            cals[op_version] = router_sim.load_cal_thresholds(
+                cost_sha256=cfg.sha256, derivation=op_version, cost_config=cfg)
+        cal = cals[op_version]
         name = obj["evaluation_set"]
         for transfer, block in ((router_sim.TRANSFER_PRIMARY, obj["policies"]),
                                 (router_sim.TRANSFER_SECONDARY,
@@ -743,7 +763,8 @@ def test_duplicate_primary_threshold_file_is_a_hard_failure(tmp_path):
                           target_coverage=0.5, cost_sha256=cfg.sha256, suffix="_stale")
     with pytest.raises(ValueError, match="two primary threshold files claim"):
         router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
-                                       results_path=repo["results"])
+                                       results_path=repo["results"],
+                                       verify_replay=False)
 
 
 @pytest.mark.parametrize(("override", "pattern"), [
@@ -756,7 +777,8 @@ def test_threshold_file_not_bound_to_the_cal_run_is_refused(tmp_path, override, 
     repo = _thresholds_for_validation(tmp_path, cfg, **override)
     with pytest.raises(ValueError, match=pattern):
         router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
-                                       results_path=repo["results"])
+                                       results_path=repo["results"],
+                                       verify_replay=False)
 
 
 @pytest.mark.parametrize(("override", "pattern"), [
@@ -776,7 +798,8 @@ def test_out_of_range_threshold_fields_are_refused(tmp_path, override, pattern):
     repo = _thresholds_for_validation(tmp_path, cfg, **override)
     with pytest.raises(ValueError, match=pattern):
         router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
-                                       results_path=repo["results"])
+                                       results_path=repo["results"],
+                                       verify_replay=False)
 
 
 @pytest.mark.parametrize(("n_examples", "n_answered", "pattern"), [
@@ -792,7 +815,8 @@ def test_self_inconsistent_threshold_counts_are_refused(tmp_path, n_examples, n_
                                       n_answered=n_answered)
     with pytest.raises(ValueError, match=pattern):
         router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
-                                       results_path=repo["results"])
+                                       results_path=repo["results"],
+                                       verify_replay=False)
 
 
 def test_incomplete_threshold_set_is_refused(tmp_path):
@@ -802,7 +826,8 @@ def test_incomplete_threshold_set_is_refused(tmp_path):
     stale.unlink()
     with pytest.raises(ValueError, match="not the expected one"):
         router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
-                                       results_path=repo["results"])
+                                       results_path=repo["results"],
+                                       verify_replay=False)
 
 
 def test_missing_cal_run_record_is_refused(tmp_path):
@@ -813,13 +838,14 @@ def test_missing_cal_run_record_is_refused(tmp_path):
     repo["results"].write_text("".join(json.dumps(r) + "\n" for r in kept))
     with pytest.raises(ValueError, match="no run record for the CAL rung"):
         router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
-                                       results_path=repo["results"])
+                                       results_path=repo["results"],
+                                       verify_replay=False)
 
 
 @_needs_real
 def test_shipped_thresholds_pass_validation_against_the_real_records():
     cfg = cost_model.load_cost_config()
-    cal = router_sim.load_cal_thresholds(cost_sha256=cfg.sha256)
+    cal = router_sim.load_cal_thresholds(cost_sha256=cfg.sha256, cost_config=cfg)
     assert set(cal) == set(router_sim.EXPECTED_THRESHOLD_KEYS)
     cal_record = predictions.records_by_config()[threshold_opt.PRIMARY_TIER_A_CONFIG]
     for entry in cal.values():
@@ -866,3 +892,235 @@ def test_secondary_block_records_the_coverage_matching_error(tmp_path):
             assert row["coverage_matched_abs_error"] == pytest.approx(
                 abs(row["coverage_matched_realized_coverage_a"]
                     - row["cal_target_coverage_a"]))
+
+
+# ---------------------------------------------------------------------------
+# v1 / v2 operating-point coexistence
+# ---------------------------------------------------------------------------
+
+def _add_v2_thresholds(repo, cfg, *, taus=(0.60, 0.60, 0.55)):
+    """Write a v2 threshold set alongside the v1 one, bound to a v2 CAL record."""
+    v2_run = "v2" * 32
+    records = [json.loads(x) for x in repo["results"].read_text().splitlines() if x.strip()]
+    records.append({
+        "run_id": v2_run,
+        "config_path": f"configs/{threshold_opt.V2_TIER_A_CAL_CONFIG}.yaml",
+        "config_sha256": "v2calcfg", "git_sha": "gitsha",
+        "dataset": {"split": "cal", "split_sha256": "calsplithash",
+                    "input_sha256": "inputsha"},
+    })
+    repo["results"].write_text("".join(json.dumps(r) + "\n" for r in records))
+    keys = [(threshold_opt.FAMILY_A_TO_HUMAN, threshold_opt.DATASET_FULL_CAL),
+            (threshold_opt.FAMILY_A_TO_HUMAN, threshold_opt.DATASET_PAIRED),
+            (threshold_opt.FAMILY_A_TO_C, threshold_opt.DATASET_PAIRED)]
+    for (family, dataset), tau in zip(keys, taus, strict=True):
+        path = _write_threshold_file(
+            repo["thresholds"], family=family, dataset=dataset, tau_star=tau,
+            target_coverage=0.5, cost_sha256=cfg.sha256, tier_a_run_id=v2_run,
+            tier_a_config_sha="v2calcfg", suffix="_v2")
+        obj = json.loads(path.read_text())
+        obj["derivation"] = threshold_opt.DERIVATION_V2
+        obj["is_primary_v2"] = True
+        obj["inputs"]["tier_a"]["config_name"] = threshold_opt.V2_TIER_A_CAL_CONFIG
+        path.write_text(json.dumps(obj, sort_keys=True, indent=2) + "\n")
+    return v2_run
+
+
+def test_v1_and_v2_threshold_sets_coexist_without_colliding(tmp_path):
+    cfg = _cost_config(tmp_path)
+    repo = _mini_repo(tmp_path, cost_sha256=cfg.sha256)
+    v2_run = _add_v2_thresholds(repo, cfg)
+
+    v1 = router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
+                                        results_path=repo["results"],
+                                        derivation=router_sim.OP_V1, verify_replay=False)
+    v2 = router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
+                                        results_path=repo["results"],
+                                        derivation=router_sim.OP_V2, verify_replay=False)
+    assert set(v1) == set(v2) == set(router_sim.EXPECTED_THRESHOLD_KEYS)
+    assert {e.tier_a_run_id for e in v1.values()} == {CAL_RUN_ID}
+    assert {e.tier_a_run_id for e in v2.values()} == {v2_run}
+    # the two sets carry different taus, i.e. neither leaked into the other
+    key = (threshold_opt.FAMILY_A_TO_C, threshold_opt.DATASET_PAIRED)
+    assert v1[key].tau_star != v2[key].tau_star
+
+
+def test_duplicate_hard_fail_is_per_derivation(tmp_path):
+    cfg = _cost_config(tmp_path)
+    repo = _mini_repo(tmp_path, cost_sha256=cfg.sha256)
+    v2_run = _add_v2_thresholds(repo, cfg)
+    # a SECOND v2 file for one key: must fail for v2 while v1 still loads cleanly
+    path = _write_threshold_file(
+        repo["thresholds"], family=threshold_opt.FAMILY_A_TO_C,
+        dataset=threshold_opt.DATASET_PAIRED, tau_star=0.31, target_coverage=0.5,
+        cost_sha256=cfg.sha256, tier_a_run_id=v2_run, tier_a_config_sha="v2calcfg",
+        suffix="_v2dup")
+    obj = json.loads(path.read_text())
+    obj["derivation"] = threshold_opt.DERIVATION_V2
+    obj["inputs"]["tier_a"]["config_name"] = threshold_opt.V2_TIER_A_CAL_CONFIG
+    path.write_text(json.dumps(obj, sort_keys=True, indent=2) + "\n")
+
+    assert router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
+                                          results_path=repo["results"],
+                                          derivation=router_sim.OP_V1, verify_replay=False)
+    with pytest.raises(ValueError, match="two primary threshold files claim"):
+        router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
+                                       results_path=repo["results"],
+                                       derivation=router_sim.OP_V2, verify_replay=False)
+
+
+def test_v2_router_outputs_are_versioned_and_marked(tmp_path):
+    cfg = _cost_config(tmp_path)
+    repo = _mini_repo(tmp_path, cost_sha256=cfg.sha256)
+    _add_v2_thresholds(repo, cfg)
+    evaluations = router_sim.build_all(
+        cfg, preds_dir=tmp_path, results_path=repo["results"],
+        thresholds_dir=repo["thresholds"], n_resamples=10,
+        op_version=router_sim.OP_V2, verify_replay=False)
+    for ev in evaluations.values():
+        assert ev["operating_point_version"] == router_sim.OP_V2
+        assert "in-sample" in ev["tau_derivation_note"]
+    assert router_sim.result_filename("paired_subset", cfg, router_sim.OP_V2) == \
+        f"paired_subset__opv2__cost-{cfg.sha256[:8]}.json"
+    # v1 keeps its original, unversioned filename so committed evidence is not renamed
+    assert router_sim.result_filename("paired_subset", cfg, router_sim.OP_V1) == \
+        f"paired_subset__cost-{cfg.sha256[:8]}.json"
+    v1_eval = router_sim.build_all(
+        cfg, preds_dir=tmp_path, results_path=repo["results"],
+        thresholds_dir=repo["thresholds"], n_resamples=10, verify_replay=False)
+    for ev in v1_eval.values():
+        assert "operating_point_version" not in ev
+
+
+def test_pairing_refuses_identical_ids_with_different_y_true(tmp_path):
+    """Same ids, different ground truth: the failure ids alone cannot catch.
+
+    Two artifacts can carry identical id vectors while disagreeing on labels (a re-cut
+    split, a relabelled taxonomy). A paired delta across that disagreement would score
+    each system against a different answer key while every shape check passed.
+    """
+    cfg = _cost_config(tmp_path)
+    ids = [1, 2, 3]
+    a = router_sim.RouterPolicy(
+        name="a", evaluation_set="fixture", ids=np.asarray(ids, dtype=np.int64),
+        y_true=np.array(["a", "b", "a"], dtype=object),
+        y_pred=np.array(["a", "b", "a"], dtype=object),
+        to_human=np.zeros(3, dtype=bool), api_cost_usd=np.zeros(3),
+        gate={"kind": "answer_all", "tau": None})
+    b = router_sim.RouterPolicy(
+        name="b", evaluation_set="fixture", ids=np.asarray(ids, dtype=np.int64),
+        y_true=np.array(["a", "a", "a"], dtype=object),   # <- one label differs
+        y_pred=np.array(["a", "b", "a"], dtype=object),
+        to_human=np.zeros(3, dtype=bool), api_cost_usd=np.zeros(3),
+        gate={"kind": "answer_all", "tau": None})
+    with pytest.raises(ValueError, match="disagree on y_true for 1 row"):
+        router_sim.paired_comparison(a, b, cfg, n_resamples=5)
+    # length mismatch is reported as such, not as an id difference
+    short = router_sim.RouterPolicy(
+        name="short", evaluation_set="fixture", ids=np.asarray([1, 2], dtype=np.int64),
+        y_true=np.array(["a", "b"], dtype=object),
+        y_pred=np.array(["a", "b"], dtype=object),
+        to_human=np.zeros(2, dtype=bool), api_cost_usd=np.zeros(2),
+        gate={"kind": "answer_all", "tau": None})
+    with pytest.raises(ValueError, match="different numbers of rows"):
+        router_sim.paired_comparison(a, short, cfg, n_resamples=5)
+
+
+# ---------------------------------------------------------------------------
+# tau-replay gate (against the real committed threshold files)
+# ---------------------------------------------------------------------------
+
+_REAL_THRESHOLD_FILES = sorted(
+    p for p in router_sim.DEFAULT_THRESHOLDS_DIR.glob("*__cost-*.json")
+    if not p.name.startswith("summary__")
+)
+_needs_thresholds = pytest.mark.skipif(
+    not (_REAL_THRESHOLD_FILES and router_sim.DEFAULT_PREDS_DIR.exists()),
+    reason="real thresholds/preds not present")
+
+
+def _tampered_threshold_dir(tmp_path, derivation, mutate):
+    """Copy the real threshold set, apply `mutate` to one matching file, return the dir."""
+    out = tmp_path / "thresholds"
+    out.mkdir()
+    touched = False
+    for path in _REAL_THRESHOLD_FILES:
+        obj = json.loads(path.read_text())
+        if (obj.get("derivation", threshold_opt.DERIVATION_V1) == derivation
+                and not touched and obj.get("is_primary")
+                and obj["policy_family"] == threshold_opt.FAMILY_A_TO_HUMAN
+                and obj["dataset"] == threshold_opt.DATASET_FULL_CAL):
+            mutate(obj)
+            touched = True
+        (out / path.name).write_text(json.dumps(obj, sort_keys=True, indent=2) + "\n")
+    assert touched, "no file was tampered; the fixture proves nothing"
+    return out
+
+
+@_needs_thresholds
+def test_shipped_thresholds_pass_the_tau_replay_gate():
+    cfg = cost_model.load_cost_config()
+    for derivation in (router_sim.OP_V1, router_sim.OP_V2):
+        cal = router_sim.load_cal_thresholds(cost_sha256=cfg.sha256, cost_config=cfg,
+                                             derivation=derivation)
+        assert set(cal) == set(router_sim.EXPECTED_THRESHOLD_KEYS)
+
+
+@_needs_thresholds
+def test_tau_replay_catches_an_edited_answered_count(tmp_path):
+    def mutate(obj):
+        obj["n_answered_at_tau_star"] += 1
+        obj["target_coverage_a"] = obj["n_answered_at_tau_star"] / obj["n_examples"]
+    cfg = cost_model.load_cost_config()
+    bad = _tampered_threshold_dir(tmp_path, router_sim.OP_V2, mutate)
+    with pytest.raises(ValueError, match="does not replay.*selects"):
+        router_sim.load_cal_thresholds(bad, cost_sha256=cfg.sha256, cost_config=cfg,
+                                       derivation=router_sim.OP_V2)
+
+
+@_needs_thresholds
+def test_tau_replay_catches_an_edited_tau(tmp_path):
+    # Move tau to a value that still satisfies every METADATA check (finite, in range,
+    # counts self-consistent) but selects a different set of rows.
+    def mutate(obj):
+        obj["tau_star"] = min(obj["tau_star"] + 0.05, 1.0)
+    cfg = cost_model.load_cost_config()
+    bad = _tampered_threshold_dir(tmp_path, router_sim.OP_V2, mutate)
+    with pytest.raises(ValueError, match="does not replay"):
+        router_sim.load_cal_thresholds(bad, cost_sha256=cfg.sha256, cost_config=cfg,
+                                       derivation=router_sim.OP_V2)
+
+
+@_needs_thresholds
+def test_tau_replay_catches_an_edited_objective(tmp_path):
+    def mutate(obj):
+        point = obj["operating_points"]["tau_star"]["expected_cost_per_1k"]["total"]
+        point["point"] = point["point"] + 1.0
+    cfg = cost_model.load_cost_config()
+    bad = _tampered_threshold_dir(tmp_path, router_sim.OP_V2, mutate)
+    with pytest.raises(ValueError, match="does not replay.*objective"):
+        router_sim.load_cal_thresholds(bad, cost_sha256=cfg.sha256, cost_config=cfg,
+                                       derivation=router_sim.OP_V2)
+
+
+def test_replay_without_a_cost_config_is_refused(tmp_path):
+    cfg = _cost_config(tmp_path)
+    repo = _mini_repo(tmp_path, cost_sha256=cfg.sha256)
+    with pytest.raises(ValueError, match="verify_replay needs the cost config"):
+        router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
+                                       results_path=repo["results"])
+
+
+@_needs_real
+def test_v1_router_outputs_regenerate_byte_identically(tmp_path):
+    """Byte-level regeneration of the committed v1 router evidence."""
+    out_dir = tmp_path / "router"
+    assert router_sim.main(["--out-dir", str(out_dir),
+                            "--op-version", router_sim.OP_V1]) == 0
+    regenerated = sorted(out_dir.glob("*.json"))
+    assert regenerated
+    for path in regenerated:
+        committed = router_sim.DEFAULT_ROUTER_DIR / path.name
+        assert committed.exists(), f"{path.name} is not committed"
+        assert path.read_bytes() == committed.read_bytes(), path.name
+        assert "__opv2__" not in path.name

@@ -79,6 +79,17 @@ TRANSFER_SECONDARY = "coverage_matched"
 # The exact CAL threshold constants the router expects to find. Stated as a set so a
 # missing file fails at load time with a readable message instead of as a KeyError inside
 # a policy builder, and so an unexpected extra key cannot be silently ignored.
+# Operating-point versions: which CAL derivation the router's tau* constants come from.
+# v1 = raw-CAL thresholds crossing into the calibrated TEST space (kept as the documented
+# lesson); v2 = thresholds derived in the deployment calibration space. Output files are
+# suffixed per version so v1 evidence is never rewritten.
+OP_V1 = threshold_opt.DERIVATION_V1
+OP_V2 = threshold_opt.DERIVATION_V2
+OP_VERSIONS: dict[str, dict] = {
+    OP_V1: {"tier_a_cal_config": threshold_opt.PRIMARY_TIER_A_CONFIG, "suffix": ""},
+    OP_V2: {"tier_a_cal_config": threshold_opt.V2_TIER_A_CAL_CONFIG, "suffix": "__opv2"},
+}
+
 EXPECTED_THRESHOLD_KEYS = frozenset({
     (threshold_opt.FAMILY_A_TO_HUMAN, threshold_opt.DATASET_FULL_CAL),
     (threshold_opt.FAMILY_A_TO_HUMAN, threshold_opt.DATASET_PAIRED),
@@ -88,6 +99,10 @@ EXPECTED_THRESHOLD_KEYS = frozenset({
 # `target_coverage_a` is written rounded to JSON_ROUND (10 dp), so the count check has to
 # tolerate that rounding and nothing more.
 THRESHOLD_COUNT_TOL = 1e-9
+
+# The published objective is rounded to JSON_ROUND (10 dp), so the replay compares against
+# that rounding and nothing looser.
+REPLAY_COST_TOL = 1e-9
 
 JSON_ROUND = cost_model.JSON_ROUND
 _round = cost_model._round
@@ -249,10 +264,75 @@ def _check_threshold_object(obj: dict, path, *, cal_record: dict,
         )
 
 
+def _replay_threshold(obj: dict, path, entry_key, *, cal_record, cost_config,
+                      preds_dir, results_path) -> None:
+    """Rebuild the CAL policy at the stored tau* and demand the stored numbers back.
+
+    The metadata checks prove the file DESCRIBES the right run; this proves the file's
+    numbers were actually produced by that run. Everything downstream is a transcription
+    of `tau_star`, so a file whose tau no longer selects the rows it claims — because the
+    artifact was regenerated, or a value was hand-edited — would silently move every
+    router operating point while every hash still matched.
+
+    Recomputed from the gate-verified CAL artifact: the answered count at tau*, and the
+    objective (expected cost per 1,000) the sweep minimized.
+    """
+    family, dataset = entry_key
+    art_a = cost_model.load_artifact_verified(cal_record, preds_dir,
+                                              allowed_splits={"cal"})
+    records = predictions.records_by_config(results_path)
+    record_c = records[threshold_opt.TIER_C_CAL_CONFIG]
+    art_c = cost_model.load_artifact_verified(record_c, preds_dir,
+                                              allowed_splits={"cal"})
+    if dataset == threshold_opt.DATASET_FULL_CAL:
+        index = None
+    else:
+        index = threshold_opt.restrict_to_ids(art_a, art_c.complaint_id)
+
+    if family == threshold_opt.FAMILY_A_TO_HUMAN:
+        policy = threshold_opt.build_a_to_human(
+            art_a, cal_record, obj["inputs"]["tier_a"]["config_name"],
+            dataset=dataset, index=index)
+    else:
+        api, parse_failed, check, _ = threshold_opt.load_tier_c_arm_inputs(art_c, record_c)
+        policy = threshold_opt.build_a_to_c(
+            art_a, cal_record, obj["inputs"]["tier_a"]["config_name"], art_c, record_c,
+            threshold_opt.TIER_C_CAL_CONFIG, api_cost_usd=api,
+            parse_failed=parse_failed, cost_sum_check=check)
+
+    tau = float(obj["tau_star"])
+    n_answered = int(np.count_nonzero(np.asarray(policy.p_max, dtype=np.float64) >= tau))
+    if n_answered != int(obj["n_answered_at_tau_star"]):
+        raise ValueError(
+            f"threshold file {path.name} does not replay: tau_star {tau!r} selects "
+            f"{n_answered} row(s) on the CAL artifact but the file records "
+            f"{obj['n_answered_at_tau_star']}"
+        )
+    if len(policy) != int(obj["n_examples"]):
+        raise ValueError(
+            f"threshold file {path.name} does not replay: the CAL policy has "
+            f"{len(policy)} row(s), the file records {obj['n_examples']}"
+        )
+    recomputed = threshold_opt.cost_at(
+        policy, tau, c_misroute=cost_config.c_misroute_usd,
+        c_human=cost_config.c_human_usd)["total"]
+    published = obj["operating_points"]["tau_star"]["expected_cost_per_1k"]["total"]["point"]
+    if abs(recomputed - published) > REPLAY_COST_TOL:
+        raise ValueError(
+            f"threshold file {path.name} does not replay: the objective at tau_star "
+            f"recomputes to {recomputed!r} but the file records {published!r} "
+            f"(|delta| > {REPLAY_COST_TOL:g})"
+        )
+
+
 def load_cal_thresholds(thresholds_dir=DEFAULT_THRESHOLDS_DIR, *,
                         cost_sha256: str | None = None,
-                        tier_a_config: str = threshold_opt.PRIMARY_TIER_A_CONFIG,
+                        tier_a_config: str | None = None,
                         results_path=DEFAULT_RESULTS_PATH,
+                        derivation: str = OP_V1,
+                        cost_config: cost_model.CostConfig | None = None,
+                        preds_dir=DEFAULT_PREDS_DIR,
+                        verify_replay: bool = True,
                         ) -> dict[tuple[str, str], CalThreshold]:
     """Read + validate the primary rung's tau* constants out of `results/thresholds/`.
 
@@ -269,6 +349,7 @@ def load_cal_thresholds(thresholds_dir=DEFAULT_THRESHOLDS_DIR, *,
     policy builder.
     """
     thresholds_dir = Path(thresholds_dir)
+    tier_a_config = tier_a_config or OP_VERSIONS[derivation]["tier_a_cal_config"]
     cal_records = predictions.records_by_config(results_path)
     if tier_a_config not in cal_records:
         raise ValueError(
@@ -284,10 +365,23 @@ def load_cal_thresholds(thresholds_dir=DEFAULT_THRESHOLDS_DIR, *,
             continue
         obj = json.loads(path.read_text())
         tier_a = obj.get("inputs", {}).get("tier_a", {})
+        # Files written before the derivation field are v1 by definition, which is why the
+        # default matters: it is what keeps v1 evidence readable without rewriting it.
+        if obj.get("derivation", threshold_opt.DERIVATION_V1) != derivation:
+            continue
         if tier_a.get("config_name") != tier_a_config or not obj.get("is_primary"):
             continue
         _check_threshold_object(obj, path, cal_record=cal_record, cost_sha256=cost_sha256)
         key = (obj["policy_family"], obj["dataset"])
+        if verify_replay:
+            if cost_config is None:
+                raise ValueError(
+                    "verify_replay needs the cost config whose prices the tau* minimized; "
+                    "pass cost_config=..., or verify_replay=False to check metadata only"
+                )
+            _replay_threshold(obj, path, key, cal_record=cal_record,
+                              cost_config=cost_config, preds_dir=preds_dir,
+                              results_path=results_path)
         if key in out:
             raise ValueError(
                 f"two primary threshold files claim {key}: {sources[key]} and "
@@ -307,16 +401,16 @@ def load_cal_thresholds(thresholds_dir=DEFAULT_THRESHOLDS_DIR, *,
         )
     if not out:
         raise ValueError(
-            f"no primary-rung threshold files for {tier_a_config!r} under "
+            f"no primary-rung {derivation} threshold files for {tier_a_config!r} under "
             f"{thresholds_dir}; run `make thresholds` first"
         )
     missing = EXPECTED_THRESHOLD_KEYS - set(out)
     unexpected = set(out) - EXPECTED_THRESHOLD_KEYS
     if missing or unexpected:
         raise ValueError(
-            f"threshold set under {thresholds_dir} is not the expected one — missing "
-            f"{sorted(missing)}, unexpected {sorted(unexpected)}; the router needs exactly "
-            f"{sorted(EXPECTED_THRESHOLD_KEYS)}"
+            f"the {derivation} threshold set under {thresholds_dir} is not the expected "
+            f"one — missing {sorted(missing)}, unexpected {sorted(unexpected)}; each "
+            f"derivation needs exactly {sorted(EXPECTED_THRESHOLD_KEYS)}"
         )
     return out
 
@@ -533,10 +627,30 @@ def evaluate_policy(policy: RouterPolicy, cfg: cost_model.CostConfig, class_labe
 # ---------------------------------------------------------------------------
 
 def _require_aligned(a: RouterPolicy, b: RouterPolicy) -> None:
+    """Two policies may only be paired if they describe the same rows, in the same order.
+
+    Ids alone are not enough: two artifacts can carry identical id vectors while disagreeing
+    on the ground truth (a split re-cut, a relabelled taxonomy), and a paired delta computed
+    across that disagreement would silently compare each system against a different answer
+    key. Length is checked first so the error names the real problem instead of surfacing as
+    a broadcast failure.
+    """
+    if len(a) != len(b):
+        raise ValueError(
+            f"cannot pair {a.name} (n={len(a)}) with {b.name} (n={len(b)}): different "
+            "numbers of rows"
+        )
     if not np.array_equal(a.ids, b.ids):
         raise ValueError(
             f"cannot pair {a.name} with {b.name}: their ids differ, so a per-example "
             "difference would compare different complaints"
+        )
+    if not np.array_equal(a.y_true, b.y_true):
+        n_bad = int(np.count_nonzero(np.asarray(a.y_true) != np.asarray(b.y_true)))
+        raise ValueError(
+            f"cannot pair {a.name} with {b.name}: they disagree on y_true for {n_bad} "
+            "row(s) despite identical ids — the two are not scored against the same "
+            "ground truth"
         )
 
 
@@ -598,12 +712,19 @@ def paired_comparison(a: RouterPolicy, b: RouterPolicy, cfg: cost_model.CostConf
 # ---------------------------------------------------------------------------
 
 def _artifact_block(record, art, config_name) -> dict:
+    """Everything that identifies the run behind an artifact, serialized into outputs.
+
+    Includes `git_sha` and `input_sha256`: a derived number should name the code and the
+    data snapshot it came from, not just the config and the split.
+    """
     return {
         "run_id": record["run_id"],
         "config_name": config_name,
         "config_sha256": art.provenance.get("config_sha256", ""),
+        "git_sha": art.provenance.get("git_sha", ""),
         "split": art.provenance.get("split", ""),
         "split_sha256": art.provenance.get("split_sha256", ""),
+        "input_sha256": art.provenance.get("input_sha256", ""),
         "n_examples": len(art),
     }
 
@@ -789,7 +910,8 @@ PAIRED_COMPARISONS = (("a_to_c_parsefail_human", "a_only"),
 def build_evaluation(name, policies, comparisons, inputs: TestInputs,
                      cfg: cost_model.CostConfig, cal: dict, *, secondary_policies,
                      n_resamples: int = harness.N_RESAMPLES,
-                     seed: int = harness.BOOTSTRAP_SEED) -> dict:
+                     seed: int = harness.BOOTSTRAP_SEED,
+                     op_version: str = OP_V1) -> dict:
     """Assemble one evaluation set: policies, paired deltas, secondary transfer block."""
     labels = list(inputs.art_a.class_labels)
     by_name = {p.name: p for p in policies}
@@ -850,8 +972,15 @@ def build_evaluation(name, policies, comparisons, inputs: TestInputs,
             "cal_source_sha256": src["sha256"],
         })
 
+    # v1 router files predate the op-version field and are never rewritten (a test asserts
+    # byte-identity), so only v2 carries it.
+    version_block = {} if op_version == OP_V1 else {
+        "operating_point_version": op_version,
+        "tau_derivation_note": threshold_opt.ISOCAL_IN_SAMPLE_NOTE,
+    }
     return {
         "schema_version": SCHEMA_VERSION,
+        **version_block,
         "evaluation_set": name,
         "n_examples": len(policies[0]),
         "class_labels": labels,
@@ -888,11 +1017,20 @@ def build_all(cfg: cost_model.CostConfig, *, preds_dir=DEFAULT_PREDS_DIR,
               results_path=DEFAULT_RESULTS_PATH,
               thresholds_dir=DEFAULT_THRESHOLDS_DIR,
               n_resamples: int = harness.N_RESAMPLES,
-              seed: int = harness.BOOTSTRAP_SEED) -> dict[str, dict]:
-    """Both evaluation sets, keyed by name. Nothing is written; the caller writes."""
+              seed: int = harness.BOOTSTRAP_SEED,
+              op_version: str = OP_V1,
+              verify_replay: bool = True) -> dict[str, dict]:
+    """Both evaluation sets, keyed by name. Nothing is written; the caller writes.
+
+    `verify_replay` is threaded only so a synthetic fixture without CAL artifacts can
+    exercise the metadata gate; production callers leave it on and the replay gate is
+    additionally covered against the shipped files.
+    """
     inputs = load_test_inputs(preds_dir, results_path)
     cal = load_cal_thresholds(thresholds_dir, cost_sha256=cfg.sha256,
-                              results_path=results_path)
+                              results_path=results_path, derivation=op_version,
+                              cost_config=cfg if verify_replay else None,
+                              preds_dir=preds_dir, verify_replay=verify_replay)
     out = {}
     for name, builder, comparisons in (
         (EVAL_FULL, build_full_policies, FULL_COMPARISONS),
@@ -901,9 +1039,14 @@ def build_all(cfg: cost_model.CostConfig, *, preds_dir=DEFAULT_PREDS_DIR,
         out[name] = build_evaluation(
             name, builder(inputs, cal), comparisons, inputs, cfg, cal,
             secondary_policies=builder(inputs, cal, transfer=TRANSFER_SECONDARY),
-            n_resamples=n_resamples, seed=seed,
+            n_resamples=n_resamples, seed=seed, op_version=op_version,
         )
     return out
+
+
+def result_filename(name: str, cfg: cost_model.CostConfig, op_version: str) -> str:
+    """`<name>[__opv2]__cost-<sha8>.json` — v1 keeps its original, unversioned name."""
+    return f"{name}{OP_VERSIONS[op_version]['suffix']}__cost-{cfg.sha256[:8]}.json"
 
 
 def _dominance_row(evaluation: dict, router: str) -> dict:
@@ -921,7 +1064,8 @@ def _dominance_row(evaluation: dict, router: str) -> dict:
     }
 
 
-def build_summary(evaluations: dict[str, dict], cfg: cost_model.CostConfig) -> dict:
+def build_summary(evaluations: dict[str, dict], cfg: cost_model.CostConfig, *,
+                  op_version: str = OP_V1) -> dict:
     """Headline table + the two verdicts Phase 4 acceptance turns on."""
     paired = evaluations[EVAL_PAIRED]
     router = "a_to_c_parsefail_human"
@@ -933,9 +1077,14 @@ def build_summary(evaluations: dict[str, dict], cfg: cost_model.CostConfig) -> d
         for a in dict.fromkeys(d["a"] for d in ev["paired_deltas"])
     }
     headline = dominance[f"{EVAL_PAIRED}/{router}"]
+    version_block = {} if op_version == OP_V1 else {
+        "operating_point_version": op_version,
+        "tau_derivation_note": threshold_opt.ISOCAL_IN_SAMPLE_NOTE,
+    }
     return {
         "schema_version": SCHEMA_VERSION,
         "kind": "summary",
+        **version_block,
         "cost_config": cost_model.config_block(cfg),
         "headline_router": router,
         "evaluations": {
@@ -954,7 +1103,7 @@ def build_summary(evaluations: dict[str, dict], cfg: cost_model.CostConfig) -> d
                     for pname, p in ev["policies"].items()
                 },
                 "transfer": ev["transfer"]["rows"],
-                "file": f"{name}__cost-{cfg.sha256[:8]}.json",
+                "file": result_filename(name, cfg, op_version),
             }
             for name, ev in evaluations.items()
         },
@@ -1016,6 +1165,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--cost-config", type=Path, default=cost_model.DEFAULT_COST_CONFIG)
     parser.add_argument("--results", type=Path, default=DEFAULT_RESULTS_PATH)
     parser.add_argument("--thresholds-dir", type=Path, default=DEFAULT_THRESHOLDS_DIR)
+    parser.add_argument(
+        "--no-verify-replay", dest="verify_replay", action="store_false",
+        help="skip the tau-replay gate (metadata checks only); for fixtures without CAL "
+             "artifacts, never for reported runs",
+    )
+    parser.add_argument(
+        "--op-version", choices=sorted(OP_VERSIONS), default=OP_V1,
+        help="which CAL threshold derivation to transfer; v1-raw is the default so its "
+             "committed files regenerate byte-identically",
+    )
     args = parser.parse_args(argv)
 
     cfg = cost_model.load_cost_config(args.cost_config)
@@ -1024,12 +1183,14 @@ def main(argv: list[str] | None = None) -> int:
 
     # Compute everything before writing anything (batch atomicity, as in cost_model).
     evaluations = build_all(cfg, preds_dir=args.preds_dir, results_path=args.results,
-                            thresholds_dir=args.thresholds_dir)
-    summary = build_summary(evaluations, cfg)
+                            thresholds_dir=args.thresholds_dir,
+                            op_version=args.op_version,
+                            verify_replay=args.verify_replay)
+    summary = build_summary(evaluations, cfg, op_version=args.op_version)
 
     for name, ev in evaluations.items():
         path = cost_model.write_result_json(
-            ev, args.out_dir / f"{name}__cost-{cfg.sha256[:8]}.json")
+            ev, args.out_dir / result_filename(name, cfg, args.op_version))
         print(f"\n=== {name} (n={ev['n_examples']}) -> {path.name}")
         for pname, p in ev["policies"].items():
             total = p["expected_cost_per_1k"]["total"]
@@ -1050,7 +1211,7 @@ def main(argv: list[str] | None = None) -> int:
                   f"  acc {d['delta_accuracy_system']['point']:+.4f}")
 
     summary_path = cost_model.write_result_json(
-        summary, args.out_dir / f"summary__cost-{cfg.sha256[:8]}.json")
+        summary, args.out_dir / result_filename("summary", cfg, args.op_version))
     dom = summary["dominance"]
     print("\ndominance (paired cost CI excludes zero; model baselines only):")
     for key, row in dom["by_router"].items():

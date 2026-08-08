@@ -243,13 +243,13 @@ def write_table_json(obj: dict, path) -> Path:
 # CLI
 # ---------------------------------------------------------------------------
 
-def _resolve_artifacts(selectors, *, select_all: bool, preds_dir: Path) -> list[Path]:
-    all_paths = sorted(preds_dir.glob("*.parquet"))
+def _resolve_run_ids(selectors, *, select_all: bool, preds_dir: Path) -> list[str]:
+    all_ids = [p.stem for p in sorted(preds_dir.glob("*.parquet"))]
     if select_all:
-        return all_paths
+        return all_ids
     chosen = []
     for sel in selectors:
-        matches = [p for p in all_paths if p.stem.startswith(sel)]
+        matches = [rid for rid in all_ids if rid.startswith(sel)]
         if not matches:
             raise ValueError(f"no artifact in {preds_dir} matches prefix {sel!r}")
         chosen.extend(matches)
@@ -263,17 +263,34 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--preds-dir", type=Path, default=DEFAULT_PREDS_DIR)
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_RC_DIR)
     parser.add_argument("--max-points", type=int, default=DEFAULT_MAX_POINTS)
+    parser.add_argument("--results", type=Path, default=harness.DEFAULT_RESULTS_PATH)
     args = parser.parse_args(argv)
 
     if not args.all and not args.run_id:
         parser.error("give run_id prefix(es) or --all")
 
-    paths = _resolve_artifacts(args.run_id, select_all=args.all, preds_dir=args.preds_dir)
-    if not paths:
+    # Imported here, not at module scope: `cost_model` imports this module (for its JSON
+    # rounding), so a top-level import would be circular. The CLI is the only place that
+    # needs the verified loader — `build_table` itself stays dependency-free.
+    from triage_lab import cost_model
+
+    run_ids = _resolve_run_ids(args.run_id, select_all=args.all, preds_dir=args.preds_dir)
+    if not run_ids:
         print(f"no artifacts found under {args.preds_dir}")
         return 0
-    for path in paths:
-        art = predictions.read_artifact(path)
+    records = predictions.records_by_config(args.results)
+    by_run = {r["run_id"]: r for r in records.values()}
+    for run_id in run_ids:
+        record = by_run.get(run_id)
+        if record is None:
+            raise ValueError(
+                f"artifact {run_id[:8]} has no record in {args.results}; a risk-coverage "
+                "table must name the run it describes"
+            )
+        # Full gate (provenance + predictions.verify_artifact) before the table is built:
+        # this module reads p_max as a RANKING signal, which is exactly what a permuted id
+        # column or a p_max that is not the row's max probability would corrupt invisibly.
+        art = cost_model.load_artifact_verified(record, args.preds_dir)
         obj = build_table(art, max_points=args.max_points)
         out_path = args.out_dir / f"{obj['run_id']}.json"
         write_table_json(obj, out_path)

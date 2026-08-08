@@ -1,0 +1,47 @@
+# Tier A v2 THRESHOLD-DERIVATION rung: tier_a_logreg_wordchar_cal with isotonic
+# calibration. Single experimental delta vs that rung: calibration none -> isotonic
+# (model.name changes too, because a config's name is its identifier, not a variable).
+# Everything else — family, params, features, split, seed — is byte-for-byte identical.
+#
+# Purpose (owner-approved 2026-08-08): v1 thresholds were fit on RAW CAL probabilities and
+# then applied to the isotonic-calibrated TEST-IID artifact, a probability-space mismatch
+# that cost 5-16 points of realized coverage (see results/router_sim v1 transfer rows).
+# This rung derives tau* in the SAME calibration space the deployment point uses, so the
+# constant transfers without crossing a space boundary. v1 stays in the repo untouched as
+# the documented lesson.
+#
+# In-sample caveat, by design: with split: cal and the default cal_split: cal, the isotonic
+# calibrator is FIT on CAL and APPLIED to CAL. That is the same calibrator-fitting code
+# path as tier_a_logreg_test_iid (CalibratedClassifierCV over a FrozenEstimator, base model
+# never refit), and CAL has always been the split thresholds are fit on — but the resulting
+# CAL probabilities are in-sample and will look better calibrated here than they would on
+# held-out data. Thresholds derived from them are still evaluated only on TEST.
+model:
+  runner: tier_a
+  name: tier_a_logreg_wordchar_isocal_cal
+  family: logreg          # logreg | complement_nb
+  params:
+    C: 1.0                # inverse L2 strength
+    max_iter: 200         # SAGA cap; kept modest so a 300k-doc fit is laptop-tractable
+    tol: 1.0e-3           # SAGA stopping tol; loosened from 1e-4 for the same reason
+data:
+  split: cal
+  train_split: train
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+features:
+  word:
+    enabled: true
+    ngram_range: [1, 2]
+    min_df: 5             # drop hapax/near-hapax word n-grams
+    max_features: 150000  # caps the LogReg problem width for tractability
+    sublinear_tf: true
+  char:
+    enabled: true         # <-- the single delta vs rung 1
+    ngram_range: [3, 5]
+    min_df: 5
+    max_features: 150000  # caps char_wb vocabulary explosion
+    sublinear_tf: true
+calibration: isotonic     # none | isotonic  <-- the single delta
+seed: 20260805

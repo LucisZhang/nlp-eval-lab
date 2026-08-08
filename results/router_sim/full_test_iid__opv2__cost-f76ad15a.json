@@ -61,30 +61,31 @@
     "parse_failures": "The Tier C -> human arm fires only on receipt parse_failed. Haiku 4.5 logged ZERO parse failures across all 5,000 TEST-IID calls, so the headline cascade's human arm is empty on this slice: its human_rate is 0.0 by measurement, not by construction. The c_human parameter therefore has no effect on the Haiku cascade here; the a_to_human policies are where c_human sensitivity is exercised.",
     "sign_convention": "Every paired delta is A - B on identical rows: a NEGATIVE cost_per_1k delta means A is cheaper, a POSITIVE accuracy delta means A is more accurate. A comparison claim requires the paired CI to exclude zero (CLAUDE.md); marginal per-policy CIs overlap even under strict dominance and must not be used for comparisons."
   },
+  "operating_point_version": "v2-isocal",
   "paired_deltas": [
     {
       "a": "a_to_human",
       "b": "a_only",
       "cheaper": "a_to_human",
       "delta_accuracy_system": {
-        "ci_hi": 0.0824578957,
-        "ci_lo": 0.0792872667,
+        "ci_hi": 0.0509466886,
+        "ci_lo": 0.0482847103,
         "excludes_zero": true,
-        "point": 0.0808287774
+        "point": 0.049538983
       },
       "delta_cost_per_1k": {
-        "ci_hi": -28.9149344619,
-        "ci_lo": -44.5147113737,
+        "ci_hi": -54.8811313348,
+        "ci_lo": -66.7933705466,
         "excludes_zero": true,
-        "point": -36.5223136065
+        "point": -60.5976465632
       },
       "evaluation_set": "full_test_iid",
       "mcnemar_machine_rows": {
         "b": 0,
         "c": 0,
-        "n_both_machine": 85708,
+        "n_both_machine": 94557,
         "n_discordant": 0,
-        "n_excluded_human": 18735,
+        "n_excluded_human": 9886,
         "note": "McNemar is computed only over rows where BOTH policies answered by machine \u2014 the rows on which two label decisions can actually disagree. Rows either policy sent to a human are excluded and counted in n_excluded_human, because their 'correctness' is an assumption rather than a prediction.",
         "p_value": 1.0
       },
@@ -95,26 +96,26 @@
       "b": "a_only_cnb",
       "cheaper": "a_to_human",
       "delta_accuracy_system": {
-        "ci_hi": 0.0993462942,
-        "ci_lo": 0.0954487137,
+        "ci_hi": 0.0679035455,
+        "ci_lo": 0.0641115249,
         "excludes_zero": true,
-        "point": 0.0973258141
+        "point": 0.0660360196
       },
       "delta_cost_per_1k": {
-        "ci_hi": -125.1591777333,
-        "ci_lo": -145.7404996027,
+        "ci_hi": -149.1229665942,
+        "ci_lo": -169.5245253392,
         "excludes_zero": true,
-        "point": -135.5045335733
+        "point": -159.5798665301
       },
       "evaluation_set": "full_test_iid",
       "mcnemar_machine_rows": {
-        "b": 2664,
-        "c": 1113,
-        "n_both_machine": 85708,
-        "n_discordant": 3777,
-        "n_excluded_human": 18735,
+        "b": 3981,
+        "c": 2147,
+        "n_both_machine": 94557,
+        "n_discordant": 6128,
+        "n_excluded_human": 9886,
         "note": "McNemar is computed only over rows where BOTH policies answered by machine \u2014 the rows on which two label decisions can actually disagree. Rows either policy sent to a human are excluded and counted in n_excluded_human, because their 'correctness' is an assumption rather than a prediction.",
-        "p_value": 1.6239451137658258e-144
+        "p_value": 4.2754039534856006e-123
       },
       "n_examples": 104443
     },
@@ -123,16 +124,16 @@
       "b": "all_human",
       "cheaper": "a_to_human",
       "delta_accuracy_system": {
-        "ci_hi": -0.0731683789,
-        "ci_lo": -0.0763004701,
+        "ci_hi": -0.1042384363,
+        "ci_lo": -0.1078035388,
         "excludes_zero": true,
-        "point": -0.0747393315
+        "point": -0.1060291259
       },
       "delta_cost_per_1k": {
-        "ci_hi": -1593.0649971755,
-        "ci_lo": -1613.3067797746,
+        "ci_hi": -1616.1237469242,
+        "ci_lo": -1638.3597991249,
         "excludes_zero": true,
-        "point": -1603.1136600825
+        "point": -1627.1889930393
       },
       "evaluation_set": "full_test_iid",
       "mcnemar_machine_rows": {
@@ -243,8 +244,8 @@
       }
     },
     "a_to_human": {
-      "accuracy_machine": 0.908923321,
-      "accuracy_system": 0.9252606685,
+      "accuracy_machine": 0.8828854553,
+      "accuracy_system": 0.8939708741,
       "api_cost_usd_total": 0.0,
       "evaluation_set": "full_test_iid",
       "expected_cost_per_1k": {
@@ -254,46 +255,46 @@
           "point": 0.0
         },
         "human": {
-          "ci_hi": 454.2202445353,
-          "ci_lo": 442.9198222954,
-          "point": 448.4503509091
+          "ci_hi": 241.0645040836,
+          "ci_lo": 232.5425112262,
+          "point": 236.6362513524
         },
         "misroute": {
-          "ci_hi": 457.8028206773,
-          "ci_lo": 439.0102735463,
-          "point": 448.4359890084
+          "ci_hi": 646.8212326341,
+          "ci_lo": 625.4306176575,
+          "point": 636.1747556083
         },
         "total": {
-          "ci_hi": 906.9350028245,
-          "ci_lo": 886.6932202254,
-          "point": 896.8863399175
+          "ci_hi": 883.8762530758,
+          "ci_lo": 861.6402008751,
+          "point": 872.8110069607
         }
       },
       "gate": {
-        "coverage_a": 0.8206198596363566,
-        "escalation_rate": 0.17938014036364333,
+        "coverage_a": 0.9053454994590351,
+        "escalation_rate": 0.09465450054096493,
         "gate_model": "tier_a_logreg_test_iid",
         "kind": "tier_a_threshold",
-        "tau": 0.5587660167157666,
+        "tau": 0.500518783264516,
         "tau_source": {
-          "cal_target_coverage_a": 0.8688773398,
-          "cal_tau_star": 0.5587660167157666,
-          "file": "a_to_human__full_cal__abcadd53__cost-f76ad15a.json",
-          "sha256": "469aa41833d74d0711697e4757d8b1cfaa6851666c7a01ab2a2a4e98ea5b8b85"
+          "cal_target_coverage_a": 0.900634687,
+          "cal_tau_star": 0.500518783264516,
+          "file": "a_to_human__full_cal__40513354__cost-f76ad15a.json",
+          "sha256": "726cf6e2dd9740cb606bcb23aca462561adcd925c700e73a21fbd2cc5eb57107"
         },
         "transfer_mode": "threshold_transfer"
       },
-      "macro_f1_answered": 0.8404787008,
-      "macro_f1_system": 0.8916443844,
+      "macro_f1_answered": 0.8110155527,
+      "macro_f1_system": 0.8474809318,
       "n_examples": 104443,
       "policy": "a_to_human",
       "routing": {
-        "coverage_a": 0.8206198596,
-        "coverage_machine": 0.8206198596,
-        "escalation_rate": 0.1793801404,
-        "human_rate": 0.1793801404,
-        "n_answered_machine": 85708,
-        "n_to_human": 18735
+        "coverage_a": 0.9053454995,
+        "coverage_machine": 0.9053454995,
+        "escalation_rate": 0.0946545005,
+        "human_rate": 0.0946545005,
+        "n_answered_machine": 94557,
+        "n_to_human": 9886
       }
     },
     "all_human": {
@@ -352,24 +353,24 @@
         "b": "a_only",
         "cheaper": "a_to_human",
         "delta_accuracy_system": {
-          "ci_hi": 0.0657298718,
-          "ci_lo": 0.0627706021,
+          "ci_hi": 0.0529477801,
+          "ci_lo": 0.0502379288,
           "excludes_zero": true,
-          "point": 0.0641976964
+          "point": 0.0515400745
         },
         "delta_cost_per_1k": {
-          "ci_hi": -50.6854217133,
-          "ci_lo": -64.1548500139,
+          "ci_hi": -55.0389925605,
+          "ci_lo": -67.0429085721,
           "excludes_zero": true,
-          "point": -57.375793495
+          "point": -60.8274369752
         },
         "evaluation_set": "full_test_iid",
         "mcnemar_machine_rows": {
           "b": 0,
           "c": 0,
-          "n_both_machine": 90748,
+          "n_both_machine": 94065,
           "n_discordant": 0,
-          "n_excluded_human": 13695,
+          "n_excluded_human": 10378,
           "note": "McNemar is computed only over rows where BOTH policies answered by machine \u2014 the rows on which two label decisions can actually disagree. Rows either policy sent to a human are excluded and counted in n_excluded_human, because their 'correctness' is an assumption rather than a prediction.",
           "p_value": 1.0
         },
@@ -380,26 +381,26 @@
         "b": "a_only_cnb",
         "cheaper": "a_to_human",
         "delta_accuracy_system": {
-          "ci_hi": 0.0826479515,
-          "ci_lo": 0.0788082973,
+          "ci_hi": 0.0698862059,
+          "ci_lo": 0.066159532,
           "excludes_zero": true,
-          "point": 0.080694733
+          "point": 0.0680371112
         },
         "delta_cost_per_1k": {
-          "ci_hi": -147.0506639985,
-          "ci_lo": -166.1290129544,
+          "ci_hi": -149.521269975,
+          "ci_lo": -169.9539461716,
           "excludes_zero": true,
-          "point": -156.3580134619
+          "point": -159.8096569421
         },
         "evaluation_set": "full_test_iid",
         "mcnemar_machine_rows": {
-          "b": 3361,
-          "c": 1642,
-          "n_both_machine": 90748,
-          "n_discordant": 5003,
-          "n_excluded_human": 13695,
+          "b": 3895,
+          "c": 2065,
+          "n_both_machine": 94065,
+          "n_discordant": 5960,
+          "n_excluded_human": 10378,
           "note": "McNemar is computed only over rows where BOTH policies answered by machine \u2014 the rows on which two label decisions can actually disagree. Rows either policy sent to a human are excluded and counted in n_excluded_human, because their 'correctness' is an assumption rather than a prediction.",
-          "p_value": 5.821989145787648e-133
+          "p_value": 4.537385971713068e-126
         },
         "n_examples": 104443
       },
@@ -408,16 +409,16 @@
         "b": "all_human",
         "cheaper": "a_to_human",
         "delta_accuracy_system": {
-          "ci_hi": -0.0897616403,
-          "ci_lo": -0.0930746915,
+          "ci_hi": -0.1022471587,
+          "ci_lo": -0.1058570225,
           "excludes_zero": true,
-          "point": -0.0913704126
+          "point": -0.1040280344
         },
         "delta_cost_per_1k": {
-          "ci_hi": -1613.1313252205,
-          "ci_lo": -1634.2111247283,
+          "ci_hi": -1616.1504361231,
+          "ci_lo": -1638.5935390596,
           "excludes_zero": true,
-          "point": -1623.9671399711
+          "point": -1627.4187834513
         },
         "evaluation_set": "full_test_iid",
         "mcnemar_machine_rows": {
@@ -435,19 +436,19 @@
     "contract": "Coverage matching hits the NEAREST ACHIEVABLE coverage, not the requested one: coverage on a finite slice is quantised to multiples of 1/n, and ties in p_max cannot be split by a `p_max >= tau` gate. Each entry therefore reports the realized coverage and abs_coverage_error next to the target; read the realized value, never the target.",
     "coverage_matching": [
       {
-        "abs_coverage_error": 1.4936e-06,
+        "abs_coverage_error": 1.09e-07,
         "coverage_quantum": 9.5746e-06,
         "policy": "a_to_human",
-        "realized_coverage_a": 0.8688758462,
-        "target_coverage_a": 0.8688773398,
-        "tau": 0.5249287795851013
+        "realized_coverage_a": 0.900634796,
+        "target_coverage_a": 0.900634687,
+        "tau": 0.503621754739005
       }
     ],
     "label": "SECONDARY sensitivity only \u2014 tau re-chosen on TEST p_max",
     "policies": {
       "a_to_human": {
-        "accuracy_machine": 0.8948406576,
-        "accuracy_system": 0.9086295874,
+        "accuracy_machine": 0.8844947643,
+        "accuracy_system": 0.8959719656,
         "api_cost_usd_total": 0.0,
         "evaluation_set": "full_test_iid",
         "expected_cost_per_1k": {
@@ -457,67 +458,68 @@
             "point": 0.0
           },
           "human": {
-            "ci_hi": 332.9812672941,
-            "ci_lo": 322.805860613,
-            "point": 327.8103846117
+            "ci_hi": 253.1057610371,
+            "ci_lo": 243.9829619984,
+            "point": 248.4130099672
           },
           "misroute": {
-            "ci_hi": 558.448148751,
-            "ci_lo": 538.5698419233,
-            "point": 548.2224754172
+            "ci_hi": 635.1421349444,
+            "ci_lo": 613.4829524238,
+            "point": 624.1682065816
           },
           "total": {
-            "ci_hi": 886.8686747795,
-            "ci_lo": 865.7888752717,
-            "point": 876.0328600289
+            "ci_hi": 883.8495638769,
+            "ci_lo": 861.4064609404,
+            "point": 872.5812165487
           }
         },
         "gate": {
-          "coverage_a": 0.8688758461553192,
-          "escalation_rate": 0.13112415384468082,
+          "coverage_a": 0.9006347960131363,
+          "escalation_rate": 0.09936520398686365,
           "gate_model": "tier_a_logreg_test_iid",
           "kind": "tier_a_threshold",
-          "tau": 0.5249287795851013,
+          "tau": 0.503621754739005,
           "tau_source": {
-            "cal_target_coverage_a": 0.8688773398,
-            "cal_tau_star": 0.5587660167157666,
-            "file": "a_to_human__full_cal__abcadd53__cost-f76ad15a.json",
-            "sha256": "469aa41833d74d0711697e4757d8b1cfaa6851666c7a01ab2a2a4e98ea5b8b85"
+            "cal_target_coverage_a": 0.900634687,
+            "cal_tau_star": 0.500518783264516,
+            "file": "a_to_human__full_cal__40513354__cost-f76ad15a.json",
+            "sha256": "726cf6e2dd9740cb606bcb23aca462561adcd925c700e73a21fbd2cc5eb57107"
           },
           "transfer_mode": "coverage_matched"
         },
-        "macro_f1_answered": 0.824033257,
-        "macro_f1_system": 0.8676819829,
+        "macro_f1_answered": 0.8125050574,
+        "macro_f1_system": 0.8500644874,
         "n_examples": 104443,
         "policy": "a_to_human",
         "routing": {
-          "coverage_a": 0.8688758462,
-          "coverage_machine": 0.8688758462,
-          "escalation_rate": 0.1311241538,
-          "human_rate": 0.1311241538,
-          "n_answered_machine": 90748,
-          "n_to_human": 13695
+          "coverage_a": 0.900634796,
+          "coverage_machine": 0.900634796,
+          "escalation_rate": 0.099365204,
+          "human_rate": 0.099365204,
+          "n_answered_machine": 94065,
+          "n_to_human": 10378
         }
       }
     },
     "transfer_mode": "coverage_matched"
   },
+  "tau_derivation_note": "v2 derivation caveat, by design: tier_a_logreg_wordchar_isocal_cal fits its isotonic calibrator ON CAL and predicts CAL (same CalibratedClassifierCV/FrozenEstimator path as the TEST-IID final, base model never refit). CAL is the split thresholds have always been fit on, but these CAL probabilities are in-sample and are better calibrated here than they would be on held-out data. The thresholds derived from them are evaluated only on TEST.",
   "transfer": {
     "note": "PRIMARY transfer is THRESHOLD TRANSFER: the CAL-fit tau* constant is applied unchanged to the TEST artifact's p_max and the realized coverage is reported as whatever it turns out to be. This is what shipping the constant actually does. The CAL rungs are calibration: none (raw probabilities) while tier_a_logreg_test_iid is calibration: isotonic (fit on CAL), so the tau crosses a probability-space boundary; the realized-vs-target coverage gap below is the direct measurement of that mismatch. The coverage-matched block (tau re-chosen on TEST p_max to hit the CAL target coverage) is SECONDARY sensitivity only \u2014 it uses TEST data to pick tau and so is not a deployable procedure without a held-out calibration slice.",
     "primary_mode": "threshold_transfer",
     "rows": [
       {
-        "applied_tau": 0.5587660167157666,
-        "cal_source_file": "a_to_human__full_cal__abcadd53__cost-f76ad15a.json",
-        "cal_source_sha256": "469aa41833d74d0711697e4757d8b1cfaa6851666c7a01ab2a2a4e98ea5b8b85",
-        "cal_target_coverage_a": 0.8688773398,
-        "cal_tau_star": 0.5587660167157666,
-        "coverage_gap": -0.0482574802,
-        "coverage_matched_abs_error": 1.4936e-06,
-        "coverage_matched_realized_coverage_a": 0.8688758462,
-        "coverage_matched_tau": 0.5249287795851013,
+        "applied_tau": 0.500518783264516,
+        "cal_source_file": "a_to_human__full_cal__40513354__cost-f76ad15a.json",
+        "cal_source_sha256": "726cf6e2dd9740cb606bcb23aca462561adcd925c700e73a21fbd2cc5eb57107",
+        "cal_target_coverage_a": 0.900634687,
+        "cal_tau_star": 0.500518783264516,
+        "coverage_gap": 0.0047108125,
+        "coverage_matched_abs_error": 1.09e-07,
+        "coverage_matched_realized_coverage_a": 0.900634796,
+        "coverage_matched_tau": 0.503621754739005,
         "policy": "a_to_human",
-        "realized_coverage_a": 0.8206198596
+        "realized_coverage_a": 0.9053454995
       }
     ]
   }

@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier
 
 setup:
 	uv sync --frozen
@@ -104,12 +104,23 @@ cost-model:
 # every distinct p_max, prices each operating point with the cost model, and writes the
 # argmin + reference policies + a (c_misroute x c_human) sensitivity grid to
 # results/thresholds/. Offline and CAL-only — no API calls, no TEST-* artifact is opened.
+# Both derivations, deterministically: v1 (raw-CAL tau*, kept as the documented
+# calibration-mismatch lesson) then v2 (tau* fit in the deployment calibration space,
+# primary for reported numbers). Each writes its own files; v1's regenerate byte-identical.
 thresholds:
-	uv run python -m triage_lab.threshold_opt
+	uv run python -m triage_lab.threshold_opt --derivation v1-raw
+	uv run python -m triage_lab.threshold_opt --derivation v2-isocal
 
 # Router simulator on TEST-IID (Phase 4 task 4): applies the CAL-fit tau* constants from
 # results/thresholds/ to the frozen TEST-IID artifacts, prices every policy, and reports
 # paired deltas + McNemar against each baseline. Offline (no model runs, no API calls);
 # TEST-* artifacts are read here because this IS the final reported evaluation.
 router-sim: thresholds
-	uv run python -m triage_lab.router_sim
+	uv run python -m triage_lab.router_sim --op-version v1-raw
+	uv run python -m triage_lab.router_sim --op-version v2-isocal
+
+# Frontier claims (Phase 4, partial): the two §4.2 headline claims with paired bootstrap
+# CIs against the v2 operating points, the dominance census, and explicit pending_tier_b
+# placeholders for every Tier B frontier slot.
+frontier: router-sim
+	uv run python -m triage_lab.frontier --op-version v2-isocal

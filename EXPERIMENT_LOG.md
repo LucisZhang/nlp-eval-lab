@@ -747,3 +747,83 @@ reported runs. Every portfolio-bound number carries its reproduction command
   transfer, measured and quantified above.
 - **Repro:** `make router-sim` (= `uv run python -m triage_lab.router_sim --all`);
   tests: `uv run pytest tests/test_router_sim.py -q`.
+
+## 2026-08-08 — Phase 4 task 5: calibrated-threshold v2 (isocal) + frontier claims (partial)
+
+- **Owner decision (2026-08-08):** calibration-space alignment approved as a **v2
+  threshold derivation** — τ fit on isotonic-calibrated CAL confidences (the same
+  calibration the deployment artifact applies), CAL-only fitting, single TEST
+  evaluation, versioned alongside v1. **v2 is the primary operating point for the
+  frontier exhibits; v1 is retained untouched** as the case-study
+  calibration-space-mismatch lesson (diagnosis, coverage shortfall, fix). Then the
+  frontier-claims task in partial form: Tier A/C claims now, every Tier B point
+  `pending_tier_b`.
+- **v2 derivation run:** `configs/tier_a_logreg_wordchar_isocal_cal.yaml`
+  (sha `6485a765…`), parsed-object delta vs the v1 rung exactly
+  {`calibration: none→isotonic`, `model.name` (identifier)}; same
+  `CalibratedClassifierCV(FrozenEstimator, isotonic)` path as the TEST final, applied
+  to CAL. Run `40513354…` appended to runs.jsonl (the task's single append); artifact
+  gate ✓ 7/7 metrics at abs delta 0. CAL metrics: acc 0.8341 (was 0.8193), macro-F1
+  0.7611, AURC 0.0574 (was 0.0678) — but **ECE 0.0225 → 0.1024, 4.5× worse**: per-class
+  isotonic + renormalization sharpens ranking while degrading max-prob ECE.
+  Stated plainly: calibration-space *alignment* is not better *calibration*; the point
+  is that τ now lives in the deployed model's confidence space. In-sample caveat
+  (calibrator fit on CAL, applied to CAL) documented — CAL is the calibration split by
+  design.
+- **Result 1 — alignment closed the transfer gap ~10×** (threshold transfer, target →
+  realized TEST coverage): a_to_human full 0.9006 → 0.9053 (**+0.0047**; v1 was
+  −0.0483); a_to_c paired 0.9600 → 0.9710 (**+0.0110**; v1 was −0.1569). v1's
+  systematically negative gaps were the space mismatch; v2's small positive residuals
+  are CAL-vs-TEST distribution difference + calibrator in-sample optimism.
+- **Result 2 — v2 router on TEST (`results/router_sim/*__opv2__*`):** full TEST-IID:
+  a_to_human@τ*v2 = cov 0.9053, 9.47% human, **$872.81/1k [861.64, 883.88]**, system
+  macro-F1 0.8475; paired deltas −60.60 [−66.79, −54.88] vs a_only ✓ and −159.58 vs
+  a_only_cnb ✓. Paired 5,000: a_to_c@τ*v2 = cov_A 0.9710, $908.44 [849.63, 966.04],
+  machine acc 0.8486; vs a_only **−22.76 [−41.96, −2.37] ✓**; vs c_only −8.48
+  [−61.27, +39.56] ·; **vs a_to_human +47.74 [+22.53, +74.74] ✓ — the v1
+  directional-only cross-family question resolves AGAINST the cascade**: with aligned
+  thresholds, escalating to the human queue is significantly cheaper than escalating
+  to Haiku at v1 cost parameters. Dominance census (model baselines only): a_to_human
+  beats 2 (full); a_to_c beats 1 (a_only, paired).
+- **Result 3 — the two §4.2 claims (`results/frontier/frontier__opv2__cost-f76ad15a.json`):**
+  - **CERTIFIED — CLAIM 2, a_to_human, full TEST-IID (n=104,443):** "At significantly
+    LOWER cost than the all-linear policy (paired cost delta −$60.60/1k
+    [−66.79, −54.88], a 6.49% [5.90, 7.11] reduction), the a_to_human router raises
+    system macro-F1 by **+0.0870 [0.0841, 0.0899]**." Caveat travels with it:
+    macro_f1_system credits the 9.47% human-routed rows as correct; answered-only
+    macro-F1 0.8110 vs 0.7605 is reported unpaired (different row sets).
+  - **NOT ESTABLISHED — CLAIM 1 (a_to_c vs c_only, n=5,000):** accuracy +0.0012
+    [−0.0068, +0.0100], pct cost reduction +0.92% [−4.45, +6.35] — directional only.
+  - **NOT ESTABLISHED — CLAIM 2 (a_to_c vs a_only, n=5,000):** cost favorable and
+    significant (−22.76 ✓, 2.44% [0.26, 4.48]) but macro-F1 +0.0070 [−0.0027, +0.0165]
+    spans zero — directional only.
+  - CLAIM 1 on full TEST: `not_applicable` (no all-LLM baseline on the full slice —
+    Haiku covers a frozen 5,000-row subsample); recorded with reason.
+  - `pending_tier_b` placeholders (b1_only, b2_only, a_to_b, a_to_b_to_c) are
+    data-shaped status entries with no numeric fields.
+- **Statistical-gate fix (Codex review blocker, pre-commit):** the first frontier
+  draft passed a claim gate on "point favorable OR CI includes zero" — an invalid
+  non-inferiority test (failure to establish inferiority ≠ non-inferiority). Replaced
+  with three-way per-metric classification on the favorable CI bound at margin 0
+  (favorable_significant / not_established / adverse_significant; degenerate [0,0]
+  bands read not_established); certification requires all gated metrics
+  favorable_significant; adverse results emit explicitly adverse diagnosis strings.
+  Numeric values everywhere invariant under the fix; CLAIM 1's accuracy gate
+  downgraded from "pass" to not_established as required. Further hardening from the
+  same review: τ* replay-on-load against the verified CAL artifact (tampered-file
+  tests), git_sha + input_sha256 added to the provenance gate and serialized into all
+  router/frontier input blocks (all 13 artifacts verified consistent first; the two
+  committed v1 router JSONs gained exactly 4 provenance string lines — documented
+  carve-out, zero numeric change), risk_coverage CLI routed through the verified
+  loader (13/13 byte-identical regeneration), y_true equality in pair alignment.
+- **Verdict:** Phase 4 acceptance in its owner-approved partial form is **met**: two
+  §4.2 headline claims computed with paired CIs — one CERTIFIED (a_to_human), two
+  honest not-established diagnoses for the LLM cascade at n=5,000 — and the router
+  dominates ≥2 single-tier policies (a_to_human vs a_only + a_only_cnb, paired CIs
+  excluding zero). The v1→v2 pair is the case-study exhibit: a measured
+  calibration-space-mismatch lesson with its measured fix. Tier B backfill (B1/B2
+  points, A→B, A→B→C) remains pending GPU.
+- **Repro:** `uv run python -m triage_lab.harness configs/tier_a_logreg_wordchar_isocal_cal.yaml`
+  (offline refit; run already logged), then `make frontier` (regenerates thresholds
+  v1+v2, router-sim v1+v2, frontier v2); tests:
+  `uv run pytest tests/test_frontier.py tests/test_router_sim.py tests/test_threshold_opt.py -q`.

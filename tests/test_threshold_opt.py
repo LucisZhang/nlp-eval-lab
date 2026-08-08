@@ -104,7 +104,8 @@ def _write_config(tmp_path, name, runner, splits_dir, *, split="cal"):
 
 
 def _write_artifact(tmp_path, run_id, ids, y_true, y_pred, labels, p_max=None,
-                    *, split="cal", split_sha256="splithash", config_sha256="cfghash"):
+                    *, split="cal", split_sha256="splithash", config_sha256="cfghash",
+                    git_sha="gitsha", input_sha256="inputsha"):
     """Artifact with controllable p_max (probs are built to realize it). Returns probs."""
     index = {lbl: i for i, lbl in enumerate(labels)}
     probs = np.zeros((len(ids), len(labels)), dtype=np.float64)
@@ -118,6 +119,7 @@ def _write_artifact(tmp_path, run_id, ids, y_true, y_pred, labels, p_max=None,
     prov = predictions.ArtifactProvenance(
         run_id=run_id, config_sha256=config_sha256, split=split,
         split_sha256=split_sha256, class_labels=list(labels),
+        git_sha=git_sha, input_sha256=input_sha256,
     )
     path = tmp_path / f"{run_id}.parquet"
     predictions.write_artifact(
@@ -147,12 +149,14 @@ def _write_receipts(path, receipts):
 
 def _record(run_id, config_name, *, split="cal", split_sha256="splithash",
             config_sha256="cfghash", cost_usd=None, raw_log_path=None,
-            config_path=None, metrics=None):
+            config_path=None, metrics=None, git_sha="gitsha", input_sha256="inputsha"):
     rec = {
         "run_id": run_id,
         "config_path": str(config_path) if config_path else f"configs/{config_name}.yaml",
         "config_sha256": config_sha256,
-        "dataset": {"split": split, "split_sha256": split_sha256},
+        "git_sha": git_sha,
+        "dataset": {"split": split, "split_sha256": split_sha256,
+                    "input_sha256": input_sha256},
     }
     if metrics is not None:
         rec["metrics"] = metrics
@@ -175,7 +179,7 @@ def _metrics_block(y_true, y_pred, probs, labels):
 
 
 def _mini_repo(tmp_path, *, receipt_overrides=None, artifact_ids=None,
-               second_rung=None):
+               second_rung=None, tier_a_config=None):
     """Synthetic CAL mini-repo complete enough for the FULL predictions gate.
 
     That means real config YAMLs (re-hashed and compared), a frozen-split parquet the
@@ -193,8 +197,8 @@ def _mini_repo(tmp_path, *, receipt_overrides=None, artifact_ids=None,
     # "confidence" below 0.5 would make the OTHER column the row's p_max.
     p_max = np.linspace(0.95, 0.55, 12)
     splits_dir = _write_split(tmp_path, ids, y_true)
-    a_cfg = _write_config(tmp_path, threshold_opt.PRIMARY_TIER_A_CONFIG, "tier_a",
-                          splits_dir)
+    tier_a_config = tier_a_config or threshold_opt.PRIMARY_TIER_A_CONFIG
+    a_cfg = _write_config(tmp_path, tier_a_config, "tier_a", splits_dir)
     c_cfg = _write_config(tmp_path, threshold_opt.TIER_C_CAL_CONFIG, "tier_c", splits_dir)
     a_sha = harness.config_sha256(a_cfg)
     c_sha = harness.config_sha256(c_cfg)
@@ -216,7 +220,7 @@ def _mini_repo(tmp_path, *, receipt_overrides=None, artifact_ids=None,
 
     results = tmp_path / "runs.jsonl"
     records = [
-        _record(a_id, threshold_opt.PRIMARY_TIER_A_CONFIG, config_path=a_cfg,
+        _record(a_id, tier_a_config, config_path=a_cfg,
                 config_sha256=a_sha,
                 metrics=_metrics_block(y_true, y_pred_a, a_probs, labels)),
         _record(c_id, threshold_opt.TIER_C_CAL_CONFIG, config_path=c_cfg,
@@ -777,12 +781,14 @@ def test_shipped_threshold_files_replay_exactly():
     cfg = cost_model.load_cost_config()
     records = threshold_opt._records_by_config()
     art_c = threshold_opt.load_artifact_checked(records[threshold_opt.TIER_C_CAL_CONFIG])
-    arts_a = {name: threshold_opt.load_artifact_checked(records[name])
-              for name in threshold_opt.TIER_A_CAL_CONFIGS}
+    arts_a: dict = {}   # resolved per file, so v1 and v2 rungs are both covered
 
     for path in _REAL_POLICY_FILES:
         obj = json.loads(path.read_text())
-        art_a = arts_a[obj["inputs"]["tier_a"]["config_name"]]
+        name_a = obj["inputs"]["tier_a"]["config_name"]
+        if name_a not in arts_a:
+            arts_a[name_a] = threshold_opt.load_artifact_checked(records[name_a])
+        art_a = arts_a[name_a]
         policy = _rebuild_policy(obj, records, art_a, art_c,
                                  threshold_opt.DEFAULT_PREDS_DIR)
         assert len(policy) == obj["n_examples"], path.name
@@ -856,6 +862,7 @@ def test_nan_probability_artifact_fails_the_verification_gate(tmp_path):
     prov = predictions.ArtifactProvenance(
         run_id=record["run_id"], config_sha256=record["config_sha256"], split="cal",
         split_sha256="splithash", class_labels=labels,
+        git_sha="gitsha", input_sha256="inputsha",
     )
     predictions.write_artifact(
         tmp_path / f"{record['run_id']}.parquet", ids=np.asarray(ids, dtype=np.int64),
@@ -892,3 +899,71 @@ def test_cli_writes_nothing_when_a_later_rung_fails(tmp_path):
             "--tier-a-config", "tier_a_logreg_word_cal",
         ])
     assert not out_dir.exists() or not list(out_dir.glob("*.json"))
+
+
+# ---------------------------------------------------------------------------
+# v1 / v2 derivations
+# ---------------------------------------------------------------------------
+
+def test_v1_results_carry_no_derivation_fields(tmp_path):
+    """v1 files are never rewritten, so their schema must not gain keys.
+
+    The derivation block is emitted only for v2; a v1 regeneration has to stay
+    byte-identical to what is committed (a separate real-data diff asserts that).
+    """
+    _, _, results = _built(tmp_path)
+    for result in results:
+        assert "derivation" not in result
+        assert "is_primary_v2" not in result
+        assert "derivation_note" not in result
+
+
+def test_v2_results_are_marked_and_bound_to_the_isocal_rung(tmp_path):
+    repo = _mini_repo(tmp_path, tier_a_config=threshold_opt.V2_TIER_A_CAL_CONFIG)
+    cfg = _cost_config(tmp_path)
+    results = threshold_opt.build_all(
+        cfg, preds_dir=tmp_path, results_path=repo["results"],
+        derivation=threshold_opt.DERIVATION_V2, n_resamples=10)
+    assert len(results) == 3
+    for result in results:
+        assert result["derivation"] == threshold_opt.DERIVATION_V2
+        assert result["is_primary_v2"] is True
+        assert result["is_primary"] is True
+        assert "in-sample" in result["derivation_note"]
+        assert result["inputs"]["tier_a"]["config_name"] == \
+            threshold_opt.V2_TIER_A_CAL_CONFIG
+    summary = threshold_opt.build_summary(results, cfg,
+                                          derivation=threshold_opt.DERIVATION_V2)
+    assert summary["derivation"] == threshold_opt.DERIVATION_V2
+    assert summary["primary_tier_a_config"] == threshold_opt.V2_TIER_A_CAL_CONFIG
+    assert summary["tier_a_configs_swept"] == [threshold_opt.V2_TIER_A_CAL_CONFIG]
+
+
+def test_derivation_profiles_have_distinct_summary_names():
+    names = {d: threshold_opt.DERIVATIONS[d]["summary_name"]
+             for d in threshold_opt.DERIVATIONS}
+    assert len(set(names.values())) == len(names)
+    assert "v2-isocal" in names[threshold_opt.DERIVATION_V2]
+
+
+@_needs_real
+def test_v1_thresholds_regenerate_byte_identically(tmp_path):
+    """The committed v1 evidence must come back byte-for-byte from today's code.
+
+    Not a normalized-JSON comparison and not a claim in a report: the CLI is re-run into a
+    scratch directory against the real inputs and the resulting FILES are compared byte
+    for byte with what is committed. v1 is the documented calibration-mismatch lesson, so
+    it has to stay reproducible while v2 evolves around it.
+    """
+    out_dir = tmp_path / "thresholds"
+    assert threshold_opt.main(["--out-dir", str(out_dir),
+                               "--derivation", threshold_opt.DERIVATION_V1]) == 0
+    regenerated = sorted(out_dir.glob("*.json"))
+    assert regenerated, "no v1 threshold files were produced"
+    for path in regenerated:
+        committed = threshold_opt.DEFAULT_THRESHOLDS_DIR / path.name
+        assert committed.exists(), f"{path.name} is not committed"
+        assert path.read_bytes() == committed.read_bytes(), path.name
+    # ...and the v2 files are untouched by a v1 run
+    assert not any(p.name.endswith("__v2-isocal__cost-f76ad15a.json")
+                   for p in regenerated)

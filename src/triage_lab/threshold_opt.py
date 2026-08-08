@@ -94,6 +94,46 @@ TIER_A_CAL_CONFIGS = (
 )
 PRIMARY_TIER_A_CONFIG = "tier_a_logreg_wordchar_cal"
 
+# ---------------------------------------------------------------------------
+# Threshold DERIVATIONS
+# ---------------------------------------------------------------------------
+# v1 fits tau* on RAW CAL probabilities (calibration: none) and the router then applies it
+# to the isotonic-calibrated TEST-IID artifact. That crosses a probability-space boundary
+# and cost 5-16 points of realized coverage — measured, reported, and kept in the repo as
+# the documented lesson rather than deleted.
+#
+# v2 fits tau* on tier_a_logreg_wordchar_isocal_cal: the SAME rung with calibration
+# isotonic, i.e. in the deployment point's own probability space, so the constant transfers
+# without a space change. v2 is primary for reported router numbers; v1 files are never
+# rewritten (a test asserts byte-identity), and files carry `derivation` so the two
+# generations can never be silently mixed. Files predating this field are v1 by definition,
+# which is why the reader defaults to DERIVATION_V1 rather than requiring the key.
+DERIVATION_V1 = "v1-raw"
+DERIVATION_V2 = "v2-isocal"
+V2_TIER_A_CAL_CONFIG = "tier_a_logreg_wordchar_isocal_cal"
+
+DERIVATIONS: dict[str, dict] = {
+    DERIVATION_V1: {
+        "tier_a_configs": TIER_A_CAL_CONFIGS,
+        "primary": PRIMARY_TIER_A_CONFIG,
+        "summary_name": "summary__cost-{sha8}.json",
+    },
+    DERIVATION_V2: {
+        "tier_a_configs": (V2_TIER_A_CAL_CONFIG,),
+        "primary": V2_TIER_A_CAL_CONFIG,
+        "summary_name": "summary__v2-isocal__cost-{sha8}.json",
+    },
+}
+
+ISOCAL_IN_SAMPLE_NOTE = (
+    "v2 derivation caveat, by design: tier_a_logreg_wordchar_isocal_cal fits its isotonic "
+    "calibrator ON CAL and predicts CAL (same CalibratedClassifierCV/FrozenEstimator path "
+    "as the TEST-IID final, base model never refit). CAL is the split thresholds have "
+    "always been fit on, but these CAL probabilities are in-sample and are better "
+    "calibrated here than they would be on held-out data. The thresholds derived from them "
+    "are evaluated only on TEST."
+)
+
 # The paired Tier C CAL run whose 1,500 ids define the subset and supply the measured
 # per-call costs and parse_failed flags. Zero-shot, matching the Tier C protocol taken to
 # TEST (the few-shot ablation is not the reported arm).
@@ -701,7 +741,8 @@ def sensitivity_grid(policy: PolicyData, grid: Grid, *, cfg: cost_model.CostConf
 def build_policy_result(policy: PolicyData, cfg: cost_model.CostConfig, *,
                         is_primary: bool, max_points: int | None = DEFAULT_MAX_GRID_POINTS,
                         n_resamples: int = harness.N_RESAMPLES,
-                        seed: int = harness.BOOTSTRAP_SEED) -> dict:
+                        seed: int = harness.BOOTSTRAP_SEED,
+                        derivation: str = DERIVATION_V1) -> dict:
     """Full deterministic result object for one (family, dataset, Tier A rung)."""
     grid = build_grid(policy)
     rows = sweep(grid, c_misroute=cfg.c_misroute_usd, c_human=cfg.c_human_usd)
@@ -729,8 +770,16 @@ def build_policy_result(policy: PolicyData, cfg: cost_model.CostConfig, *,
     keep = {0, n_rows - 1, j_star}
     kept = _downsample(n_rows, max_points, keep)
 
+    # v1 files predate the derivation fields and are never rewritten, so they are emitted
+    # exactly as before; only v2 carries the extra keys (a test asserts v1 byte-identity).
+    version_block = {} if derivation == DERIVATION_V1 else {
+        "derivation": derivation,
+        "is_primary_v2": bool(is_primary),
+        "derivation_note": ISOCAL_IN_SAMPLE_NOTE,
+    }
     return {
         "schema_version": SCHEMA_VERSION,
+        **version_block,
         "policy_family": policy.family,
         "dataset": policy.dataset,
         "is_primary": bool(is_primary),
@@ -788,12 +837,17 @@ def result_filename(obj: dict, cfg: cost_model.CostConfig) -> str:
 
 def build_all(cfg: cost_model.CostConfig, *, preds_dir=DEFAULT_PREDS_DIR,
               results_path=DEFAULT_RESULTS_PATH,
-              tier_a_configs=TIER_A_CAL_CONFIGS,
+              tier_a_configs=None,
               tier_c_config=TIER_C_CAL_CONFIG,
               max_points: int | None = DEFAULT_MAX_GRID_POINTS,
               n_resamples: int = harness.N_RESAMPLES,
-              seed: int = harness.BOOTSTRAP_SEED) -> list[dict]:
-    """Every (family, dataset, rung) result. Nothing is written; the caller writes."""
+              seed: int = harness.BOOTSTRAP_SEED,
+              derivation: str = DERIVATION_V1,
+              primary_config: str | None = None) -> list[dict]:
+    """Every (family, dataset, rung) result for one derivation. The caller writes."""
+    profile = DERIVATIONS[derivation]
+    tier_a_configs = tier_a_configs or profile["tier_a_configs"]
+    primary_config = primary_config or profile["primary"]
     records = _records_by_config(results_path)
     missing = [name for name in (*tier_a_configs, tier_c_config) if name not in records]
     if missing:
@@ -808,7 +862,7 @@ def build_all(cfg: cost_model.CostConfig, *, preds_dir=DEFAULT_PREDS_DIR,
     for config_name in tier_a_configs:
         record_a = records[config_name]
         art_a = load_artifact_checked(record_a, preds_dir)
-        is_primary = config_name == PRIMARY_TIER_A_CONFIG
+        is_primary = config_name == primary_config
         index = restrict_to_ids(art_a, art_c.complaint_id)
 
         policies = [
@@ -821,7 +875,8 @@ def build_all(cfg: cost_model.CostConfig, *, preds_dir=DEFAULT_PREDS_DIR,
         ]
         built = [
             build_policy_result(policy, cfg, is_primary=is_primary,
-                                max_points=max_points, n_resamples=n_resamples, seed=seed)
+                                max_points=max_points, n_resamples=n_resamples, seed=seed,
+                                derivation=derivation)
             for policy in policies
         ]
         # The headline cross-family claim ("escalate to Tier C rather than to a human")
@@ -847,7 +902,8 @@ def _cell_key(cell: dict) -> str:
     return f"{cell['c_misroute_usd']:g}|{cell['c_human_usd']:g}"
 
 
-def build_summary(results: list[dict], cfg: cost_model.CostConfig) -> dict:
+def build_summary(results: list[dict], cfg: cost_model.CostConfig, *,
+                  derivation: str = DERIVATION_V1) -> dict:
     """Cross-family summary the EXPERIMENT_LOG entry cites.
 
     Family comparison happens ONLY on the paired subset: `a_to_human` on full CAL and
@@ -885,11 +941,17 @@ def build_summary(results: list[dict], cfg: cost_model.CostConfig) -> dict:
             "beats_a_only": bool(min(costs.values()) < a_only),
         })
 
+    profile = DERIVATIONS[derivation]
+    version_block = {} if derivation == DERIVATION_V1 else {
+        "derivation": derivation,
+        "derivation_note": ISOCAL_IN_SAMPLE_NOTE,
+    }
     return {
         "schema_version": SCHEMA_VERSION,
         "kind": "summary",
-        "primary_tier_a_config": PRIMARY_TIER_A_CONFIG,
-        "tier_a_configs_swept": list(TIER_A_CAL_CONFIGS),
+        **version_block,
+        "primary_tier_a_config": profile["primary"],
+        "tier_a_configs_swept": list(profile["tier_a_configs"]),
         "tier_c_config": TIER_C_CAL_CONFIG,
         "cost_config": cost_model.config_block(cfg),
         "results": [
@@ -953,6 +1015,11 @@ def main(argv: list[str] | None = None) -> int:
         help="CAL rung config name to sweep (repeatable); default: all three rungs",
     )
     parser.add_argument("--tier-c-config", default=TIER_C_CAL_CONFIG)
+    parser.add_argument(
+        "--derivation", choices=sorted(DERIVATIONS), default=DERIVATION_V1,
+        help="threshold derivation: v1-raw (raw CAL p_max) or v2-isocal (calibrated CAL); "
+             "v1 is the default so its committed files regenerate byte-identically",
+    )
     args = parser.parse_args(argv)
 
     cfg = cost_model.load_cost_config(args.cost_config)
@@ -962,10 +1029,11 @@ def main(argv: list[str] | None = None) -> int:
     # Build everything before writing anything (batch atomicity, as in cost_model).
     results = build_all(
         cfg, preds_dir=args.preds_dir, results_path=args.results,
-        tier_a_configs=tuple(args.tier_a_configs or TIER_A_CAL_CONFIGS),
+        tier_a_configs=tuple(args.tier_a_configs) if args.tier_a_configs else None,
         tier_c_config=args.tier_c_config, max_points=args.max_points,
+        derivation=args.derivation,
     )
-    summary = build_summary(results, cfg)
+    summary = build_summary(results, cfg, derivation=args.derivation)
 
     written = []
     for obj in results:
@@ -983,7 +1051,10 @@ def main(argv: list[str] | None = None) -> int:
             f"cost/1k=${total['point']:8.2f} [{total['ci_lo']:8.2f}, {total['ci_hi']:8.2f}]"
         )
     summary_path = cost_model.write_result_json(
-        summary, args.out_dir / f"summary__cost-{cfg.sha256[:8]}.json")
+        summary,
+        args.out_dir / DERIVATIONS[args.derivation]["summary_name"].format(
+            sha8=cfg.sha256[:8]),
+    )
     print(f"\nsummary -> {summary_path}  ({len(written)} policy file(s))")
     return 0
 
