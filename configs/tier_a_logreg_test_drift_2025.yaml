@@ -1,0 +1,48 @@
+# Tier A FINAL reported point (LogReg): word + char_wb, isotonic-calibrated on
+# CAL, evaluated ONCE on TEST-DRIFT-2023. Features/params match the CAL rung
+# tier_a_logreg_wordchar_cal; the deltas vs that rung are the reporting
+# switches: calibration none -> isotonic and split cal -> test_drift_2025. Fit on
+# TRAIN, calibrate on CAL, evaluate on TEST-DRIFT-2023 (no TEST-* data touches
+# training or calibration).
+#
+# NOTE (owner-approved documentation correction, 2026-08-07, Phase 4 task 4): this
+# header previously described tier_a_logreg_wordchar_cal as "the winning CAL rung".
+# That claim is not supported by results/runs.jsonl — the WORD-ONLY rung
+# (tier_a_logreg_word_cal, d35c23d2) beat it on every logged CAL metric:
+# accuracy 0.8264 vs 0.8193, macro_f1 0.7535 vs 0.7466, aurc 0.0664 vs 0.0678.
+# The wordchar rung is the feature/param match to THIS frozen final config, which is
+# the only rationale this comment should have claimed. Correcting prose only: no
+# model, feature, split, seed or calibration setting changed, so run 8e4d6345's
+# numbers are untouched. The resulting file-hash change is registered explicitly in
+# predictions.CONFIG_DOC_CORRECTIONS so the provenance gate accepts exactly this
+# correction for exactly this run and nothing else.
+model:
+  runner: tier_a
+  name: tier_a_logreg_test_drift_2025
+  family: logreg          # logreg | complement_nb
+  params:
+    C: 1.0                # inverse L2 strength
+    max_iter: 200         # SAGA cap; kept modest so a 300k-doc fit is laptop-tractable
+    tol: 1.0e-3           # SAGA stopping tol; loosened from 1e-4 for the same reason
+data:
+  split: test_drift_2025
+  train_split: train
+  cal_split: cal          # isotonic calibration is fit here, disjoint from test_iid
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+features:
+  word:
+    enabled: true
+    ngram_range: [1, 2]
+    min_df: 5
+    max_features: 150000
+    sublinear_tf: true
+  char:
+    enabled: true
+    ngram_range: [3, 5]
+    min_df: 5
+    max_features: 150000
+    sublinear_tf: true
+calibration: isotonic     # none | isotonic
+seed: 20260805

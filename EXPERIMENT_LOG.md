@@ -827,3 +827,50 @@ reported runs. Every portfolio-bound number carries its reproduction command
   (offline refit; run already logged), then `make frontier` (regenerates thresholds
   v1+v2, router-sim v1+v2, frontier v2); tests:
   `uv run pytest tests/test_frontier.py tests/test_router_sim.py tests/test_threshold_opt.py -q`.
+
+## 2026-08-08 — Phase 5 task 1: Tier A rolling yearly evals (TEST-DRIFT 2023–2026H1)
+
+- **Context:** Tier B backfill deferred (incoming bundle was the outgoing kit by
+  mistake; real checkpoints still on the A6000). Per STATUS §b order, Phase 5 drift
+  proceeds for available tiers — Tier A this task, Tier C (Haiku headline +
+  Sonnet-terminal as the drift-chapter variant, per Phase 4 task 4 owner decision 2)
+  in following sessions.
+- **Hypothesis:** the frozen Tier A model (TF-IDF word+char LogReg, fit TRAIN,
+  isotonic-calibrated on CAL; TEST-IID reference run `8e4d6345…`, macro-F1 0.7605
+  [0.7564, 0.7643]) degrades monotonically across the frozen yearly TEST-DRIFT
+  slices, with the 2026-H1 slice worst given its known class-mix inversion
+  (credit_reporting 585 rows vs ~10k in 2023–25; splits_stats.yaml).
+- **Configs:** four clones of `tier_a_logreg_test_iid.yaml`
+  (`tier_a_logreg_test_drift_{2023,2024,2025,2026h1}.yaml`); diff-verified delta per
+  config = {`data.split`, `model.name` (identifier), comments} — single-variable
+  discipline (split only). One harness run each; four appends to runs.jsonl (git diff
+  confirms 4 insertions, 0 modifications).
+- **Result (evidence class: measured, frozen protocol; 95% bootstrap CI n=1,000):**
+
+  | split | run | macro-F1 | accuracy | ECE | AURC |
+  |---|---|---|---|---|---|
+  | test_iid (2022-H2, ref) | `8e4d6345…` | 0.7605 [0.7564, 0.7643] | 0.8444 | 0.1059 | 0.0500 |
+  | test_drift_2023 | `389d3e69…` | 0.7579 [0.7496, 0.7663] | 0.8338 | 0.1039 | 0.0617 |
+  | test_drift_2024 | `c1c810e2…` | 0.7478 [0.7376, 0.7569] | 0.8304 | 0.0970 | 0.0675 |
+  | test_drift_2025 | `cef3a58c…` | 0.7295 [0.7205, 0.7386] | 0.8108 | 0.0855 | 0.0757 |
+  | test_drift_2026h1 | `2ae5d8ea…` | 0.6656 [0.6585, 0.6729] | 0.6918 | 0.0422 | 0.1888 |
+
+- **Findings:** (1) monotone macro-F1 decay 2023→2025 (−0.028 over two years; 2025 CI
+  [0.7205, 0.7386] excludes the 2023 point), then a cliff at 2026-H1 (−0.064 vs
+  2025). (2) The cliff is localized: per-class F1 for credit_reporting collapses
+  0.887 (2025) → 0.215 (2026-H1) while mortgage/card/debt_collection hold or
+  improve (0.882/0.777/0.725) — consistent with prior shift (TRAIN-era
+  credit_reporting prior ≫ 2026-H1 share ⇒ precision collapse on the shrunken
+  class), to be decomposed in the prior-shift task before claiming within-class
+  drift. (3) Selective-risk degrades faster than raw accuracy (AURC 0.050 → 0.189,
+  3.8×) while max-prob ECE *improves* (0.1059 → 0.0422) — confidence stays
+  usable for ranking-threshold routing but the risk-coverage curve moves
+  substantially; escalation-rate-over-time computation must use these per-year
+  prediction artifacts (`extra.predictions_path` present in all four records).
+- **Verdict:** hypothesis supported; degradation measured and logged. The 2026-H1
+  credit_reporting collapse is a finding, not a bug — it is the drift chapter's
+  motivating exhibit and feeds tasks 2 (prior-shift decomposition) and the
+  escalation-rate chart.
+- **Repro:** `uv run python -m triage_lab.harness configs/tier_a_logreg_test_drift_2023.yaml`
+  (and `_2024`, `_2025`, `_2026h1`); ~29 min each on M-series CPU (full TRAIN refit
+  per run, deterministic seed 20260805).
