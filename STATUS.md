@@ -72,7 +72,7 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 ### Phase 5 — Drift protocol  ▶ **NEXT (per §b order — available tiers only)**
 | Task | Status | Evidence |
 |---|---|---|
-| Rolling yearly evals (2023–2026) | **Tier A done** (2026-08-08); Tier C next (Haiku headline + Sonnet-terminal drift variant); Tier B rows **pending Tier B** | EXPERIMENT_LOG 2026-08-08 Phase 5 task 1; runs `389d3e69…`/`c1c810e2…`/`cef3a58c…`/`2ae5d8ea…`; macro-F1 0.758→0.748→0.730→0.666 (2026-H1 cliff = credit_reporting prior shift, feeds task 2) |
+| Rolling yearly evals (2023–2026) | **Tier A done** (2026-08-08); **Tier C smoke done + projection logged (2026-08-09) — full runs ⏸ awaiting owner sign-off** (projected ≈$30.94, cumulative ≈$67.84 of ≈$75); Tier B rows **pending Tier B** | EXPERIMENT_LOG 2026-08-08 Phase 5 task 1 (Tier A runs `389d3e69…`/`c1c810e2…`/`cef3a58c…`/`2ae5d8ea…`; macro-F1 0.758→0.748→0.730→0.666, 2026-H1 cliff = credit_reporting prior shift) + 2026-08-09 task 2a (smoke receipts in `results/tier_c_raw/`, 16 configs staged) |
 | Prior-shift decomposition | pending | — |
 | OOV tracking | pending | — |
 | Perturbation robustness | pending | — |

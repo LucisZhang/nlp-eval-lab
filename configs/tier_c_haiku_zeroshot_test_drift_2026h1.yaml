@@ -1,0 +1,27 @@
+# Tier C FINAL Tier C Haiku drift run — Haiku 4.5 zero-shot on TEST-DRIFT-2026h1.
+#
+# FINAL reported Tier C Haiku drift runs (n=1500), paired with Sonnet via identical
+# cap_seed on this frozen slice, per UPGRADE_PLAN §4.2 amendment 2026-08-07,
+# owner-approved, evidence 84d79d6; the two configs differ only in model.name/data.split;
+# cap_seed matches the ablation so the Sonnet 5 subsample pairs on identical rows.
+model:
+  runner: tier_c
+  name: tier_c_haiku_zeroshot_test_drift_2026h1
+  slug: anthropic/claude-haiku-4.5
+  params:
+    temperature: 0.0
+    max_tokens: 64          # output is just {"label": "<class>"}; 64 is ample headroom
+    request_timeout_s: 60
+    max_retries: 3          # transport/429/5xx only; parse failures use the fallback label
+    max_concurrency: 8      # ThreadPoolExecutor fan-out; predictions stay id-aligned
+prompt:
+  version: v1
+  num_exemplars: 0          # zero-shot arm: no exemplar pairs, same system + template
+data:
+  split: test_drift_2026h1
+  eval_rows_cap: 1500       # owner-approved drift sizing, paired with Sonnet
+  cap_seed: 20260806        # SAME as the few-shot arm -> identical paired row set
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+seed: 20260806

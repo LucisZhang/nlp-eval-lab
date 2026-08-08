@@ -1,0 +1,26 @@
+# Tier C FINAL Tier C Sonnet drift run — Sonnet 5 zero-shot on TEST-DRIFT-2023.
+#
+# FINAL reported Tier C Sonnet drift runs (n=1500), paired with Haiku via identical
+# cap_seed on this frozen slice, per UPGRADE_PLAN §4.2 amendment 2026-08-07,
+# owner-approved, evidence 84d79d6; the two configs differ only in model.name/data.split.
+model:
+  runner: tier_c
+  name: tier_c_sonnet_zeroshot_test_drift_2023
+  slug: anthropic/claude-sonnet-5
+  params:
+    temperature: 0.0
+    max_tokens: 64
+    request_timeout_s: 60
+    max_retries: 3
+    max_concurrency: 8
+prompt:
+  version: v1
+  num_exemplars: 0
+data:
+  split: test_drift_2023
+  eval_rows_cap: 1500
+  cap_seed: 20260806
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+seed: 20260806

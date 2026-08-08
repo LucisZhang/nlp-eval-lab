@@ -874,3 +874,48 @@ reported runs. Every portfolio-bound number carries its reproduction command
 - **Repro:** `uv run python -m triage_lab.harness configs/tier_a_logreg_test_drift_2023.yaml`
   (and `_2024`, `_2025`, `_2026h1`); ~29 min each on M-series CPU (full TRAIN refit
   per run, deterministic seed 20260805).
+
+## 2026-08-09 — Phase 5 task 2a: Tier C drift smoke (20 calls/slice/model) + cost projection
+
+- **Owner decision (2026-08-09):** Tier C envelope raised ≈$48.5 → ≈$75. Approved
+  scope: Haiku headline on all four drift slices at n=1,500/slice + Sonnet-terminal
+  drift variant paired on the same 1,500 rows/slice (frozen zero-shot prompt v1
+  `f6777a96…`, canonical params — Sonnet v1 max_tokens 64, NOT the v2params probe;
+  cap_seed 20260806 everywhere ⇒ identical row sets per slice). Gate: per-slice
+  smoke (20 calls) with projected total, STOP for owner sign-off before full runs.
+- **Method:** 16 configs created — 8 full-run
+  (`tier_c_{haiku,sonnet}_zeroshot_test_drift_{2023,2024,2025,2026h1}.yaml`; Haiku
+  delta vs frozen TEST-IID final = {split, eval_rows_cap 5000→1500 owner-approved
+  pairing sizing, name}; Sonnet delta = {split, name} only) and 8 smoke clones
+  (eval_rows_cap: 20 = seeded first-20 subset of each slice, owner-authorized TEST
+  touch). Smokes run with `--no-append` (no smoke record enters runs.jsonl);
+  receipts under `results/tier_c_raw/tier_c_*_smoke_zeroshot_test_drift_*/`. Both
+  models smoked per slice deliberately — Phase 3 step 5 showed Haiku→Sonnet
+  extrapolation under-projects ~40% (Sonnet prompt tokenization runs heavier).
+- **Smoke results (measured; all 8×20 calls, provider Amazon Bedrock 160/160;
+  computed cost = OpenRouter-reported cost on every receipt):** parse failures
+  0/140 except sonnet 2024: 1/20 (consistent with the Phase 4 finding that the
+  parse-failure→human arm fires on Sonnet, not Haiku). Mean $/call — Haiku:
+  0.001430 / 0.001339 / 0.001395 / 0.001264 (2023/24/25/26h1); Sonnet: 0.003960 /
+  0.003775 / 0.003930 / 0.003534. Smoke spend **$0.41**.
+- **Projection (mean $/call × 1,500, evidence class: measured-smoke projection):**
+
+  | slice | Haiku n=1500 | Sonnet n=1500 |
+  |---|---|---|
+  | 2023 | $2.15 | $5.94 |
+  | 2024 | $2.01 | $5.66 |
+  | 2025 | $2.09 | $5.90 |
+  | 2026h1 | $1.90 | $5.30 |
+  | **subtotal** | **$8.14** | **$22.80** |
+
+  **Projected full-run total ≈ $30.94** (+10% retry contingency ⇒ ceiling ≈ $34.0).
+  Cumulative Tier C spend: $36.49 prior + $0.41 smoke = **$36.90 of ≈$75**;
+  if full runs land on projection, cumulative ≈ **$67.84** (contingency ceiling
+  ≈ $70.9) — inside the raised envelope with ≈$4–7 headroom.
+- **Verdict: smoke accepted; full runs NOT started.** Awaiting owner sign-off on
+  the projection per the 2026-08-09 gate. On approval, the 8 full runs append to
+  runs.jsonl (single append each) and Phase 5 task 2 (Tier C yearly rows +
+  paired Haiku-vs-Sonnet deltas per slice) proceeds.
+- **Repro (smoke):** `uv run --extra tierc python -m triage_lab.harness
+  configs/tier_c_haiku_smoke_zeroshot_test_drift_2023.yaml --no-append` (and the
+  other 7); receipts are the audit artifact.
