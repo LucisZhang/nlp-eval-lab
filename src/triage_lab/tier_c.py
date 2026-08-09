@@ -30,6 +30,16 @@ Determinism / integrity: the eval split parquet is re-hashed against the frozen
 ``data.eval_rows_cap`` subsample is seeded by ``data.cap_seed`` and re-sorted so row order
 is stable (same convention as ``tier_b.subsample_eval``).
 
+Robustness (Phase 5 §6.3.4): an optional ``data.perturbation`` block rewrites the eval
+narratives via ``perturb.apply_spec`` **after** the ``eval_rows_cap`` subsample. The order
+matters and is pinned by test: the cap draw is a permutation of the row *count* and never
+reads the text, so selecting first and perturbing second is what makes a perturbed run
+cover the byte-identical complaint_ids of its clean counterpart. Nothing else moves — the
+prompt bundle, the exemplars and the schema are the same frozen v1 objects, so the only
+difference reaching the API is the narrative inside the last user turn. That also means
+the perturbation *does* change ``prompt_tokens`` per call (noisier text tokenizes worse),
+which is a measured cost difference, not an artifact.
+
 Concurrency: ``model.params.max_concurrency`` (default 1 = sequential) fans the per-example
 calls out across a ThreadPoolExecutor. Predictions are re-collected by input index, so
 ``y_true``/``y_pred`` stay id-aligned regardless of completion order; only the raw
@@ -64,6 +74,7 @@ from pathlib import Path
 import duckdb
 import numpy as np
 
+from triage_lab import perturb
 from triage_lab.harness import RunnerResult, dataset_info, register_runner
 from triage_lab.snapshot import sha256_file
 from triage_lab.tier_c_prompt import build_messages, load_prompt_bundle
@@ -554,6 +565,17 @@ def tier_c_runner(config: dict) -> RunnerResult:
     ids, texts, y_true = load_split_frame(eval_path, text_col, label_col, order_col)
     ids, texts, y_true = subsample_eval(ids, texts, y_true, eval_rows_cap, cap_seed)
 
+    # Phase 5 §6.3.4: optional eval-text perturbation, applied STRICTLY AFTER the subsample.
+    # The cap draw is a permutation of the loaded row COUNT and never reads the text, so this
+    # ordering is not merely cosmetic — it is the guarantee that a perturbed run covers the
+    # byte-identical 1,500 complaint_ids of its clean counterpart, which is what makes the
+    # comparison paired. Perturbation touches `texts` only: ids, labels, the frozen prompt
+    # bundle and the exemplars are all untouched, so the only thing that changes between a
+    # clean and a perturbed run is the narrative inside the final user turn.
+    perturbation = perturb.spec_from_config(config)
+    if perturbation is not None:
+        texts = perturb.apply_spec(texts, ids, perturbation)
+
     api_key = load_openrouter_key()
     pricing = find_model_pricing(fetch_models_payload(api_key=api_key), slug)
     pricing_snapshot = {
@@ -646,6 +668,10 @@ def tier_c_runner(config: dict) -> RunnerResult:
         "fallback_label": fallback_label,
         "run_type": config.get("run_type", "standard"),
     }
+    if perturbation is not None:
+        # Echoed so the record carries the applied block and the harness gate
+        # (`harness._check_perturbation_applied`) can confirm this runner honoured it.
+        extra[perturb.CONFIG_KEY] = perturbation.as_dict()
     return RunnerResult(
         y_true=np.asarray(y_true, dtype=object),
         y_pred=np.asarray(y_pred, dtype=object),

@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier prior-shift oov perturb perturb-report
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier prior-shift oov perturb perturb-tier-c perturb-report
 
 setup:
 	uv sync --frozen
@@ -174,6 +174,18 @@ perturb:
 	uv run python -m triage_lab.harness configs/tier_a_logreg_word_test_iid_perturb_typo_10.yaml
 	uv run python -m triage_lab.harness configs/tier_a_logreg_word_test_iid_perturb_ocr_10.yaml
 	uv run python -m triage_lab.harness configs/tier_a_logreg_word_test_iid_perturb_case_10.yaml
+
+# Tier C perturbation arm (Phase 5 task 4, owner-approved 2026-08-09). Haiku 4.5 zero-shot,
+# TEST-IID, the 1,500-row paired subset (cap_seed 20260806 -> byte-identical subset of the
+# clean 5,000-row run 70a1b0c4, and identical to the Sonnet paired rows), one run per family
+# at rate 0.10. Makes LIVE OpenRouter calls and spends REAL money — needs the `tierc` dep
+# group + OPENROUTER_API_KEY in .env. Nominal projection is ~$1.97/family at the clean run's
+# measured $1.315/1k calls; actual will be HIGHER for typo/ocr (noisy text tokenizes into
+# more prompt tokens) and is read from the per-call receipts, never from this estimate.
+perturb-tier-c:
+	uv run --extra tierc python -m triage_lab.harness configs/tier_c_haiku_zeroshot_test_iid_perturb_typo_10.yaml
+	uv run --extra tierc python -m triage_lab.harness configs/tier_c_haiku_zeroshot_test_iid_perturb_ocr_10.yaml
+	uv run --extra tierc python -m triage_lab.harness configs/tier_c_haiku_zeroshot_test_iid_perturb_case_10.yaml
 
 # Perturbed-vs-clean paired bootstrap deltas on identical TEST-IID rows, from the frozen
 # per-example artifacts the runs above wrote. Offline; appends nothing to runs.jsonl.

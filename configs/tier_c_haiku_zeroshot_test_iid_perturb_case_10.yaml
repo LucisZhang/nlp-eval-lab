@@ -1,0 +1,43 @@
+# Tier C perturbation-robustness arm (Phase 5 §6.3.4), owner-approved 2026-08-09.
+# Haiku 4.5 zero-shot on TEST-IID, perturbed at rate 0.10.
+#
+# Deltas vs the clean reported run tier_c_haiku_zeroshot_test_iid (70a1b0c4):
+#   1. data.eval_rows_cap 5000 -> 1500 (budget; ~$1.97/family at the clean run's
+#      measured $1.315 per 1,000 calls, before the perturbation's own token inflation)
+#   2. the data.perturbation block below
+# cap_seed is UNCHANGED at 20260806, and subsample_eval takes the first `cap` entries
+# of one default_rng(cap_seed).permutation(n). The 1,500 rows are therefore a byte-
+# identical STRICT SUBSET of the clean run's 5,000, and identical to the 1,500 rows of
+# tier_c_sonnet_zeroshot_test_iid. The perturbation is applied AFTER that selection, so
+# noise cannot move which rows are evaluated.
+#
+# Case mangling: per alphabetic character, flip its case. Unlike Tier A —
+# whose TF-IDF blocks lowercase everything, making this a structural zero —
+# an LLM tokenizer is case-sensitive, so this arm carries real signal here.
+# rate = independent per-eligible-site probability (see perturb.py), not the
+# fraction of the document rewritten.
+model:
+  runner: tier_c
+  name: tier_c_haiku_zeroshot_test_iid_perturb_case_10
+  slug: anthropic/claude-haiku-4.5
+  params:
+    temperature: 0.0
+    max_tokens: 64          # output is just {"label": "<class>"}; 64 is ample headroom
+    request_timeout_s: 60
+    max_retries: 3          # transport/429/5xx only; parse failures use the fallback label
+    max_concurrency: 8      # ThreadPoolExecutor fan-out; predictions stay id-aligned
+prompt:
+  version: v1
+  num_exemplars: 0          # zero-shot arm: no exemplar pairs, same system + template
+data:
+  split: test_iid
+  eval_rows_cap: 1500       # paired subset of the clean 5000-row run; frozen split untouched
+  cap_seed: 20260806        # SAME as the clean run and the Sonnet arm -> identical rows
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+  perturbation:             # EVAL narratives only, applied AFTER the cap selection
+    family: case
+    rate: 0.10
+    seed: 20260805          # frozen repo-wide perturbation seed
+seed: 20260806

@@ -3,29 +3,59 @@
   "arms": [
     {
       "clean_config": "tier_a_logreg_test_iid",
+      "expected_n": null,
+      "join": "identical_rows",
       "key": "logreg_wordchar",
       "label": "LogReg word+char (TEST-IID final)",
+      "optional": false,
       "rates": [
         0.05,
         0.1
+      ],
+      "structural_zero_families": [
+        "case"
       ]
     },
     {
       "clean_config": "tier_a_cnb_test_iid",
+      "expected_n": null,
+      "join": "identical_rows",
       "key": "cnb_wordchar",
       "label": "ComplementNB word+char (TEST-IID final)",
+      "optional": false,
       "rates": [
         0.05,
         0.1
+      ],
+      "structural_zero_families": [
+        "case"
       ]
     },
     {
       "clean_config": "tier_a_logreg_word_test_iid",
+      "expected_n": null,
+      "join": "identical_rows",
       "key": "logreg_word_only",
       "label": "LogReg word-only (sensitivity arm)",
+      "optional": false,
       "rates": [
         0.1
+      ],
+      "structural_zero_families": [
+        "case"
       ]
+    },
+    {
+      "clean_config": "tier_c_haiku_zeroshot_test_iid",
+      "expected_n": 1500,
+      "join": "perturbed_subset_of_clean",
+      "key": "tier_c_haiku",
+      "label": "Claude Haiku 4.5 zero-shot (1,500-row paired subset)",
+      "optional": true,
+      "rates": [
+        0.1
+      ],
+      "structural_zero_families": []
     }
   ],
   "bootstrap": {
@@ -39,13 +69,15 @@
     "seed": 20260805
   },
   "evidence_class": "measured",
-  "generated_at": "2026-08-09T14:44:53.414473Z",
-  "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+  "generated_at": "2026-08-09T16:25:10.477396Z",
+  "git_sha": "adc8e826a0b1b31a707919d095d48c75d8a5fc6b",
   "methods_notes": {
     "artifact_gate": "every artifact is read through cost_model.load_artifact_verified (the full provenance + structural + aggregate gate), because this module joins artifacts row by row and a permuted id column is invisible to aggregates",
     "case_arm": "Predicted STRUCTURAL ZERO for Tier A: both TF-IDF blocks use lowercase=True, so a case flip is annihilated before featurization and the delta must be exactly 0.0 with CI [0, 0]. Reported as an end-to-end control on the perturbation plumbing, not as a robustness finding; the informative version of this arm is Tier B / Tier C.",
     "char_shield": "Whether the char_wb 3-5-grams BUY robustness is the difference between the logreg_wordchar and logreg_word_only deltas at the same family and rate. That difference-of-differences is not computed here: it spans four artifacts and two different fitted models, so an honest CI needs one joint bootstrap over the shared rows rather than a subtraction of two independently-bootstrapped intervals (whose widths do not compose). The point estimates are all in `rows`; read the sign, and compute the joint interval before making it a claim.",
-    "sign": "delta = perturbed - clean; negative = degradation"
+    "sign": "delta = perturbed - clean; negative = degradation",
+    "tier_c_case_arm": "The Tier A structural-zero argument does NOT extend to Tier C: an LLM's subword tokenizer is case-sensitive, so case mangling changes the token sequence, the token count and therefore both the prediction and the per-call cost. The tier_c case row is a real measurement and is not labelled structural.",
+    "tier_c_join": "The Tier C perturbed arms were capped at 1,500 rows against a clean run capped at 5,000, with the SAME cap_seed. tier_c.subsample_eval takes the first `cap` entries of one default_rng(cap_seed).permutation(n), so the 1,500 are a byte-identical subset of the 5,000 (and identical to the Sonnet paired subset). The clean side is restricted to those ids by containment -- every perturbed id must exist in the clean run, and the matched count must equal expected_n -- so this is a pairing claim, not an inner join."
   },
   "missing": [],
   "protocol": {
@@ -95,6 +127,7 @@
       "clean_config": "tier_a_logreg_test_iid",
       "clean_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
       "family": "typo",
+      "join": "identical_rows",
       "metrics": {
         "accuracy": {
           "ci_excludes_zero": true,
@@ -131,6 +164,7 @@
       "clean_config": "tier_a_logreg_test_iid",
       "clean_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
       "family": "typo",
+      "join": "identical_rows",
       "metrics": {
         "accuracy": {
           "ci_excludes_zero": true,
@@ -167,6 +201,7 @@
       "clean_config": "tier_a_logreg_test_iid",
       "clean_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
       "family": "ocr",
+      "join": "identical_rows",
       "metrics": {
         "accuracy": {
           "ci_excludes_zero": true,
@@ -203,6 +238,7 @@
       "clean_config": "tier_a_logreg_test_iid",
       "clean_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
       "family": "ocr",
+      "join": "identical_rows",
       "metrics": {
         "accuracy": {
           "ci_excludes_zero": true,
@@ -239,6 +275,7 @@
       "clean_config": "tier_a_logreg_test_iid",
       "clean_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
       "family": "case",
+      "join": "identical_rows",
       "metrics": {
         "accuracy": {
           "ci_excludes_zero": false,
@@ -275,6 +312,7 @@
       "clean_config": "tier_a_logreg_test_iid",
       "clean_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
       "family": "case",
+      "join": "identical_rows",
       "metrics": {
         "accuracy": {
           "ci_excludes_zero": false,
@@ -311,6 +349,7 @@
       "clean_config": "tier_a_cnb_test_iid",
       "clean_run_id": "c20cd14a7acd63b33b1a164b2fb56615153c5d595597668063ab3c666ec19781",
       "family": "typo",
+      "join": "identical_rows",
       "metrics": {
         "accuracy": {
           "ci_excludes_zero": true,
@@ -347,6 +386,7 @@
       "clean_config": "tier_a_cnb_test_iid",
       "clean_run_id": "c20cd14a7acd63b33b1a164b2fb56615153c5d595597668063ab3c666ec19781",
       "family": "typo",
+      "join": "identical_rows",
       "metrics": {
         "accuracy": {
           "ci_excludes_zero": true,
@@ -383,6 +423,7 @@
       "clean_config": "tier_a_cnb_test_iid",
       "clean_run_id": "c20cd14a7acd63b33b1a164b2fb56615153c5d595597668063ab3c666ec19781",
       "family": "ocr",
+      "join": "identical_rows",
       "metrics": {
         "accuracy": {
           "ci_excludes_zero": true,
@@ -419,6 +460,7 @@
       "clean_config": "tier_a_cnb_test_iid",
       "clean_run_id": "c20cd14a7acd63b33b1a164b2fb56615153c5d595597668063ab3c666ec19781",
       "family": "ocr",
+      "join": "identical_rows",
       "metrics": {
         "accuracy": {
           "ci_excludes_zero": true,
@@ -455,6 +497,7 @@
       "clean_config": "tier_a_cnb_test_iid",
       "clean_run_id": "c20cd14a7acd63b33b1a164b2fb56615153c5d595597668063ab3c666ec19781",
       "family": "case",
+      "join": "identical_rows",
       "metrics": {
         "accuracy": {
           "ci_excludes_zero": false,
@@ -491,6 +534,7 @@
       "clean_config": "tier_a_cnb_test_iid",
       "clean_run_id": "c20cd14a7acd63b33b1a164b2fb56615153c5d595597668063ab3c666ec19781",
       "family": "case",
+      "join": "identical_rows",
       "metrics": {
         "accuracy": {
           "ci_excludes_zero": false,
@@ -527,6 +571,7 @@
       "clean_config": "tier_a_logreg_word_test_iid",
       "clean_run_id": "8dacc1b9a8966530ff3ec011f8ef6516b47fca07bb7d45a3dfe5704a15162071",
       "family": "typo",
+      "join": "identical_rows",
       "metrics": {
         "accuracy": {
           "ci_excludes_zero": true,
@@ -563,6 +608,7 @@
       "clean_config": "tier_a_logreg_word_test_iid",
       "clean_run_id": "8dacc1b9a8966530ff3ec011f8ef6516b47fca07bb7d45a3dfe5704a15162071",
       "family": "ocr",
+      "join": "identical_rows",
       "metrics": {
         "accuracy": {
           "ci_excludes_zero": true,
@@ -599,6 +645,7 @@
       "clean_config": "tier_a_logreg_word_test_iid",
       "clean_run_id": "8dacc1b9a8966530ff3ec011f8ef6516b47fca07bb7d45a3dfe5704a15162071",
       "family": "case",
+      "join": "identical_rows",
       "metrics": {
         "accuracy": {
           "ci_excludes_zero": false,
@@ -628,8 +675,120 @@
         "seed": 20260805
       },
       "structural_expectation": "Predicted STRUCTURAL ZERO for Tier A: both TF-IDF blocks use lowercase=True, so a case flip is annihilated before featurization and the delta must be exactly 0.0 with CI [0, 0]. Reported as an end-to-end control on the perturbation plumbing, not as a robustness finding; the informative version of this arm is Tier B / Tier C."
+    },
+    {
+      "arm": "tier_c_haiku",
+      "arm_label": "Claude Haiku 4.5 zero-shot (1,500-row paired subset)",
+      "clean_config": "tier_c_haiku_zeroshot_test_iid",
+      "clean_run_id": "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e",
+      "family": "typo",
+      "join": "perturbed_subset_of_clean",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0093166667,
+          "ci_lo": -0.0293333333,
+          "clean": 0.842,
+          "delta": -0.0193333333,
+          "perturbed": 0.8226666667
+        },
+        "macro_f1": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0160966388,
+          "ci_lo": -0.0479870481,
+          "clean": 0.7490643074,
+          "delta": -0.0310028272,
+          "perturbed": 0.7180614802
+        }
+      },
+      "n_rows": 1500,
+      "perturbed_config": "tier_c_haiku_zeroshot_test_iid_perturb_typo_10",
+      "perturbed_run_id": "182774b6977de8625c08a7a351c6eca98cf72aa51aedcaae0c3eb6f1596b301a",
+      "rate": 0.1,
+      "rate_tag": "10",
+      "recorded_perturbation": {
+        "family": "typo",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "structural_expectation": null
+    },
+    {
+      "arm": "tier_c_haiku",
+      "arm_label": "Claude Haiku 4.5 zero-shot (1,500-row paired subset)",
+      "clean_config": "tier_c_haiku_zeroshot_test_iid",
+      "clean_run_id": "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e",
+      "family": "ocr",
+      "join": "perturbed_subset_of_clean",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": false,
+          "ci_hi": 0.0060166667,
+          "ci_lo": -0.01,
+          "clean": 0.842,
+          "delta": -0.0013333333,
+          "perturbed": 0.8406666667
+        },
+        "macro_f1": {
+          "ci_excludes_zero": false,
+          "ci_hi": 0.0317450322,
+          "ci_lo": -0.0080755077,
+          "clean": 0.7490643074,
+          "delta": 0.0115328358,
+          "perturbed": 0.7605971432
+        }
+      },
+      "n_rows": 1500,
+      "perturbed_config": "tier_c_haiku_zeroshot_test_iid_perturb_ocr_10",
+      "perturbed_run_id": "237bffae43f102aa11be8f85f349c5666b22fdbd9f99cfefa267d11fc8bcbe47",
+      "rate": 0.1,
+      "rate_tag": "10",
+      "recorded_perturbation": {
+        "family": "ocr",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "structural_expectation": null
+    },
+    {
+      "arm": "tier_c_haiku",
+      "arm_label": "Claude Haiku 4.5 zero-shot (1,500-row paired subset)",
+      "clean_config": "tier_c_haiku_zeroshot_test_iid",
+      "clean_run_id": "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e",
+      "family": "case",
+      "join": "perturbed_subset_of_clean",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": false,
+          "ci_hi": 0.0093333333,
+          "ci_lo": -0.0073333333,
+          "clean": 0.842,
+          "delta": 0.0013333333,
+          "perturbed": 0.8433333333
+        },
+        "macro_f1": {
+          "ci_excludes_zero": false,
+          "ci_hi": 0.0258036687,
+          "ci_lo": -0.0187733453,
+          "clean": 0.7490643074,
+          "delta": 0.0030606743,
+          "perturbed": 0.7521249817
+        }
+      },
+      "n_rows": 1500,
+      "perturbed_config": "tier_c_haiku_zeroshot_test_iid_perturb_case_10",
+      "perturbed_run_id": "c7e53e2a9c31a0b7019697569ec5e9d07b41b1059eaacd01155cc07830cdcd35",
+      "rate": 0.1,
+      "rate_tag": "10",
+      "recorded_perturbation": {
+        "family": "case",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "structural_expectation": null
     }
   ],
   "schema_version": 1,
+  "skipped": [],
   "split": "test_iid"
 }

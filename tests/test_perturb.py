@@ -13,13 +13,14 @@ the join/delta core directly.
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 
 import duckdb
 import numpy as np
 import pytest
 import yaml
 
-from triage_lab import harness, perturb, perturb_report, predictions, tier_a
+from triage_lab import harness, perturb, perturb_report, predictions, tier_a, tier_c
 from triage_lab.snapshot import sha256_file
 
 # A long-ish document with letters, digits, punctuation and every OCR-table character, so
@@ -279,19 +280,25 @@ def test_apply_spec_with_no_spec_is_the_identity():
 
 
 def test_every_shipped_perturbation_config_parses_to_its_declared_arm():
-    """The 15 committed perturbed configs must each name a real family/rate, and must not
-    perturb anything but a TEST-IID eval."""
+    """The 18 committed perturbed configs (15 Tier A + 3 Tier C) must each name a real
+    family/rate, and must not perturb anything but a TEST-IID eval."""
     paths = sorted((harness.REPO_ROOT / "configs").glob("*_perturb_*.yaml"))
-    assert len(paths) == 15
+    assert len(paths) == 18
     for path in paths:
         config = harness.load_config(path)
         spec = perturb.spec_from_config(config)
         assert spec is not None, path.name
         assert config["data"]["split"] == "test_iid"
-        assert config["data"]["train_split"] == "train"
         assert spec.seed == perturb.DEFAULT_SEED
         tag = "05" if spec.rate == 0.05 else "10"
         assert path.stem.endswith(f"_perturb_{spec.family}_{tag}")
+        if config["model"]["runner"] == "tier_a":
+            # the model is fitted on CLEAN train and calibrated on CLEAN cal
+            assert config["data"]["train_split"] == "train"
+            assert config["data"]["cal_split"] == "cal"
+        else:
+            assert config["model"]["runner"] == "tier_c"
+            assert "train_split" not in config["data"]
 
 
 # ---------------------------------------------------------------------------
@@ -633,9 +640,9 @@ def test_recorded_perturbation_gate_catches_a_misfiled_run():
 
 
 def test_job_grid_matches_the_shipped_configs():
-    """16 committed configs = 1 clean word-only baseline + 15 perturbed cells."""
+    """Every report cell has a committed config and vice versa (15 Tier A + 3 Tier C)."""
     cells = perturb_report.jobs()
-    assert len(cells) == 15
+    assert len(cells) == 18
     assert [c[0].key for c in cells[:6]] == ["logreg_wordchar"] * 6
     names = {arm.perturbed_config(fam, tag) for arm, fam, tag in cells}
     on_disk = {p.stem for p in (harness.REPO_ROOT / "configs").glob("*_perturb_*.yaml")}
@@ -676,3 +683,356 @@ def test_module_defaults_match_the_frozen_protocol():
     assert perturb_report.DEFAULT_PREDS_DIR == harness.DEFAULT_PREDS_DIR
     assert sum(perturb.TYPO_OP_WEIGHTS) == pytest.approx(1.0)
     assert perturb_report.RATE_TAGS == {"05": 0.05, "10": 0.10}
+
+
+# ---------------------------------------------------------------------------
+# (g) Tier C: subsample-then-perturb ordering, and the echoed block
+# ---------------------------------------------------------------------------
+
+def test_subsample_selection_cannot_be_moved_by_perturbation():
+    """The ordering guarantee, at the level of tier_c's own selector.
+
+    `subsample_eval` draws a permutation of the row COUNT and never reads the text, so the
+    selected ids are identical whether it is handed clean or perturbed narratives. This is
+    what makes a perturbed Tier C run pair with its clean counterpart row for row -- and it
+    is why the runner perturbs AFTER selecting, not before.
+    """
+    ids = list(range(4000, 4200))
+    texts = [LONG_DOC[: 40 + i] for i in range(200)]
+    labels = np.array(["card"] * 200, dtype=object)
+    noisy = perturb.perturb_texts(texts, ids, "typo", 0.3, SEED)
+    assert noisy != texts
+
+    clean_ids, clean_texts, _ = tier_c.subsample_eval(ids, texts, labels, 50, 20260806)
+    noisy_ids, noisy_texts, _ = tier_c.subsample_eval(ids, noisy, labels, 50, 20260806)
+    assert clean_ids == noisy_ids
+    # ...and perturbing the SELECTED rows is the same thing as selecting from the perturbed
+    # frame, so the runner's order costs nothing but guarantees the id set
+    assert perturb.perturb_texts(clean_texts, clean_ids, "typo", 0.3, SEED) == noisy_texts
+
+
+def test_the_1500_row_cap_is_a_subset_of_the_5000_row_cap_at_the_same_seed():
+    """The pairing claim behind the tier_c arm: same cap_seed, prefix of one permutation."""
+    n = 104_443  # TEST-IID row count; the property is a fact about subsample_eval, not data
+    ids = list(range(n))
+    texts = [""] * n
+    labels = np.zeros(n, dtype=object)
+    big, _, _ = tier_c.subsample_eval(ids, texts, labels, 5000, 20260806)
+    small, _, _ = tier_c.subsample_eval(ids, texts, labels, 1500, 20260806)
+    assert len(small) == 1500 and len(big) == 5000
+    assert set(small) <= set(big)
+    # a different cap_seed breaks the pairing, which is why the configs must not touch it
+    other, _, _ = tier_c.subsample_eval(ids, texts, labels, 1500, 20260807)
+    assert not set(other) <= set(big)
+
+
+def test_shipped_tier_c_perturb_configs_pair_with_the_sonnet_subset():
+    sonnet = harness.load_config(
+        harness.REPO_ROOT / "configs" / "tier_c_sonnet_zeroshot_test_iid.yaml"
+    )["data"]
+    clean = harness.load_config(
+        harness.REPO_ROOT / "configs" / "tier_c_haiku_zeroshot_test_iid.yaml"
+    )
+    paths = sorted(
+        (harness.REPO_ROOT / "configs").glob("tier_c_haiku_zeroshot_test_iid_perturb_*.yaml")
+    )
+    assert len(paths) == 3
+    for path in paths:
+        config = harness.load_config(path)
+        data = config["data"]
+        # every field that determines WHICH rows are evaluated matches the Sonnet arm
+        for key in ("split", "eval_rows_cap", "cap_seed", "order_column", "text_column",
+                    "label_column"):
+            assert data[key] == sonnet[key], (path.name, key)
+        # ...and everything that determines WHAT is asked matches the clean Haiku run
+        assert config["model"]["slug"] == clean["model"]["slug"]
+        assert config["prompt"] == clean["prompt"]
+        assert config["model"]["params"] == clean["model"]["params"]
+        assert config["seed"] == clean["seed"]
+        spec = perturb.spec_from_config(config)
+        assert spec.rate == 0.10 and spec.seed == perturb.DEFAULT_SEED
+        assert path.stem.endswith(f"_perturb_{spec.family}_10")
+
+
+_TIER_C_TEXTS = [
+    "the collector called me daily about a closed card balance",
+    "my mortgage escrow shortage notice was never explained",
+    "credit report error the bureau refuses to correct",
+    "student loan servicer misapplied my payment for months",
+    "the bank closed my checking account without any notice",
+    "a debt i never owed was reported to the bureaus",
+]
+
+
+class _RecordingCompletions:
+    """Fake OpenRouter completions endpoint: records every request, returns a fixed label."""
+
+    def __init__(self, label):
+        self.label = label
+        self.requests = []
+
+    def create(self, **kwargs):
+        self.requests.append(kwargs)
+        usage = SimpleNamespace(prompt_tokens=120, completion_tokens=8, total_tokens=128,
+                                cost=1.0e-4)
+        choice = SimpleNamespace(
+            message=SimpleNamespace(content=json.dumps({"label": self.label})),
+            finish_reason="stop",
+        )
+        return SimpleNamespace(choices=[choice], usage=usage, provider="Anthropic")
+
+
+@pytest.fixture
+def tier_c_env(tmp_path, monkeypatch):
+    """A network-free Tier C environment: synthetic split, fake client, tmp receipt root."""
+    pytest.importorskip("openai")
+    from triage_lab.tier_c_prompt import load_prompt_bundle
+
+    bundle = load_prompt_bundle("v1")
+    labels = list(bundle.labels)
+
+    splits_dir = tmp_path / "splits"
+    splits_dir.mkdir()
+    ids = list(range(6000, 6006))
+    y = [labels[i % len(labels)] for i in range(len(_TIER_C_TEXTS))]
+    path = splits_dir / "test_iid.parquet"
+    _write_parquet(path, ids, _TIER_C_TEXTS, y)
+    (splits_dir / "splits_stats.yaml").write_text(
+        yaml.safe_dump({"input_sha256": "synthetic-input",
+                        "splits": {"test_iid": {"sha256": sha256_file(path)}}})
+    )
+
+    completions = _RecordingCompletions(labels[0])
+    monkeypatch.setattr(tier_c, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(tier_c, "RAW_LOG_ROOT", tmp_path / "tier_c_raw")
+    monkeypatch.setattr(tier_c, "load_openrouter_key", lambda *a, **k: "test-key")
+    monkeypatch.setattr(
+        tier_c, "fetch_models_payload",
+        lambda *a, **k: {"data": [{"id": "anthropic/claude-haiku-4.5",
+                                   "pricing": {"prompt": "1e-6", "completion": "5e-6"}}]},
+    )
+    monkeypatch.setattr(
+        tier_c, "build_client",
+        lambda *a, **k: SimpleNamespace(chat=SimpleNamespace(completions=completions)),
+    )
+    return SimpleNamespace(splits_dir=splits_dir, ids=ids, labels=labels,
+                           completions=completions, bundle=bundle, tmp_path=tmp_path)
+
+
+def _tier_c_config(env, perturbation=None, cap=None) -> dict:
+    config = {
+        "model": {"runner": "tier_c", "name": "fixture_haiku",
+                  "slug": "anthropic/claude-haiku-4.5",
+                  "params": {"temperature": 0.0, "max_tokens": 64, "max_retries": 0,
+                             "max_concurrency": 1}},
+        "prompt": {"version": "v1", "num_exemplars": 0},
+        "data": {"split": "test_iid", "text_column": "narrative", "label_column": "class",
+                 "order_column": "complaint_id", "splits_dir": str(env.splits_dir),
+                 "cap_seed": 20260806},
+        "seed": 20260806,
+    }
+    if cap is not None:
+        config["data"]["eval_rows_cap"] = cap
+    if perturbation is not None:
+        config["data"]["perturbation"] = perturbation
+    return config
+
+
+def test_tier_c_perturbs_the_narrative_it_sends_and_echoes_the_block(tier_c_env):
+    spec = {"family": "ocr", "rate": 1.0, "seed": 20260805}
+    result = tier_c.tier_c_runner(_tier_c_config(tier_c_env, spec))
+
+    assert result.extra["perturbation"] == {"family": "ocr", "rate": 1.0, "seed": 20260805}
+    expected = perturb.perturb_texts(_TIER_C_TEXTS, tier_c_env.ids, "ocr", 1.0, 20260805)
+    assert expected != _TIER_C_TEXTS
+    sent = [req["messages"][-1]["content"] for req in tier_c_env.completions.requests]
+    assert len(sent) == len(expected)
+    for narrative, message in zip(expected, sent, strict=True):
+        assert narrative in message
+    # ids, labels and the frozen prompt bundle are untouched by the perturbation
+    np.testing.assert_array_equal(result.ids, np.array(tier_c_env.ids, dtype=np.int64))
+    assert result.extra["prompt_bundle_sha256"] == tier_c_env.bundle.bundle_sha256
+    assert result.extra["num_exemplars"] == 0
+
+
+def test_tier_c_selects_rows_before_perturbing_them(tier_c_env):
+    """Same cap + cap_seed -> the same complaint_ids, clean or perturbed."""
+    clean = tier_c.tier_c_runner(_tier_c_config(tier_c_env, cap=3))
+    clean_ids = list(clean.ids)
+    tier_c_env.completions.requests.clear()
+
+    perturbed = tier_c.tier_c_runner(
+        _tier_c_config(tier_c_env, {"family": "typo", "rate": 1.0, "seed": 20260805}, cap=3)
+    )
+    assert list(perturbed.ids) == clean_ids
+    np.testing.assert_array_equal(perturbed.y_true, clean.y_true)
+    # and the sent text is the perturbation OF THE SELECTED ROWS
+    selected = [_TIER_C_TEXTS[tier_c_env.ids.index(i)] for i in clean_ids]
+    expected = perturb.perturb_texts(selected, clean_ids, "typo", 1.0, 20260805)
+    sent = [req["messages"][-1]["content"] for req in tier_c_env.completions.requests]
+    for narrative, message in zip(expected, sent, strict=True):
+        assert narrative in message
+
+
+def test_tier_c_clean_run_records_no_perturbation_key(tier_c_env):
+    result = tier_c.tier_c_runner(_tier_c_config(tier_c_env))
+    assert "perturbation" not in result.extra
+    sent = [req["messages"][-1]["content"] for req in tier_c_env.completions.requests]
+    for narrative, message in zip(_TIER_C_TEXTS, sent, strict=True):
+        assert narrative in message
+
+
+def test_tier_c_passes_the_harness_perturbation_gate(tier_c_env, tmp_path):
+    """End-to-end: the block reaches the record and harness._check_perturbation_applied
+    accepts it (a tier that ignored the block would fail here)."""
+    cfg_path = tmp_path / "tier_c_run.yaml"
+    cfg_path.write_text(yaml.safe_dump(
+        _tier_c_config(tier_c_env, {"family": "case", "rate": 0.1, "seed": 20260805})
+    ))
+    results = tmp_path / "out" / "runs.jsonl"
+    record = harness.run(cfg_path, results)
+    on_disk = json.loads(results.read_text().splitlines()[0])
+    assert on_disk["extra"]["perturbation"] == {"family": "case", "rate": 0.1,
+                                                "seed": 20260805}
+    assert on_disk["cost_usd"] == pytest.approx(6 * (120 * 1e-6 + 8 * 5e-6))
+    assert record["extra"]["n_examples"] == 6
+
+
+# ---------------------------------------------------------------------------
+# (h) perturb_report: the tier_c subset join + optional-arm behaviour
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def subset_pair(tmp_path):
+    """A 300-row clean artifact and a 100-row perturbed artifact drawn from its ids."""
+    rng = np.random.default_rng(5)
+    ids = np.arange(8000, 8300)
+    y_true = np.array([LABELS[i % 3] for i in range(300)], dtype=object)
+    clean_pred = y_true.copy()
+    clean = _synthetic_artifact(tmp_path / "c5k.parquet", ids, y_true, clean_pred, "clean")
+
+    take = np.sort(rng.permutation(300)[:100])
+    pert_pred = y_true[take].copy()
+    for j in range(0, 100, 5):          # 20 disagreements inside the subset
+        pert_pred[j] = LABELS[(LABELS.index(pert_pred[j]) + 1) % 3]
+    perturbed = _synthetic_artifact(
+        tmp_path / "p1500.parquet", ids[take], y_true[take], pert_pred, "pert"
+    )
+    return clean, perturbed, ids[take]
+
+
+def test_subset_join_restricts_the_clean_side_to_the_perturbed_ids(subset_pair):
+    clean, perturbed, take_ids = subset_pair
+    pair = perturb_report.align_pair(
+        clean, perturbed, join=perturb_report.JOIN_SUBSET, expected_n=100
+    )
+    assert len(pair.ids) == 100
+    np.testing.assert_array_equal(pair.ids, np.sort(take_ids))
+    # the clean rows carried over are the ones belonging to those ids, not the first 100
+    assert np.array_equal(pair.clean_pred, pair.y_true)
+    assert int(np.count_nonzero(pair.perturbed_pred != pair.y_true)) == 20
+    out = perturb_report.pair_deltas(pair, n_resamples=200)
+    assert out["accuracy"]["delta"] == pytest.approx(-20 / 100)
+    assert out["macro_f1"]["ci_hi"] < 0.0
+
+
+def test_subset_join_refuses_a_perturbed_id_the_clean_run_never_scored(tmp_path, subset_pair):
+    clean, perturbed, _ = subset_pair
+    stray = perturbed.complaint_id.copy()
+    stray[0] = 999_999
+    bad = _synthetic_artifact(
+        tmp_path / "stray.parquet", stray, perturbed.y_true, perturbed.y_pred, "stray"
+    )
+    with pytest.raises(ValueError, match="not a subset of the clean one"):
+        perturb_report.align_pair(clean, bad, join=perturb_report.JOIN_SUBSET)
+
+
+def test_subset_join_enforces_the_frozen_subsample_size(subset_pair):
+    clean, perturbed, _ = subset_pair
+    with pytest.raises(ValueError, match="expected 1500 paired rows"):
+        perturb_report.align_pair(
+            clean, perturbed, join=perturb_report.JOIN_SUBSET, expected_n=1500
+        )
+
+
+def test_identical_join_still_refuses_a_subset(subset_pair):
+    """The Tier A arms must NOT silently accept a partial row set."""
+    clean, perturbed, _ = subset_pair
+    with pytest.raises(ValueError, match="identical rows"):
+        perturb_report.align_pair(clean, perturbed)
+
+
+def test_tier_c_arm_is_declared_as_the_optional_subset_arm():
+    arm = perturb_report.ARMS_BY_KEY["tier_c_haiku"]
+    assert arm.join == perturb_report.JOIN_SUBSET
+    assert arm.expected_n == 1500
+    assert arm.optional is True
+    assert arm.rate_tags == ("10",)
+    assert arm.clean_config == "tier_c_haiku_zeroshot_test_iid"
+    # case is NOT a structural zero for an LLM: its tokenizer is case-sensitive
+    assert arm.structural_zero_families == ()
+    for tier_a_arm in perturb_report.ARMS:
+        if tier_a_arm.key != "tier_c_haiku":
+            assert tier_a_arm.structural_zero_families == ("case",)
+            assert tier_a_arm.join == perturb_report.JOIN_IDENTICAL
+            assert tier_a_arm.optional is False
+
+
+def test_tier_c_case_row_is_not_labelled_structural(subset_pair):
+    clean, perturbed, _ = subset_pair
+    pair = perturb_report.align_pair(clean, perturbed, join=perturb_report.JOIN_SUBSET)
+    row = perturb_report.build_row(
+        perturb_report.ARMS_BY_KEY["tier_c_haiku"], "case", "10",
+        clean_record={"run_id": "70a1b0c4", "config_path": "configs/clean.yaml"},
+        perturbed_record={"run_id": "p", "config_path": "configs/p.yaml",
+                          "extra": {"perturbation": {"family": "case", "rate": 0.1,
+                                                     "seed": 20260805}}},
+        pair=pair, n_resamples=20,
+    )
+    assert row["structural_expectation"] is None
+    assert row["join"] == perturb_report.JOIN_SUBSET
+    assert row["n_rows"] == 100
+
+
+def test_all_grid_covers_tier_c_and_the_shipped_configs():
+    cells = perturb_report.jobs()
+    assert len(cells) == 18                        # 15 tier A + 3 tier C
+    tier_c_cells = [(c[1], c[2]) for c in cells if c[0].key == "tier_c_haiku"]
+    assert tier_c_cells == [("typo", "10"), ("ocr", "10"), ("case", "10")]
+    names = {
+        arm.perturbed_config(fam, tag) for arm, fam, tag in cells if arm.key == "tier_c_haiku"
+    }
+    on_disk = {
+        p.stem for p in
+        (harness.REPO_ROOT / "configs").glob("tier_c_haiku_zeroshot_test_iid_perturb_*.yaml")
+    }
+    assert names == on_disk
+
+
+def test_unrun_tier_c_cells_are_skipped_not_reported_as_holes(tmp_path):
+    """`--all` must not turn "the LLM arm has not been paid for yet" into a report hole."""
+    results = tmp_path / "runs.jsonl"
+    results.write_text("")
+    lines: list[str] = []
+    summary = perturb_report.run(
+        perturb_report.select_jobs(["tier_c_haiku"], None),
+        results_path=results, preds_dir=tmp_path / "preds", out_dir=tmp_path / "out",
+        write_summary=False, log=lines.append,
+    )
+    assert summary["rows"] == [] and summary["missing"] == []
+    assert [s["cell"] for s in summary["skipped"]] == [
+        "tier_c_haiku/typo/10", "tier_c_haiku/ocr/10", "tier_c_haiku/case/10"
+    ]
+    assert all("not run yet" in line for line in lines)
+
+
+def test_unrun_tier_a_cells_are_still_reported_as_holes(tmp_path):
+    results = tmp_path / "runs.jsonl"
+    results.write_text("")
+    summary = perturb_report.run(
+        perturb_report.select_jobs(["logreg_word_only"], ["ocr"]),
+        results_path=results, preds_dir=tmp_path / "preds", out_dir=tmp_path / "out",
+        write_summary=False, log=lambda *a: None,
+    )
+    assert summary["skipped"] == []
+    assert [m["cell"] for m in summary["missing"]] == ["logreg_word_only/ocr/10"]

@@ -1258,3 +1258,73 @@ reported runs. Every portfolio-bound number carries its reproduction command
   `3ddd0a7f`; word-only clean `8dacc1b9`, perturbed `dcfb1bee`/`e94b4e51`/`3f5eff59`.
   Tests: `uv run pytest tests/test_perturb.py -q` (54 passed; full suite 486 passed,
   1 skipped).
+
+## 2026-08-10 — Phase 5 task 5b: perturbation robustness — Tier C arm (owner-approved option A)
+
+- **Context:** owner approved option A of the task-5 projection (2026-08-09): Haiku 4.5
+  zero-shot, TEST-IID, typo/ocr/case at rate 0.10 only, on the frozen 1,500-row paired
+  subset — ceiling ≈$6.8 incl. +15% token-inflation margin, with a guard: pause between
+  families and report if projected total breaches the ≈$7.6 remaining envelope (owner
+  offered top-up). Guard evaluated after each family; never triggered. Runs executed
+  2026-08-09 UTC.
+- **Hypothesis:** subword tokenization degrades more gracefully than word-level TF-IDF
+  under character noise (the §6.3.4 cross-tier question), and **case** — structurally
+  unmeasurable for Tier A (task 5) — is the family where an LLM *could* pay a real
+  penalty, since case-mangling breaks tokenizer merges.
+- **Method:** `tier_c.py` now applies `data.perturbation` via `perturb.apply_spec`
+  **after** `subsample_eval`, keyed by `complaint_id` — row selection is computed on
+  unperturbed data, so the 1,500 rows are byte-identical to the clean run's subset
+  (asserted; also field-by-field config parity with `tier_c_sonnet_zeroshot_test_iid.yaml`
+  pinned by test). Prompt template/exemplars untouched (zero-shot; bundle
+  `f6777a96…` unchanged). `perturb_report.py` gained a `tier_c_haiku` arm: containment
+  join of each perturbed run against clean run `70a1b0c4`'s per-example artifact
+  (1,500 ⊂ 5,000, n=1500 matched asserted); structural-zero labelling explicitly NOT
+  applied to tier_c case rows. 16 new tests (70 total in `tests/test_perturb.py`;
+  full suite 502 passed, 1 skipped).
+- **Result (evidence class: measured; n=1,500 paired rows; clean Haiku on same rows
+  macro-F1 0.7491, accuracy 0.8420; delta = perturbed − clean, paired 95% CI):**
+
+  | family @ 0.10 | perturbed F1 | ΔF1 | Δacc | CI≠0 |
+  |---|---|---|---|---|
+  | typo | 0.7181 | −0.0310 [−0.0480, −0.0161] | −0.0193 [−0.0293, −0.0093] | yes |
+  | ocr | 0.7606 | +0.0115 [−0.0081, +0.0317] | −0.0013 [−0.0100, +0.0060] | no |
+  | case | 0.7521 | +0.0031 [−0.0188, +0.0258] | +0.0013 [−0.0073, +0.0093] | no |
+
+  Parse failures 0/4,500; provider 100% Amazon Bedrock; completion tokens pinned
+  (~10.7/call, all three runs); latency p50 ≈1.4 s / p95 ≈2.3 s (typo run; OpenRouter→
+  Bedrock route caveat as per Phase 3 step 7 audit).
+- **Per-family cost, actual vs projection (per owner instruction):** honest clean
+  baseline = clean run receipts restricted to the *same 1,500 rows*: **$1.9725**
+  (the $1.97/family nominal was near-exact). Pricing snapshot identical to the clean
+  run ($1/$5 per MTok), so dollar deltas are pure token deltas. **typo $2.1216**
+  (prompt tokens +7.9%), **ocr $2.0259** (+2.8%), **case $2.1394** (+8.8% — the
+  *largest* inflation). Total **$6.287** vs approved ≈$6.8 ceiling; computed cost
+  matches `openrouter_reported_cost_usd` per run. Cumulative project spend
+  ≈$73.67 of ≈$75 (≈$1.3 remaining).
+- **Findings:** (1) **Typo is the only family that hurts Haiku** (−3.1 F1 points,
+  CI excludes zero), and its point loss is smaller than every Tier A arm at the same
+  nominal rate (word+char −4.4, word-only −6.6; cross-arm comparison directional-only —
+  different n, no joint CI, same discipline as task 5's char-shield note).
+  (2) **OCR noise: no measurable effect** on Haiku (ΔF1 CI spans zero) where Tier A
+  pays ~−1 point — the confusion-table corruptions that break TF-IDF vocabulary lookups
+  are evidently recoverable in context by the LLM. (3) **Case-mangling: no accuracy
+  effect despite the largest tokenizer disruption** (+8.8% prompt tokens). The one cell
+  Tier A cannot occupy turns out to be a robustness win, not a vulnerability — the
+  §6.3.4 cross-tier exhibit now reads: LLM ≳ word+char TF-IDF > word-only TF-IDF under
+  character noise (Tier B cell pending GPU). (4) **Perturbation is a serving-cost tax
+  for Tier C only:** +3–9% per-call cost purely from token inflation, invisible to
+  Tier A economics. A router implication worth one sentence in the case study: noisy
+  inputs make escalation *more* expensive exactly when Tier A is *least* reliable.
+- **Deviations / limits:** n=1,500 CIs are ~6× wider than the Tier A cells (±0.016 vs
+  ±0.003); a Haiku "shield" claim vs Tier A is directional-only. Rate 0.10 only — no
+  0.05 rung, no dose-response. Sonnet excluded by cost. Realized changed-char fraction
+  still not emitted (carried over from task 5).
+- **Verdict:** hypothesis confirmed — the LLM degrades slowest under character noise,
+  and the case-family risk did not materialize. §6.3.4 is now complete for all
+  available tiers; Tier B rows pending GPU.
+- **Repro:** `make perturb-tier-c` (3 runs, 4,500 calls, $6.287 measured) then
+  `make perturb-report` → `results/perturbation/summary.json` (18 rows: 15 Tier A +
+  3 Tier C, 0 missing). Run ids: typo `182774b6`, ocr `237bffae`, case `c7e53e2a`;
+  clean baseline `70a1b0c4` (Phase 3). Raw receipts under
+  `results/tier_c_raw/tier_c_haiku_zeroshot_test_iid_perturb_*_10/`.
+  Tests: `uv run pytest tests/test_perturb.py -q` (70 passed).

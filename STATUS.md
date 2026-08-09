@@ -8,7 +8,7 @@ _what's next_.
 - **Owner decision (2026-08-06):** The A6000 is unavailable until the weekend, so **all Tier B
   training and eval is BLOCKED-until-weekend.** Work has been reordered to make maximal progress on
   the tiers and infrastructure that do not need the GPU.
-- Last updated: 2026-08-09.
+- Last updated: 2026-08-10.
 
 ---
 
@@ -75,7 +75,7 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 | Rolling yearly evals (2023–2026) | **Tier A done** (2026-08-08); **Tier C done** (2026-08-09, owner-approved; 8 runs, $30.48 actual vs $30.94 projected, cumulative $67.38 of ≈$75); Tier B rows **pending Tier B** | EXPERIMENT_LOG 2026-08-08 Phase 5 task 1 (Tier A: macro-F1 0.758→0.748→0.730→0.666, 2026-H1 cliff = credit_reporting prior shift) + 2026-08-09 tasks 2a/2b (Tier C: Haiku/Sonnet tied 2023–25 paired CIs ∋ 0; 2026-H1 Sonnet +0.054 F1 paired CI excl. 0, p≈1e-15; Tier C degrades slower than Tier A — 2026-H1: A 0.666 / Haiku 0.728 / Sonnet 0.782) |
 | Prior-shift decomposition | **done for available tiers** (2026-08-09; Tier B rows pending Tier B) | EXPERIMENT_LOG 2026-08-09 Phase 5 task 3; `results/prior_shift/` (12 decompositions + summary.json); Tier A 2026-H1: 4.2 of 9.2 pts prior-shift alone [3.9, 4.5], credit_reporting = 7.6 pts; LLMs pay the prior penalty (Haiku +3.0 [1.4, 4.4]) but within-class holds (≈0/negative) |
 | OOV tracking | **done** (2026-08-09; model-free, $0; dense-encoder centroid variant pending Tier B) | EXPERIMENT_LOG 2026-08-09 Phase 5 task 4; `results/oov/` (6 slices + summary.json); OOV hypothesis **refuted**: model-vocab token OOV 0.545%→0.773% TRAIN→2026-H1 (+0.23 pp), 99.2% of 2026-H1 token mass still in-vocab; TF-IDF centroid distance peaks at 2025 and *falls* at 2026-H1 (CIs disjoint) — lexical drift ruled out as cause of Tier A cliff, prior shift stands; types-vs-tokens gap (53.4% types vs 0.77% tokens OOV at 2026-H1) = grown-up CoNLL finding |
-| Perturbation robustness | **Tier A done** (2026-08-09; full grid 3 families × 2 rates on TEST-IID, 16 runs, $0; typo −4.4 F1 pts @ 0.10 both models, ocr ~−1 pt, case = exact structural zero for Tier A; char-n-gram shield confirmed directionally — word-only loses −6.6 vs word+char −4.4 @ typo 0.10); **Tier C pending owner cost approval** (projection: full mirror $39.5 over envelope; recommended subsample 3 families × 0.10 × 1,500 paired rows ≈ $5.9–6.8 of ≈$7.6 remaining); Tier B rows **pending Tier B** | EXPERIMENT_LOG 2026-08-09 Phase 5 task 5; `results/perturbation/summary.json` (15 rows); runs `4bbd26c4…`–`3f5eff59…` |
+| Perturbation robustness | **done for available tiers** (Tier A 2026-08-09, 16 runs, $0; Tier C 2026-08-10 owner-approved option A, 4,500 calls, $6.287 actual vs $5.92 nominal / ≈$6.8 ceiling — cumulative ≈$73.67 of ≈$75). Tier A: typo −4.4 F1 pts @ 0.10, ocr ~−1, case = exact structural zero; char-n-gram shield directional (word-only −6.6). Tier C Haiku @ 0.10: typo −3.1 pts (CI excl. 0, smallest of any tier), ocr and case ∅ (CIs ∋ 0) despite case's largest token inflation (+8.8%); perturbation = +3–9% Tier C serving-cost tax. Cross-tier: LLM ≳ word+char > word-only. Tier B rows **pending Tier B** | EXPERIMENT_LOG 2026-08-09 task 5 + 2026-08-10 task 5b; `results/perturbation/summary.json` (18 rows); Tier A runs `4bbd26c4…`–`3f5eff59…`, Tier C runs `182774b6…`/`237bffae…`/`c7e53e2a…` |
 | Novel-class probe (stretch) | pending | — |
 | Drift charts from results log; escalation-rate-over-time; evidence classes labeled | pending | — |
 

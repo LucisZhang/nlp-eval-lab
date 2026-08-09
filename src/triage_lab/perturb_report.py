@@ -19,7 +19,7 @@ The join is asserted, never assumed: perturbation rewrites text, so it must leav
 set bit-identical. A mismatch means the two runs are not on the same rows and the paired
 delta would be meaningless, so it is a hard error rather than an inner join.
 
-**Three arms.**
+**Four arms.**
 
 - ``logreg_wordchar`` / ``cnb_wordchar`` -- the two frozen TEST-IID finals (runs 8e4d6345
   and c20cd14a), perturbed at 0.05 and 0.10 in each family.
@@ -27,14 +27,20 @@ delta would be meaningless, so it is a hard error rather than an inner join.
   is to be *differenced against* ``logreg_wordchar`` at the same rate, since the only
   configuration difference is ``features.char.enabled``. That difference-of-differences is
   deliberately NOT computed here (see ``methods_notes.char_shield``).
+- ``tier_c_haiku`` -- Claude Haiku 4.5 zero-shot at 0.10, on the frozen 1,500-row paired
+  subset, against clean run 70a1b0c4 (5,000 rows). This arm joins by *containment* rather
+  than equality and is ``optional``: until its runs are logged it is omitted from the report
+  entirely (``skipped``) rather than counted as a hole, because it costs real money and its
+  absence is a schedule fact, not a defect. See ``methods_notes.tier_c_join``.
 
-**The case arm is a predicted structural zero for Tier A** and is labelled as such in every
-row. Both TF-IDF blocks are built with ``lowercase=True``, so flipping case and then
-lowercasing is the identity: the feature matrix is bit-identical and the delta must be
+**The case arm is a predicted structural zero for Tier A only** and is labelled as such in
+the Tier A rows. Both TF-IDF blocks are built with ``lowercase=True``, so flipping case and
+then lowercasing is the identity: the feature matrix is bit-identical and the delta must be
 exactly 0.0 with CI [0, 0]. It is reported rather than skipped because a *non*-zero case
 delta would be a bug in the perturbation plumbing, which makes this arm the cheapest
-available end-to-end control on that plumbing. It is also the arm that will carry real
-signal for Tier B (case-sensitive subword vocabularies) and Tier C.
+available end-to-end control on that plumbing. The label is per-arm, not per-family: LLM
+subword tokenizers are case-sensitive, so the ``tier_c_haiku`` case row is an ordinary
+measurement (``methods_notes.tier_c_case_arm``).
 
 Every artifact is read through ``cost_model.load_artifact_verified``, i.e. the repo's full
 provenance + structural + aggregate gate, because a permuted id column is invisible to
@@ -72,15 +78,34 @@ FAMILY_ORDER: tuple[str, ...] = perturb.FAMILIES
 RATE_TAGS: dict[str, float] = {"05": 0.05, "10": 0.10}
 
 
+JOIN_IDENTICAL = "identical_rows"
+JOIN_SUBSET = "perturbed_subset_of_clean"
+
+
 @dataclass(frozen=True)
 class Arm:
-    """One model configuration, its clean baseline config, and the rates it was perturbed at."""
+    """One model configuration, its clean baseline config, and the rates it was perturbed at.
+
+    ``join`` distinguishes the two shapes this report has to handle. Tier A perturbed runs
+    cover the whole TEST-IID split, so clean and perturbed are the SAME rows and any
+    disagreement is a fault. Tier C runs on a seeded ``eval_rows_cap`` subsample, and the
+    perturbed arms were capped at 1,500 against a clean run capped at 5,000 -- with the same
+    ``cap_seed``, so the 1,500 are a byte-identical prefix-of-the-same-permutation subset.
+    That case restricts the clean side and checks ``expected_n``, which is what turns "a
+    subset" into "*the* subset" rather than a silent inner join.
+    """
 
     key: str
     label: str
     clean_config: str
     perturbed_template: str
     rate_tags: tuple[str, ...]
+    join: str = JOIN_IDENTICAL
+    expected_n: int | None = None
+    # Families whose delta is a structural zero for THIS model class (see CASE_STRUCTURAL_NOTE).
+    structural_zero_families: tuple[str, ...] = ()
+    # Optional arms are skipped (not reported as holes) when their runs are not logged yet.
+    optional: bool = False
 
     def perturbed_config(self, family: str, rate_tag: str) -> str:
         return self.perturbed_template.format(family=family, rate_tag=rate_tag)
@@ -93,6 +118,7 @@ ARMS: tuple[Arm, ...] = (
         clean_config="tier_a_logreg_test_iid",
         perturbed_template="tier_a_logreg_test_iid_perturb_{family}_{rate_tag}",
         rate_tags=("05", "10"),
+        structural_zero_families=("case",),
     ),
     Arm(
         key="cnb_wordchar",
@@ -100,6 +126,7 @@ ARMS: tuple[Arm, ...] = (
         clean_config="tier_a_cnb_test_iid",
         perturbed_template="tier_a_cnb_test_iid_perturb_{family}_{rate_tag}",
         rate_tags=("05", "10"),
+        structural_zero_families=("case",),
     ),
     Arm(
         key="logreg_word_only",
@@ -107,6 +134,20 @@ ARMS: tuple[Arm, ...] = (
         clean_config="tier_a_logreg_word_test_iid",
         perturbed_template="tier_a_logreg_word_test_iid_perturb_{family}_{rate_tag}",
         rate_tags=("10",),
+        structural_zero_families=("case",),
+    ),
+    Arm(
+        key="tier_c_haiku",
+        label="Claude Haiku 4.5 zero-shot (1,500-row paired subset)",
+        clean_config="tier_c_haiku_zeroshot_test_iid",
+        perturbed_template="tier_c_haiku_zeroshot_test_iid_perturb_{family}_{rate_tag}",
+        rate_tags=("10",),
+        join=JOIN_SUBSET,
+        expected_n=1500,
+        # Deliberately empty: an LLM tokenizer is case-SENSITIVE, so `case` is a real
+        # measurement here, not the Tier A structural zero.
+        structural_zero_families=(),
+        optional=True,
     ),
 )
 ARMS_BY_KEY = {arm.key: arm for arm in ARMS}
@@ -116,6 +157,20 @@ CASE_STRUCTURAL_NOTE = (
     "case flip is annihilated before featurization and the delta must be exactly 0.0 with "
     "CI [0, 0]. Reported as an end-to-end control on the perturbation plumbing, not as a "
     "robustness finding; the informative version of this arm is Tier B / Tier C."
+)
+TIER_C_CASE_NOTE = (
+    "The Tier A structural-zero argument does NOT extend to Tier C: an LLM's subword "
+    "tokenizer is case-sensitive, so case mangling changes the token sequence, the token "
+    "count and therefore both the prediction and the per-call cost. The tier_c case row is "
+    "a real measurement and is not labelled structural."
+)
+TIER_C_JOIN_NOTE = (
+    "The Tier C perturbed arms were capped at 1,500 rows against a clean run capped at "
+    "5,000, with the SAME cap_seed. tier_c.subsample_eval takes the first `cap` entries of "
+    "one default_rng(cap_seed).permutation(n), so the 1,500 are a byte-identical subset of "
+    "the 5,000 (and identical to the Sonnet paired subset). The clean side is restricted to "
+    "those ids by containment -- every perturbed id must exist in the clean run, and the "
+    "matched count must equal expected_n -- so this is a pairing claim, not an inner join."
 )
 CHAR_SHIELD_NOTE = (
     "Whether the char_wb 3-5-grams BUY robustness is the difference between the "
@@ -222,13 +277,24 @@ class AlignedPair:
     class_labels: list
 
 
-def align_pair(clean, perturbed) -> AlignedPair:
-    """Sort both artifacts by complaint_id and assert they describe the same rows.
+def align_pair(clean, perturbed, *, join: str = JOIN_IDENTICAL,
+               expected_n: int | None = None) -> AlignedPair:
+    """Sort both artifacts by complaint_id and reduce them to one comparable row set.
 
-    Perturbation rewrites text; it cannot add, drop or relabel a row. So an id-set or
-    y_true disagreement is not something to reconcile with an inner join -- it means one of
-    the two runs is not what it claims to be.
+    ``join=JOIN_IDENTICAL``: the id sets must be equal. Perturbation rewrites text; it
+    cannot add, drop or relabel a row, so a disagreement is not something to reconcile with
+    an inner join -- it means one of the two runs is not what it claims to be.
+
+    ``join=JOIN_SUBSET``: every perturbed id must be present in the clean run, and the clean
+    side is restricted to exactly those rows. This is the Tier C shape (1,500-row perturbed
+    arms against a 5,000-row clean run drawn from the same seeded permutation). It is a
+    *containment* check, not an intersection: an id the clean run never scored is a hard
+    error, because it would mean the two caps were not drawn from the same stream. When
+    ``expected_n`` is given the matched count must hit it exactly, which is what stops a
+    partially-overlapping pair from quietly producing a small-n delta.
     """
+    if join not in (JOIN_IDENTICAL, JOIN_SUBSET):
+        raise ValueError(f"unknown join mode {join!r}")
     if list(clean.class_labels) != list(perturbed.class_labels):
         raise ValueError(
             f"class_labels differ between the clean ({clean.class_labels}) and perturbed "
@@ -238,13 +304,32 @@ def align_pair(clean, perturbed) -> AlignedPair:
     c_order = np.argsort(clean.complaint_id, kind="stable")
     p_order = np.argsort(perturbed.complaint_id, kind="stable")
     c_ids, p_ids = clean.complaint_id[c_order], perturbed.complaint_id[p_order]
-    if not np.array_equal(c_ids, p_ids):
+
+    if join == JOIN_SUBSET:
+        pos = np.searchsorted(c_ids, p_ids)
+        pos_clipped = np.minimum(pos, max(len(c_ids) - 1, 0))
+        matched = len(c_ids) > 0 and np.array_equal(c_ids[pos_clipped], p_ids)
+        if not matched:
+            n_absent = int(np.setdiff1d(p_ids, c_ids).size)
+            raise ValueError(
+                f"{n_absent} of {len(p_ids)} perturbed id(s) are absent from the clean run "
+                f"({len(c_ids)} rows); the perturbed subsample is not a subset of the clean "
+                "one, so the two caps were not drawn from the same seeded permutation"
+            )
+        c_order = c_order[pos]
+        c_ids = clean.complaint_id[c_order]
+    elif not np.array_equal(c_ids, p_ids):
         only_clean = int(np.setdiff1d(c_ids, p_ids).size)
         only_pert = int(np.setdiff1d(p_ids, c_ids).size)
         raise ValueError(
             f"clean and perturbed runs do not cover identical rows: {len(c_ids)} vs "
             f"{len(p_ids)} ids, {only_clean} only-clean and {only_pert} only-perturbed; "
             "perturbation must not change the eval row set"
+        )
+    if expected_n is not None and len(p_ids) != expected_n:
+        raise ValueError(
+            f"expected {expected_n} paired rows for this arm but matched {len(p_ids)}; "
+            "the frozen subsample size is part of the run's identity"
         )
     c_true, p_true = clean.y_true[c_order], perturbed.y_true[p_order]
     if not np.array_equal(c_true, p_true):
@@ -332,6 +417,7 @@ def build_row(
         "rate": rate,
         "rate_tag": rate_tag,
         "n_rows": len(pair.ids),
+        "join": arm.join,
         "clean_run_id": clean_record["run_id"],
         "clean_config": Path(clean_record.get("config_path", "")).stem,
         "perturbed_run_id": perturbed_record["run_id"],
@@ -342,7 +428,9 @@ def build_row(
         "metrics": pair_deltas(
             pair, n_resamples=n_resamples, seed=seed
         ),
-        "structural_expectation": CASE_STRUCTURAL_NOTE if family == "case" else None,
+        "structural_expectation": (
+            CASE_STRUCTURAL_NOTE if family in arm.structural_zero_families else None
+        ),
     }
 
 
@@ -447,27 +535,38 @@ def run(
     clean_cache: dict[str, tuple[dict, object]] = {}
     rows: list[dict] = []
     missing: list[dict] = []
+    skipped: list[dict] = []
 
     for arm, family, rate_tag in selected_jobs:
         cell = f"{arm.key}/{family}/{rate_tag}"
         pert_config = arm.perturbed_config(family, rate_tag)
+        # The perturbed run is resolved FIRST: an optional arm with no logged run must not
+        # pay for (or fail on) its clean baseline's verification.
+        if pert_config not in by_config:
+            entry = {"cell": cell, "arm": arm.key, "family": family, "rate_tag": rate_tag,
+                     "missing": f"perturbed config {pert_config}"}
+            if arm.optional:
+                skipped.append(entry)
+                log(f"[{cell:34s}] not run yet (optional arm) -- omitted from the report")
+            else:
+                missing.append(entry)
+                log(f"[{cell:34s}] MISSING: no logged run for {pert_config}")
+            continue
         try:
+            pert_record = by_config[pert_config]
+            check_recorded_perturbation(pert_record, family, RATE_TAGS[rate_tag])
+            pert_art = _load_verified(pert_record, preds_dir)
             if arm.key not in clean_cache:
                 clean_record = resolve_clean_record(arm, by_config, records, clean_overrides)
                 clean_cache[arm.key] = (clean_record, _load_verified(clean_record, preds_dir))
             clean_record, clean_art = clean_cache[arm.key]
-            if pert_config not in by_config:
-                raise MissingRun(f"perturbed config {pert_config}")
-            pert_record = by_config[pert_config]
-            check_recorded_perturbation(pert_record, family, RATE_TAGS[rate_tag])
-            pert_art = _load_verified(pert_record, preds_dir)
         except MissingRun as exc:
             missing.append({"cell": cell, "arm": arm.key, "family": family,
                             "rate_tag": rate_tag, "missing": str(exc)})
             log(f"[{cell:34s}] MISSING: no logged run / artifact for {exc}")
             continue
 
-        pair = align_pair(clean_art, pert_art)
+        pair = align_pair(clean_art, pert_art, join=arm.join, expected_n=arm.expected_n)
         row = build_row(
             arm, family, rate_tag,
             clean_record=clean_record, perturbed_record=pert_record, pair=pair,
@@ -486,7 +585,9 @@ def run(
         "split": "test_iid",
         "arms": [
             {"key": a.key, "label": a.label, "clean_config": a.clean_config,
-             "rates": [RATE_TAGS[t] for t in a.rate_tags]}
+             "rates": [RATE_TAGS[t] for t in a.rate_tags], "join": a.join,
+             "expected_n": a.expected_n, "optional": a.optional,
+             "structural_zero_families": list(a.structural_zero_families)}
             for a in ARMS
         ],
         "protocol": protocol_block(),
@@ -500,6 +601,8 @@ def run(
         "methods_notes": {
             "sign": "delta = perturbed - clean; negative = degradation",
             "case_arm": CASE_STRUCTURAL_NOTE,
+            "tier_c_case_arm": TIER_C_CASE_NOTE,
+            "tier_c_join": TIER_C_JOIN_NOTE,
             "char_shield": CHAR_SHIELD_NOTE,
             "artifact_gate": (
                 "every artifact is read through cost_model.load_artifact_verified (the full "
@@ -509,10 +612,12 @@ def run(
         },
         "rows": rows,
         "missing": missing,
+        "skipped": skipped,
     }
     if write_summary:
         path = write_json(summary, Path(out_dir) / "summary.json")
-        log(f"summary: {len(rows)} row(s), {len(missing)} missing -> {path}")
+        log(f"summary: {len(rows)} row(s), {len(missing)} missing, "
+            f"{len(skipped)} skipped -> {path}")
     return summary
 
 
@@ -543,9 +648,12 @@ def format_table(summary: dict) -> str:
                 f"{row['arm']:<20s} {row['family']:<6s} {row['rate']:>5.2f} {name:<9s} "
                 f"{m['clean']:>8.4f} {m['perturbed']:>8.4f} {m['delta']:>+9.4f} {ci:>21s}"
                 f"  {'yes' if m['ci_excludes_zero'] else 'no':<3s}"
+                f"{'   [structural zero expected]' if row['structural_expectation'] else ''}"
             )
     for miss in summary["missing"]:
         lines.append(f"{miss['cell']:<20s} MISSING ({miss['missing']})")
+    for skip in summary.get("skipped", []):
+        lines.append(f"{skip['cell']:<20s} not run yet ({skip['missing']})")
     return "\n".join(lines)
 
 
