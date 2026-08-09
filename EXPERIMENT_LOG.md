@@ -1063,3 +1063,100 @@ reported runs. Every portfolio-bound number carries its reproduction command
   requires `make preds` artifacts + `data/splits/splits_stats.yaml`. Tests:
   `uv run pytest tests/test_prior_shift.py -q` (43 passed; full suite 399 passed,
   1 skipped).
+
+## 2026-08-09 — Phase 5 task 4: OOV / covariate tracking vs the frozen TRAIN vocabulary
+
+- **Context:** UPGRADE_PLAN §6.3.3 — "yearly OOV rate against the TRAIN vocabulary and
+  embedding-centroid distance — the grown-up version of the CoNLL dev/test OOV finding
+  in the seed." Model-free covariate-shift exhibit: no prediction is read, no run
+  record is opened, nothing appended to `results/runs.jsonl`. Refits the tier_a
+  FeatureUnion on the frozen TRAIN split from scratch (vocabularies are not persisted
+  anywhere), then measures every eval slice against it. Zero API spend.
+- **Hypothesis:** if Tier A's 2026-H1 macro-F1 cliff (task 1: −9.2 points) were driven
+  by *covariate* shift, the yearly OOV rate and the TRAIN-centroid distance should rise
+  monotonically and the 2026-H1 jump should be the largest — a lexical explanation
+  competing with task 3's prior-shift explanation.
+- **Method (new module `src/triage_lab/oov.py`; 33 unit tests):** two OOV definitions,
+  both computed with the *fitted vectorizer's own* `build_analyzer()` (unigram level =
+  a `clone` with `ngram_range=(1,1)`, so lowercasing/token_pattern/preprocessing are
+  byte-for-byte the model's; a test pins that the (1,2) analyzer's output is the (1,1)
+  output followed by the bigrams). **model_vocab** (primary) = occurrences whose
+  unigram is not a key of the fitted word `TfidfVectorizer.vocabulary_`, i.e. after
+  `min_df=5` / `max_features=150000` pruning — nonzero on TRAIN itself, which is why
+  TRAIN is emitted as a slice and is the baseline the drift numbers are read against.
+  **corpus_novelty** = occurrences whose unigram never appears anywhere in TRAIN
+  (unpruned; 0 on TRAIN by construction). Token-level is the headline; type-level is
+  reported as **point estimates only** (a document bootstrap replicate holds ~63.2% of
+  the distinct documents, so an interval around a distinct-type count describes the
+  bootstrap's combinatorics, not the estimand — stated in `methods_notes`). Secondary:
+  the (1,2)-gram-level model_vocab rate. **`tfidf_centroid_cosine_distance`** =
+  `1 − cos(µ_slice, µ_TRAIN)` in the frozen word+char_wb FeatureUnion space, rows
+  renormalized to unit L2 after the hstack (sklearn L2-normalizes each block
+  separately, so raw rows have norm √2 and an empty-word-block document would be
+  down-weighted); cosine clipped to [−1,1] so the TRAIN self-distance is an exact 0
+  rather than −2.2e−16. Bootstrap: n=1,000, seed 20260805, resampling **documents**,
+  one weight vector per replicate driving every statistic of the slice; the TRAIN side
+  (vocabulary, idf, centroid, unpruned type set) is held **fixed** — it is a frozen
+  model artifact, not a sample, and cannot be resampled without refitting the
+  vectorizer and changing the estimand. Weights are materialized as a `uint16` count
+  matrix because every statistic is a ratio of linear functionals of the rows, so the
+  whole centroid bootstrap collapses to one `Xᵀ C` sparse×dense product accumulated
+  over fixed document chunks. Guards: split-parquet sha256 gate on every slice
+  (CLAUDE.md #2), and a **feature-block parity gate** asserting the four yearly Tier A
+  drift configs plus the CAL rung declare byte-identical `features` blocks — that
+  assertion is what makes "the TRAIN vocabulary" a single well-defined object.
+- **Result (evidence class: measured; 95% bootstrap percentile CI, n=1,000):**
+
+  | slice | n_docs | n_tokens | model-vocab OOV (token) | corpus-novelty OOV (token) | TF-IDF centroid cos-dist |
+  |---|---|---|---|---|---|
+  | train (reference) | 300,000 | 55,547,546 | 0.545% [0.540, 0.550] | 0.000% (structural) | 0.000000 [0.000020, 0.000023] |
+  | test_iid (2022-H2) | 104,443 | 18,871,498 | 0.561% [0.551, 0.570] | 0.129% [0.126, 0.133] | 0.053578 [0.052716, 0.054579] |
+  | test_drift_2023 | 20,000 | 3,706,384 | 0.762% [0.738, 0.789] | 0.140% [0.131, 0.150] | 0.031173 [0.030226, 0.032882] |
+  | test_drift_2024 | 20,000 | 3,794,437 | 0.695% [0.673, 0.717] | 0.136% [0.128, 0.145] | 0.052102 [0.050811, 0.053950] |
+  | test_drift_2025 | 20,000 | 3,817,701 | 0.713% [0.689, 0.739] | 0.183% [0.172, 0.193] | 0.092611 [0.090854, 0.095114] |
+  | test_drift_2026h1 | 20,000 | 4,377,819 | 0.773% [0.751, 0.796] | 0.192% [0.181, 0.203] | 0.081474 [0.080100, 0.083270] |
+
+  Type-level (point only) and the (1,2)-gram companion, same slice order:
+  model-vocab TYPE OOV 86.9 / 73.5 / 50.5 / 49.6 / 51.5 / 53.4%; corpus-novelty TYPE
+  OOV 0.0 / 29.5 / 14.2 / 15.3 / 20.4 / 20.2%; (1,2)-gram token OOV 7.56 / 7.43 /
+  8.04 / 8.20 / 9.47 / 11.06%. Vocabulary: **13,471 of 102,636 distinct TRAIN unigram
+  types survive pruning** (the other 136,529 of the 150,000 word features are bigrams).
+- **Findings:** (1) **The OOV hypothesis is refuted, and that is the finding.**
+  Model-vocab OOV rises only 0.545% → 0.773% of token mass TRAIN → 2026-H1 (+0.23 pp),
+  and true novelty only 0.00% → 0.19%. **99.2% of 2026-H1 token occurrences are still
+  in the vocabulary Tier A was fitted on.** A 0.2-pp shift in representable token mass
+  cannot produce a 9.2-point macro-F1 collapse; task 3's prior shift (4.2 pts) +
+  within-class drift (5.0 pts) remains the explanation. (2) **Neither covariate signal
+  tracks the performance cliff.** Model-vocab OOV is not even monotone in time
+  (2023 0.762% > 2025 0.713% > 2024 0.695%), and the centroid distance *peaks at 2025*
+  (0.0926) and then *falls* at 2026-H1 (0.0815, CIs disjoint) — the exact year the
+  macro-F1 cliff happens. Text-space distance to TRAIN and Tier A's failure are
+  decoupled. (3) **The types-vs-tokens gap is the grown-up CoNLL finding.** 86.9% of
+  TRAIN's own unigram *types* are pruned out of the model vocabulary, yet those types
+  carry only 0.545% of TRAIN's token *occurrences*; on 2026-H1, 53.4% of types are OOV
+  against 0.77% of tokens. Reporting type-level OOV alone would have overstated the
+  problem ~70×. (4) The (1,2)-gram rate is 14× the unigram rate (11.06% at 2026-H1,
+  and already 7.56% on TRAIN itself) — n-gram sparsity, not drift, dominates it; it is
+  kept as a labelled secondary for exactly that reason. (5) Caveat recorded in every
+  output: the centroid distance is an *aggregate* covariate statistic absorbing class-mix
+  change and within-class lexical change together (each eval slice is a natural-mix
+  Hamilton-apportioned sample of its period while TRAIN is class_year-stratified), which
+  is also why test_iid (0.0536) sits *further* from TRAIN than test_drift_2023 (0.0312).
+  Only the four drift slices are like-for-like with each other.
+- **Deviations / limits:** the centroid lives in TF-IDF space, not a dense-encoder
+  space (named `tfidf_centroid_cosine_distance` and flagged `dense_encoder_note`;
+  a sentence-encoder version is pending Tier B). No size-matched null was measured:
+  the TRAIN interval is the noise floor at n=300,000 and scales as 1/√n, so at the
+  20,000-row slice size it is ≈3.9× larger — still two-plus orders of magnitude below
+  every measured drift distance, so no conclusion turns on it (`centroid.ci_note`).
+- **Verdict:** hypothesis refuted, cleanly and with CIs. This is the negative control
+  the drift chapter needs: it rules out lexical drift as the cause of Tier A's collapse
+  and leaves the prior-shift decomposition as the standing explanation.
+- **Repro:** `make oov` (= `uv run python -m triage_lab.oov --all`); deterministic
+  (seed 20260805), ~10.5 min wall-clock, ~7.7 GB peak RSS (a 300k-document word+char
+  TF-IDF fit plus one `Xᵀ C` pass per slice), byte-identical output modulo
+  `generated_at` (verified by two consecutive runs). Requires only
+  `data/splits/*.parquet` + `data/splits/splits_stats.yaml` — no `make preds`
+  artifacts. Outputs: `results/oov/{train,test_iid,test_drift_*}.json` + `summary.json`.
+  Tests: `uv run pytest tests/test_oov.py -q` (33 passed; full suite 432 passed,
+  1 skipped).

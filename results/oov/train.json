@@ -1,0 +1,146 @@
+{
+  "analysis": "oov_covariate_tracking",
+  "bootstrap": {
+    "ci_pct": [
+      2.5,
+      97.5
+    ],
+    "joint_draw": "one weight vector per replicate drives every statistic of the slice",
+    "method": "percentile",
+    "n_resamples": 1000,
+    "resample": "slice_documents_with_replacement",
+    "seed": 20260805,
+    "train_reference_note": "The TRAIN side (vocabulary, idf weights, centroid, unpruned unigram type set) is held fixed across bootstrap replicates: it is a frozen model artifact, not a sample, and it cannot be resampled without refitting the vectorizer, which would change the vocabulary and hence the estimand. Only the slice's documents are resampled."
+  },
+  "centroid": {
+    "aggregation": "unweighted mean of unit rows",
+    "ci_note": "A cosine distance is non-negative, so its bootstrap distribution is biased UPWARD by resampling noise and the interval need not bracket the point estimate -- most visibly on TRAIN, where the point is a structural 0 and the interval sits at the pure noise floor. That floor scales as 1/sqrt(n_docs), so at the 20,000-row drift-slice size it is approximately sqrt(300000/20000) = 3.9x the TRAIN figure. That factor is an analytic extrapolation, NOT a measurement: no size-matched null (n = 20,000 drawn from TRAIN) was computed, because even after the correction the floor stays two-plus orders of magnitude below every measured drift distance and no conclusion turns on its exact value. Measure it if a future claim ever rests on a centroid distance below ~0.001.",
+    "confounding_note": "The centroid distance is an AGGREGATE covariate statistic: it absorbs the class-mix change and the within-class lexical change together, and does not separate them. Every eval slice is a natural-mix (Hamilton-apportioned) sample of its own period while TRAIN is class_year-stratified, so part of every distance here -- including test_iid's -- is prior shift, which results/prior_shift/ measures separately for macro-F1. Do not read this number as within-class text drift; the year-over-year comparison among the four drift slices is the like-for-like one, since they share a sampling scheme.",
+    "dense_encoder_note": "TF-IDF-space centroid, not a dense-encoder embedding: this is the frozen Tier A FeatureUnion (word 1-2gram + char_wb 3-5gram) fitted on TRAIN. A dense sentence-encoder version of the same exhibit is pending Tier B; until it exists, no claim here should be read as being about semantic drift, only about lexical/character-n-gram drift.",
+    "row_normalization": "unit L2 after hstack (blocks are L2-normalised separately by sklearn, giving raw rows norm sqrt(2))",
+    "slice_centroid_l2": 0.2669922692,
+    "space": "tier_a_tfidf_featureunion_word1_2_char_wb3_5"
+  },
+  "counts": {
+    "n_docs": 300000,
+    "n_docs_zero_feature_row": 0,
+    "n_ngrams_12": 110795092,
+    "n_oov_model_ngrams_12": 8378917,
+    "n_oov_model_tokens": 302738,
+    "n_oov_model_types": 89165,
+    "n_oov_novel_tokens": 0,
+    "n_oov_novel_types": 0,
+    "n_tokens": 55547546,
+    "n_types": 102636
+  },
+  "dataset": {
+    "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+    "split": "train",
+    "split_sha256": "939186e72a78c680107dd3ae0087485fabd5f50dc1cca8dab8ca0205956a342b"
+  },
+  "evidence_class": "measured",
+  "generated_at": "2026-08-09T05:04:44.813852Z",
+  "git_sha": "23d0cbfeff538404800d7b90dddf092e635a4aeb",
+  "is_reference_slice": true,
+  "methods_notes": {
+    "corpus_novelty": "OOV against every unigram type appearing anywhere in TRAIN, unpruned -- true lexical novelty, disentangled from the pruning artifact",
+    "headline": "model_vocab_oov_token_rate is the primary Tier-A-relevant rate; corpus_novelty_oov_token_rate is the pruning-free novelty rate; model_vocab_oov_ngram12_token_rate is a secondary (1, 2)-gram-level companion",
+    "model_vocab": "OOV against the fitted word TfidfVectorizer.vocabulary_ (post min_df / max_features pruning) -- the vocabulary the model actually has",
+    "token_vs_type": "Type-level rates are point estimates with no CI. A document bootstrap replicate contains only ~63.2% of the distinct documents, so the number of distinct token TYPES it exhibits is driven by the resample's own combinatorics rather than by sampling error in the estimand; a percentile interval around it would be a statement about the bootstrap, not about the slice. Token-level rates are the headline and are CI'd.",
+    "tokenization": "the fitted vectorizer's own build_analyzer(); the unigram analyzer is a clone with ngram_range=(1, 1), so lowercasing / token_pattern / preprocessing are byte-for-byte the model's"
+  },
+  "metrics": {
+    "corpus_novelty_oov_token_rate": {
+      "ci_hi": 0.0,
+      "ci_kind": "bootstrap_percentile",
+      "ci_lo": 0.0,
+      "point": 0.0
+    },
+    "corpus_novelty_oov_type_rate": {
+      "ci_hi": null,
+      "ci_kind": null,
+      "ci_lo": null,
+      "no_ci_reason": "type_level_under_document_bootstrap",
+      "point": 0.0
+    },
+    "model_vocab_oov_ngram12_token_rate": {
+      "ci_hi": 0.0758300831,
+      "ci_kind": "bootstrap_percentile",
+      "ci_lo": 0.0754266213,
+      "point": 0.0756253445
+    },
+    "model_vocab_oov_token_rate": {
+      "ci_hi": 0.0054961684,
+      "ci_kind": "bootstrap_percentile",
+      "ci_lo": 0.0054043962,
+      "point": 0.0054500697
+    },
+    "model_vocab_oov_type_rate": {
+      "ci_hi": null,
+      "ci_kind": null,
+      "ci_lo": null,
+      "no_ci_reason": "type_level_under_document_bootstrap",
+      "point": 0.8687497564
+    },
+    "tfidf_centroid_cosine_distance": {
+      "ci_hi": 2.30264e-05,
+      "ci_kind": "bootstrap_percentile",
+      "ci_lo": 2.04986e-05,
+      "point": 0.0
+    }
+  },
+  "provenance": {
+    "boot_block": 250,
+    "chunk_docs": 20000,
+    "config_path": "configs/tier_a_logreg_test_drift_2023.yaml",
+    "config_sha256": "68ea22911c1792a763c1ecd6afc9054a824863d6e6bdf5352712d03376f93102",
+    "features": {
+      "char": {
+        "enabled": true,
+        "max_features": 150000,
+        "min_df": 5,
+        "ngram_range": [
+          3,
+          5
+        ],
+        "sublinear_tf": true
+      },
+      "word": {
+        "enabled": true,
+        "max_features": 150000,
+        "min_df": 5,
+        "ngram_range": [
+          1,
+          2
+        ],
+        "sublinear_tf": true
+      }
+    },
+    "parity_configs": [
+      "tier_a_logreg_test_drift_2023.yaml",
+      "tier_a_logreg_test_drift_2024.yaml",
+      "tier_a_logreg_test_drift_2025.yaml",
+      "tier_a_logreg_test_drift_2026h1.yaml",
+      "tier_a_logreg_wordchar_cal.yaml"
+    ]
+  },
+  "reference_slice": "train",
+  "repro_command": "uv run python -m triage_lab.oov --slice train",
+  "schema_version": 1,
+  "slice": "train",
+  "structural_values": {
+    "corpus_novelty_oov_token_rate": "exactly 0 by construction: corpus novelty is defined against TRAIN itself",
+    "corpus_novelty_oov_type_rate": "exactly 0 by construction: corpus novelty is defined against TRAIN itself",
+    "model_vocab_oov_token_rate": "nonzero on TRAIN because of min_df / max_features pruning; this is the baseline every drift-slice model-vocab rate must be read against",
+    "tfidf_centroid_cosine_distance": "exactly 0 by construction (self-distance); the interval is the pure resampling noise floor at n = 300000, NOT a size-matched null for the 20,000-row drift slices -- see centroid.ci_note"
+  },
+  "vocabulary": {
+    "n_char_features": 150000,
+    "n_features": 300000,
+    "n_train_unigram_types_in_model_vocab": 13471,
+    "n_train_unigram_types_unpruned": 102636,
+    "n_word_features": 150000,
+    "pruning_note": "13471 of 102636 distinct TRAIN unigram types survive min_df / max_features into the word vocabulary; the other 136529 of that vocabulary's 150000 features are bigrams, which is why the feature count is not comparable to a unigram type count. The gap between the model_vocab and corpus_novelty rates is exactly this pruning",
+    "source_split": "train"
+  }
+}

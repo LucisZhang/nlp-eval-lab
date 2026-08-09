@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier prior-shift
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier prior-shift oov
 
 setup:
 	uv sync --frozen
@@ -134,3 +134,15 @@ frontier: router-sim
 # appends nothing to results/runs.jsonl.
 prior-shift:
 	uv run python -m triage_lab.prior_shift --all
+
+# OOV / covariate tracking (Phase 5 task 4): yearly OOV rate against the frozen TRAIN
+# vocabulary under two definitions — model-vocab (post min_df/max_features pruning, the
+# vocabulary Tier A actually has) and corpus-novelty (unpruned, true lexical novelty) — plus
+# the TF-IDF-space centroid cosine distance to TRAIN, all with document-bootstrap CIs. Reads
+# only the frozen split parquets (sha256-gated) and refits the tier_a FeatureUnion on TRAIN
+# from scratch, so it needs no artifacts and appends nothing to results/runs.jsonl. Slow by
+# construction (a 300k-doc word+char TF-IDF fit, then one X^T C pass per slice); TRAIN is
+# emitted as a slice too, as the pruning/noise-floor baseline the drift numbers are read
+# against. Deliberately standalone, like prior-shift.
+oov:
+	uv run python -m triage_lab.oov --all
