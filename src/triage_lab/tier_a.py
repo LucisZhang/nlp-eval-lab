@@ -21,6 +21,11 @@ Provenance: the runner rebuilds the record's `dataset` block from
 `splits_stats.yaml` via `harness.dataset_info`, and verifies that the on-disk
 train/eval parquet sha256 matches the frozen stats before training (fail-loud
 integrity gate, CLAUDE.md rule 2).
+
+Robustness: an optional `data.perturbation` block (see `perturb.py`) rewrites the
+EVAL narratives only, deterministically per complaint_id, after loading and before
+featurization. TRAIN and CAL are never perturbed, so a perturbed run is the frozen
+clean model measured on noisy input.
 """
 
 from __future__ import annotations
@@ -36,6 +41,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import ComplementNB
 from sklearn.pipeline import FeatureUnion, Pipeline
 
+from triage_lab import perturb
 from triage_lab.harness import RunnerResult, dataset_info, register_runner
 from triage_lab.snapshot import sha256_file
 
@@ -229,6 +235,15 @@ def fit_predict(config: dict):
     x_train, y_train = load_split_frame(train_path, text_col, label_col, order_col)
     x_eval, y_eval = load_split_frame(eval_path, text_col, label_col, order_col)
 
+    # Phase 5 §6.3.4: optional eval-text perturbation, applied here — after loading, before
+    # featurization — and to the EVAL frame only. TRAIN (above) and CAL (below) are read
+    # separately and stay clean by construction, so a perturbed run is the frozen clean
+    # model scored on noisy input, never a model trained on noise. Keyed by complaint_id,
+    # which is read only when a perturbation is actually configured.
+    spec = perturb.spec_from_config(config)
+    if spec is not None:
+        x_eval = perturb.apply_spec(x_eval, load_eval_ids(config), spec)
+
     pipe = build_pipeline(config)
     pipe.fit(x_train, y_train)
 
@@ -286,6 +301,11 @@ def tier_a_runner(config: dict) -> RunnerResult:
     eval_split = config["data"]["split"]
     stats_path = _splits_dir(config) / "splits_stats.yaml"
     dataset = dataset_info(eval_split, stats_path)
+    # Echo the applied perturbation so the record carries it and the harness gate can
+    # confirm this runner honoured the config (harness._check_perturbation_applied). Absent
+    # perturbation -> empty extra -> the record schema of every pre-Phase-5 run is unchanged.
+    spec = perturb.spec_from_config(config)
+    extra = {} if spec is None else {perturb.CONFIG_KEY: spec.as_dict()}
     return RunnerResult(
         y_true=np.asarray(y_true, dtype=object),
         y_pred=np.asarray(y_pred, dtype=object),
@@ -293,5 +313,6 @@ def tier_a_runner(config: dict) -> RunnerResult:
         class_labels=class_labels,
         dataset=dataset,
         cost_usd=None,
+        extra=extra,
         ids=ids,
     )

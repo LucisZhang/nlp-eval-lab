@@ -1,0 +1,44 @@
+# Phase 5 §6.3.4 perturbation-robustness arm, WORD-ONLY sensitivity ladder. SINGLE
+# delta vs tier_a_logreg_word_test_iid (its clean baseline): the data.perturbation
+# block below. Only the 0.10 rate is run on this arm — it exists to be differenced
+# against tier_a_logreg_test_iid_perturb_ocr_10, whose only difference is
+# features.char.enabled.
+#
+# OCR glyph noise: per confusion-table site (l/1, O/0, S/5, B/8, e/c,
+# rn/m, cl/d), swap for its confusable reading.
+# rate = independent per-eligible-site probability (see perturb.py), not the
+# fraction of the document rewritten.
+model:
+  runner: tier_a
+  name: tier_a_logreg_word_test_iid_perturb_ocr_10
+  family: logreg          # logreg | complement_nb
+  params:
+    C: 1.0                # inverse L2 strength
+    max_iter: 200         # SAGA cap; kept modest so a 300k-doc fit is laptop-tractable
+    tol: 1.0e-3           # SAGA stopping tol; loosened from 1e-4 for the same reason
+data:
+  split: test_iid
+  train_split: train
+  cal_split: cal          # isotonic calibration is fit here, disjoint from test_iid
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+  perturbation:           # EVAL text only; TRAIN and CAL are read clean
+    family: ocr
+    rate: 0.10
+    seed: 20260805        # frozen repo-wide perturbation seed
+features:
+  word:
+    enabled: true
+    ngram_range: [1, 2]
+    min_df: 5
+    max_features: 150000
+    sublinear_tf: true
+  char:
+    enabled: false        # word-only sensitivity arm: no char n-grams to absorb the noise
+    ngram_range: [3, 5]
+    min_df: 5
+    max_features: 150000
+    sublinear_tf: true
+calibration: isotonic     # none | isotonic
+seed: 20260805

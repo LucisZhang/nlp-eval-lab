@@ -23,6 +23,13 @@ Determinism guarantees (the reason this file is careful):
   carrying `supersedes_run_id`; the harness has no update/delete path by design
   (CLAUDE.md hard rule 3).
 
+- **Eval-text perturbation** (`data.perturbation`, Phase 5 §6.3.4) is validated here and
+  applied by the tier runners via `perturb.apply_spec`, never by this module — the harness
+  has no access to a tier's text loading. What the harness *does* own is the honesty gate:
+  a config that declares a perturbation must come back from its runner with a matching
+  `extra.perturbation`, or the run fails. Without that check a runner which ignores the
+  block would silently emit a clean record under a perturbed config's hash.
+
 Hashing/provenance reuses `snapshot.sha256_file` so config hashing is identical to
 the rest of the Phase-0 pipeline.
 """
@@ -44,7 +51,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from triage_lab import metrics
+from triage_lab import metrics, perturb
 from triage_lab.snapshot import sha256_file
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -491,6 +498,24 @@ def _persist_predictions(record: dict, result: RunnerResult, cfg_hash: str, pred
     record.setdefault("extra", {})["predictions_path"] = rel
 
 
+def _check_perturbation_applied(spec, result: RunnerResult, runner_name: str) -> None:
+    """Refuse a record whose config declares a perturbation the runner did not apply.
+
+    The runner is the only place that can rewrite the eval text, so it is the only place
+    that can *confirm* the rewrite; it does so by echoing the applied block into
+    `extra.perturbation`. A tier that does not implement `data.perturbation` therefore
+    fails loud here instead of producing a clean result under a perturbed config hash —
+    which would be an unfalsifiable "the perturbation had no effect" finding.
+    """
+    applied = (result.extra or {}).get(perturb.CONFIG_KEY)
+    if applied != spec.as_dict():
+        raise ValueError(
+            f"config declares data.{perturb.CONFIG_KEY}={spec.as_dict()} but runner "
+            f"{runner_name!r} returned extra.{perturb.CONFIG_KEY}={applied!r}; either the "
+            "runner does not support eval-text perturbation or it applied a different one"
+        )
+
+
 def _resolve_preds_dir(preds_dir, results_path) -> Path:
     """Where the predictions artifact goes when a runner supplies ids.
 
@@ -521,6 +546,9 @@ def run(
     config_path = Path(config_path)
     config = load_config(config_path)
     cfg_hash = config_sha256(config_path)
+    # Validated before the (expensive) runner call so a malformed perturbation block fails
+    # in milliseconds rather than after a 300k-document fit.
+    perturbation = perturb.spec_from_config(config)
     runner_name = config["model"]["runner"]
     if runner_name not in RUNNERS:
         _load_optional_runners()
@@ -531,6 +559,9 @@ def run(
     t0 = time.perf_counter()
     result = runner(config)
     wall = time.perf_counter() - t0
+
+    if perturbation is not None:
+        _check_perturbation_applied(perturbation, result, runner_name)
 
     metrics_ci = bootstrap_ci(
         result.y_true, result.y_pred, result.probs, result.class_labels

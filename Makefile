@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier prior-shift oov
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier prior-shift oov perturb perturb-report
 
 setup:
 	uv sync --frozen
@@ -146,3 +146,37 @@ prior-shift:
 # against. Deliberately standalone, like prior-shift.
 oov:
 	uv run python -m triage_lab.oov --all
+
+# Perturbation robustness (Phase 5 task 4): the 16 Tier A TEST-IID eval runs behind the
+# typo / OCR / case exhibit — the clean word-only sensitivity baseline first, then 15
+# perturbed runs (2 finals x 3 families x 2 rates, plus the word-only arm at 0.10). Each is
+# a full TRAIN fit + CAL isotonic calibration with ONLY the eval narratives rewritten, so
+# this is genuinely 16 model fits and takes hours; run it in the background. APPENDS to
+# results/runs.jsonl and auto-writes data/preds/<run_id>.parquet.
+#
+# The 5 `case` runs are expected to reproduce their clean baseline EXACTLY (both TF-IDF
+# blocks lowercase), and are run as the end-to-end control on the perturbation plumbing —
+# they are the first thing to cut if wall-clock becomes the binding constraint.
+perturb:
+	uv run python -m triage_lab.harness configs/tier_a_logreg_word_test_iid.yaml
+	uv run python -m triage_lab.harness configs/tier_a_logreg_test_iid_perturb_typo_05.yaml
+	uv run python -m triage_lab.harness configs/tier_a_logreg_test_iid_perturb_typo_10.yaml
+	uv run python -m triage_lab.harness configs/tier_a_logreg_test_iid_perturb_ocr_05.yaml
+	uv run python -m triage_lab.harness configs/tier_a_logreg_test_iid_perturb_ocr_10.yaml
+	uv run python -m triage_lab.harness configs/tier_a_logreg_test_iid_perturb_case_05.yaml
+	uv run python -m triage_lab.harness configs/tier_a_logreg_test_iid_perturb_case_10.yaml
+	uv run python -m triage_lab.harness configs/tier_a_cnb_test_iid_perturb_typo_05.yaml
+	uv run python -m triage_lab.harness configs/tier_a_cnb_test_iid_perturb_typo_10.yaml
+	uv run python -m triage_lab.harness configs/tier_a_cnb_test_iid_perturb_ocr_05.yaml
+	uv run python -m triage_lab.harness configs/tier_a_cnb_test_iid_perturb_ocr_10.yaml
+	uv run python -m triage_lab.harness configs/tier_a_cnb_test_iid_perturb_case_05.yaml
+	uv run python -m triage_lab.harness configs/tier_a_cnb_test_iid_perturb_case_10.yaml
+	uv run python -m triage_lab.harness configs/tier_a_logreg_word_test_iid_perturb_typo_10.yaml
+	uv run python -m triage_lab.harness configs/tier_a_logreg_word_test_iid_perturb_ocr_10.yaml
+	uv run python -m triage_lab.harness configs/tier_a_logreg_word_test_iid_perturb_case_10.yaml
+
+# Perturbed-vs-clean paired bootstrap deltas on identical TEST-IID rows, from the frozen
+# per-example artifacts the runs above wrote. Offline; appends nothing to runs.jsonl.
+# Exits nonzero (naming the cells) if any run in `make perturb` is still missing.
+perturb-report:
+	uv run python -m triage_lab.perturb_report --all

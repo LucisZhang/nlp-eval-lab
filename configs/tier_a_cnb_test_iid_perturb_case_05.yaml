@@ -1,0 +1,45 @@
+# Phase 5 §6.3.4 perturbation-robustness arm. SINGLE delta vs the frozen clean
+# TEST-IID final tier_a_cnb_test_iid (run c20cd14a): the data.perturbation
+# block below. Same model, same features, same seed, same TRAIN fit, same CAL
+# isotonic calibration — only the EVAL narratives are rewritten, per complaint_id,
+# after loading and before featurization.
+#
+# Case mangling: per alphabetic character, flip its case. NOTE: both Tier A
+# TF-IDF blocks use lowercase=true, so this arm is a STRUCTURAL ZERO for
+# Tier A (delta exactly 0, CI [0,0]). It is run anyway as the plumbing
+# control, and it is the arm that will matter for Tier B/C.
+# rate = independent per-eligible-site probability (see perturb.py), not the
+# fraction of the document rewritten.
+model:
+  runner: tier_a
+  name: tier_a_cnb_test_iid_perturb_case_05
+  family: complement_nb   # logreg | complement_nb
+  params:
+    alpha: 0.3            # Laplace/Lidstone smoothing
+    norm: false           # ComplementNB weight-normalization off (sklearn default)
+data:
+  split: test_iid
+  train_split: train
+  cal_split: cal          # isotonic calibration is fit here, disjoint from test_iid
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+  perturbation:           # EVAL text only; TRAIN and CAL are read clean
+    family: case
+    rate: 0.05
+    seed: 20260805        # frozen repo-wide perturbation seed
+features:
+  word:
+    enabled: true
+    ngram_range: [1, 2]
+    min_df: 5
+    max_features: 150000
+    sublinear_tf: true
+  char:
+    enabled: true
+    ngram_range: [3, 5]
+    min_df: 5
+    max_features: 150000
+    sublinear_tf: true
+calibration: isotonic     # none | isotonic
+seed: 20260805

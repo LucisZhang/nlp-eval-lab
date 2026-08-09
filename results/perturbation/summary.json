@@ -1,0 +1,635 @@
+{
+  "analysis": "perturbation_robustness",
+  "arms": [
+    {
+      "clean_config": "tier_a_logreg_test_iid",
+      "key": "logreg_wordchar",
+      "label": "LogReg word+char (TEST-IID final)",
+      "rates": [
+        0.05,
+        0.1
+      ]
+    },
+    {
+      "clean_config": "tier_a_cnb_test_iid",
+      "key": "cnb_wordchar",
+      "label": "ComplementNB word+char (TEST-IID final)",
+      "rates": [
+        0.05,
+        0.1
+      ]
+    },
+    {
+      "clean_config": "tier_a_logreg_word_test_iid",
+      "key": "logreg_word_only",
+      "label": "LogReg word-only (sensitivity arm)",
+      "rates": [
+        0.1
+      ]
+    }
+  ],
+  "bootstrap": {
+    "ci_pct": [
+      2.5,
+      97.5
+    ],
+    "method": "percentile",
+    "n_resamples": 1000,
+    "pairing": "One resample index vector per replicate is applied to BOTH systems (harness.paired_bootstrap_delta), so the delta CI is a paired interval on identical rows. Sign convention: delta = perturbed - clean, so a negative delta is degradation.",
+    "seed": 20260805
+  },
+  "evidence_class": "measured",
+  "generated_at": "2026-08-09T14:44:53.414473Z",
+  "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+  "methods_notes": {
+    "artifact_gate": "every artifact is read through cost_model.load_artifact_verified (the full provenance + structural + aggregate gate), because this module joins artifacts row by row and a permuted id column is invisible to aggregates",
+    "case_arm": "Predicted STRUCTURAL ZERO for Tier A: both TF-IDF blocks use lowercase=True, so a case flip is annihilated before featurization and the delta must be exactly 0.0 with CI [0, 0]. Reported as an end-to-end control on the perturbation plumbing, not as a robustness finding; the informative version of this arm is Tier B / Tier C.",
+    "char_shield": "Whether the char_wb 3-5-grams BUY robustness is the difference between the logreg_wordchar and logreg_word_only deltas at the same family and rate. That difference-of-differences is not computed here: it spans four artifacts and two different fitted models, so an honest CI needs one joint bootstrap over the shared rows rather than a subtraction of two independently-bootstrapped intervals (whose widths do not compose). The point estimates are all in `rows`; read the sign, and compute the joint interval before making it a claim.",
+    "sign": "delta = perturbed - clean; negative = degradation"
+  },
+  "missing": [],
+  "protocol": {
+    "applied_to": "eval split narrative only; TRAIN fit and CAL calibration stay clean",
+    "default_seed": 20260805,
+    "doc_rng_key": "blake2b(f'{seed}:{family}:{rate}:{complaint_id}', digest_size=16)",
+    "families": [
+      "typo",
+      "ocr",
+      "case"
+    ],
+    "ocr_bigram_confusions": {
+      "cl": "d",
+      "rn": "m"
+    },
+    "ocr_unigram_confusions": {
+      "0": "O",
+      "1": "l",
+      "5": "S",
+      "8": "B",
+      "B": "8",
+      "O": "0",
+      "S": "5",
+      "c": "e",
+      "d": "cl",
+      "e": "c",
+      "l": "1",
+      "m": "rn"
+    },
+    "rate_semantics": "independent per-eligible-SITE probability, not the fraction of the document rewritten; sites are non-whitespace chars (typo), confusion-table matches (ocr, greedy longest-first and non-overlapping), alphabetic chars (case)",
+    "rates": [
+      0.05,
+      0.1
+    ],
+    "typo_ops": {
+      "delete": 0.2,
+      "insert": 0.2,
+      "substitute": 0.4,
+      "transpose": 0.2
+    }
+  },
+  "repro_command": "uv run python -m triage_lab.perturb_report --all",
+  "rows": [
+    {
+      "arm": "logreg_wordchar",
+      "arm_label": "LogReg word+char (TEST-IID final)",
+      "clean_config": "tier_a_logreg_test_iid",
+      "clean_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+      "family": "typo",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0086360503,
+          "ci_lo": -0.0112408204,
+          "clean": 0.8444318911,
+          "delta": -0.0100150321,
+          "perturbed": 0.834416859
+        },
+        "macro_f1": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0141794517,
+          "ci_lo": -0.0193530692,
+          "clean": 0.7605270747,
+          "delta": -0.0168266307,
+          "perturbed": 0.7437004441
+        }
+      },
+      "n_rows": 104443,
+      "perturbed_config": "tier_a_logreg_test_iid_perturb_typo_05",
+      "perturbed_run_id": "4bbd26c4b29fe63dff4f1cb75ae83e3a658e5db129f75381ef97050f3a9f19a1",
+      "rate": 0.05,
+      "rate_tag": "05",
+      "recorded_perturbation": {
+        "family": "typo",
+        "rate": 0.05,
+        "seed": 20260805
+      },
+      "structural_expectation": null
+    },
+    {
+      "arm": "logreg_wordchar",
+      "arm_label": "LogReg word+char (TEST-IID final)",
+      "clean_config": "tier_a_logreg_test_iid",
+      "clean_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+      "family": "typo",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0238206486,
+          "ci_lo": -0.0272205892,
+          "clean": 0.8444318911,
+          "delta": -0.0255450341,
+          "perturbed": 0.8188868569
+        },
+        "macro_f1": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0403016281,
+          "ci_lo": -0.0469339657,
+          "clean": 0.7605270747,
+          "delta": -0.0435901599,
+          "perturbed": 0.7169369148
+        }
+      },
+      "n_rows": 104443,
+      "perturbed_config": "tier_a_logreg_test_iid_perturb_typo_10",
+      "perturbed_run_id": "0c9308be2c9e3f9008ace06f99dfb51e40c56744df3a67a934f6dff695c772ea",
+      "rate": 0.1,
+      "rate_tag": "10",
+      "recorded_perturbation": {
+        "family": "typo",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "structural_expectation": null
+    },
+    {
+      "arm": "logreg_wordchar",
+      "arm_label": "LogReg word+char (TEST-IID final)",
+      "clean_config": "tier_a_logreg_test_iid",
+      "clean_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+      "family": "ocr",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0021064121,
+          "ci_lo": -0.0039736986,
+          "clean": 0.8444318911,
+          "delta": -0.0030159992,
+          "perturbed": 0.8414158919
+        },
+        "macro_f1": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0037757417,
+          "ci_lo": -0.0076534118,
+          "clean": 0.7605270747,
+          "delta": -0.0056338254,
+          "perturbed": 0.7548932493
+        }
+      },
+      "n_rows": 104443,
+      "perturbed_config": "tier_a_logreg_test_iid_perturb_ocr_05",
+      "perturbed_run_id": "cd8be5b713acfde37e89fac192dbf3fd493adeb5ce1a44530df861e98c8ab45d",
+      "rate": 0.05,
+      "rate_tag": "05",
+      "recorded_perturbation": {
+        "family": "ocr",
+        "rate": 0.05,
+        "seed": 20260805
+      },
+      "structural_expectation": null
+    },
+    {
+      "arm": "logreg_wordchar",
+      "arm_label": "LogReg word+char (TEST-IID final)",
+      "clean_config": "tier_a_logreg_test_iid",
+      "clean_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+      "family": "ocr",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.004241548,
+          "ci_lo": -0.0064247963,
+          "clean": 0.8444318911,
+          "delta": -0.0053426271,
+          "perturbed": 0.839089264
+        },
+        "macro_f1": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0072253208,
+          "ci_lo": -0.0116007658,
+          "clean": 0.7605270747,
+          "delta": -0.0094855544,
+          "perturbed": 0.7510415203
+        }
+      },
+      "n_rows": 104443,
+      "perturbed_config": "tier_a_logreg_test_iid_perturb_ocr_10",
+      "perturbed_run_id": "acb00456264ca030265c9cb5feda3c8b3282d2c5f3c73a1086f6ccfd07d0f2d0",
+      "rate": 0.1,
+      "rate_tag": "10",
+      "recorded_perturbation": {
+        "family": "ocr",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "structural_expectation": null
+    },
+    {
+      "arm": "logreg_wordchar",
+      "arm_label": "LogReg word+char (TEST-IID final)",
+      "clean_config": "tier_a_logreg_test_iid",
+      "clean_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+      "family": "case",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": false,
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "clean": 0.8444318911,
+          "delta": 0.0,
+          "perturbed": 0.8444318911
+        },
+        "macro_f1": {
+          "ci_excludes_zero": false,
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "clean": 0.7605270747,
+          "delta": 0.0,
+          "perturbed": 0.7605270747
+        }
+      },
+      "n_rows": 104443,
+      "perturbed_config": "tier_a_logreg_test_iid_perturb_case_05",
+      "perturbed_run_id": "5e5e030c2c92f3b040b0f3c10a27a3c12966b80495347b9003d47386d187dabd",
+      "rate": 0.05,
+      "rate_tag": "05",
+      "recorded_perturbation": {
+        "family": "case",
+        "rate": 0.05,
+        "seed": 20260805
+      },
+      "structural_expectation": "Predicted STRUCTURAL ZERO for Tier A: both TF-IDF blocks use lowercase=True, so a case flip is annihilated before featurization and the delta must be exactly 0.0 with CI [0, 0]. Reported as an end-to-end control on the perturbation plumbing, not as a robustness finding; the informative version of this arm is Tier B / Tier C."
+    },
+    {
+      "arm": "logreg_wordchar",
+      "arm_label": "LogReg word+char (TEST-IID final)",
+      "clean_config": "tier_a_logreg_test_iid",
+      "clean_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+      "family": "case",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": false,
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "clean": 0.8444318911,
+          "delta": 0.0,
+          "perturbed": 0.8444318911
+        },
+        "macro_f1": {
+          "ci_excludes_zero": false,
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "clean": 0.7605270747,
+          "delta": 0.0,
+          "perturbed": 0.7605270747
+        }
+      },
+      "n_rows": 104443,
+      "perturbed_config": "tier_a_logreg_test_iid_perturb_case_10",
+      "perturbed_run_id": "96a13428a039c9f65c30365196bfaf54a6f18996d42985fa91b68a6b503aa1fc",
+      "rate": 0.1,
+      "rate_tag": "10",
+      "recorded_perturbation": {
+        "family": "case",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "structural_expectation": "Predicted STRUCTURAL ZERO for Tier A: both TF-IDF blocks use lowercase=True, so a case flip is annihilated before featurization and the delta must be exactly 0.0 with CI [0, 0]. Reported as an end-to-end control on the perturbation plumbing, not as a robustness finding; the informative version of this arm is Tier B / Tier C."
+    },
+    {
+      "arm": "cnb_wordchar",
+      "arm_label": "ComplementNB word+char (TEST-IID final)",
+      "clean_config": "tier_a_cnb_test_iid",
+      "clean_run_id": "c20cd14a7acd63b33b1a164b2fb56615153c5d595597668063ab3c666ec19781",
+      "family": "typo",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0092203403,
+          "ci_lo": -0.0117865726,
+          "clean": 0.8279348544,
+          "delta": -0.0105033367,
+          "perturbed": 0.8174315177
+        },
+        "macro_f1": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0100622191,
+          "ci_lo": -0.0155901036,
+          "clean": 0.7265088273,
+          "delta": -0.0127918326,
+          "perturbed": 0.7137169946
+        }
+      },
+      "n_rows": 104443,
+      "perturbed_config": "tier_a_cnb_test_iid_perturb_typo_05",
+      "perturbed_run_id": "6b6c7825e7bc7177a73c8e61e5da07c2ef3500f1f1a893a24176a670a1db1a28",
+      "rate": 0.05,
+      "rate_tag": "05",
+      "recorded_perturbation": {
+        "family": "typo",
+        "rate": 0.05,
+        "seed": 20260805
+      },
+      "structural_expectation": null
+    },
+    {
+      "arm": "cnb_wordchar",
+      "arm_label": "ComplementNB word+char (TEST-IID final)",
+      "clean_config": "tier_a_cnb_test_iid",
+      "clean_run_id": "c20cd14a7acd63b33b1a164b2fb56615153c5d595597668063ab3c666ec19781",
+      "family": "typo",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.030427841,
+          "ci_lo": -0.0337035512,
+          "clean": 0.8279348544,
+          "delta": -0.0320461879,
+          "perturbed": 0.7958886665
+        },
+        "macro_f1": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0401125268,
+          "ci_lo": -0.0468182911,
+          "clean": 0.7265088273,
+          "delta": -0.0433994215,
+          "perturbed": 0.6831094058
+        }
+      },
+      "n_rows": 104443,
+      "perturbed_config": "tier_a_cnb_test_iid_perturb_typo_10",
+      "perturbed_run_id": "61f786be6015b5752c6aa1d78c1a01f34cbb5560e58a15837935b5d82313b184",
+      "rate": 0.1,
+      "rate_tag": "10",
+      "recorded_perturbation": {
+        "family": "typo",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "structural_expectation": null
+    },
+    {
+      "arm": "cnb_wordchar",
+      "arm_label": "ComplementNB word+char (TEST-IID final)",
+      "clean_config": "tier_a_cnb_test_iid",
+      "clean_run_id": "c20cd14a7acd63b33b1a164b2fb56615153c5d595597668063ab3c666ec19781",
+      "family": "ocr",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0022117327,
+          "ci_lo": -0.0038975805,
+          "clean": 0.8279348544,
+          "delta": -0.0030255738,
+          "perturbed": 0.8249092807
+        },
+        "macro_f1": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.003302758,
+          "ci_lo": -0.0068226122,
+          "clean": 0.7265088273,
+          "delta": -0.0050113385,
+          "perturbed": 0.7214974888
+        }
+      },
+      "n_rows": 104443,
+      "perturbed_config": "tier_a_cnb_test_iid_perturb_ocr_05",
+      "perturbed_run_id": "169d5c912d009cf0237b2bddd8619f43971d74c0342e1dff0ea610bca937597f",
+      "rate": 0.05,
+      "rate_tag": "05",
+      "recorded_perturbation": {
+        "family": "ocr",
+        "rate": 0.05,
+        "seed": 20260805
+      },
+      "structural_expectation": null
+    },
+    {
+      "arm": "cnb_wordchar",
+      "arm_label": "ComplementNB word+char (TEST-IID final)",
+      "clean_config": "tier_a_cnb_test_iid",
+      "clean_run_id": "c20cd14a7acd63b33b1a164b2fb56615153c5d595597668063ab3c666ec19781",
+      "family": "ocr",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0063285716,
+          "ci_lo": -0.0083777754,
+          "clean": 0.8279348544,
+          "delta": -0.0073532932,
+          "perturbed": 0.8205815612
+        },
+        "macro_f1": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0078289341,
+          "ci_lo": -0.0127179461,
+          "clean": 0.7265088273,
+          "delta": -0.0102971106,
+          "perturbed": 0.7162117167
+        }
+      },
+      "n_rows": 104443,
+      "perturbed_config": "tier_a_cnb_test_iid_perturb_ocr_10",
+      "perturbed_run_id": "84c34754383d97d4401c16ca4ffb19809708c946fdfd7aa2df6f4ccc69520a0b",
+      "rate": 0.1,
+      "rate_tag": "10",
+      "recorded_perturbation": {
+        "family": "ocr",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "structural_expectation": null
+    },
+    {
+      "arm": "cnb_wordchar",
+      "arm_label": "ComplementNB word+char (TEST-IID final)",
+      "clean_config": "tier_a_cnb_test_iid",
+      "clean_run_id": "c20cd14a7acd63b33b1a164b2fb56615153c5d595597668063ab3c666ec19781",
+      "family": "case",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": false,
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "clean": 0.8279348544,
+          "delta": 0.0,
+          "perturbed": 0.8279348544
+        },
+        "macro_f1": {
+          "ci_excludes_zero": false,
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "clean": 0.7265088273,
+          "delta": 0.0,
+          "perturbed": 0.7265088273
+        }
+      },
+      "n_rows": 104443,
+      "perturbed_config": "tier_a_cnb_test_iid_perturb_case_05",
+      "perturbed_run_id": "9882794f8d6abad909542ae24f54e9da34dac9440149e5153592412115fbaf68",
+      "rate": 0.05,
+      "rate_tag": "05",
+      "recorded_perturbation": {
+        "family": "case",
+        "rate": 0.05,
+        "seed": 20260805
+      },
+      "structural_expectation": "Predicted STRUCTURAL ZERO for Tier A: both TF-IDF blocks use lowercase=True, so a case flip is annihilated before featurization and the delta must be exactly 0.0 with CI [0, 0]. Reported as an end-to-end control on the perturbation plumbing, not as a robustness finding; the informative version of this arm is Tier B / Tier C."
+    },
+    {
+      "arm": "cnb_wordchar",
+      "arm_label": "ComplementNB word+char (TEST-IID final)",
+      "clean_config": "tier_a_cnb_test_iid",
+      "clean_run_id": "c20cd14a7acd63b33b1a164b2fb56615153c5d595597668063ab3c666ec19781",
+      "family": "case",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": false,
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "clean": 0.8279348544,
+          "delta": 0.0,
+          "perturbed": 0.8279348544
+        },
+        "macro_f1": {
+          "ci_excludes_zero": false,
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "clean": 0.7265088273,
+          "delta": 0.0,
+          "perturbed": 0.7265088273
+        }
+      },
+      "n_rows": 104443,
+      "perturbed_config": "tier_a_cnb_test_iid_perturb_case_10",
+      "perturbed_run_id": "3ddd0a7f6f31788d970007ae18cebe7ac687f5bfeb9795cda8f35f29fe8a0644",
+      "rate": 0.1,
+      "rate_tag": "10",
+      "recorded_perturbation": {
+        "family": "case",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "structural_expectation": "Predicted STRUCTURAL ZERO for Tier A: both TF-IDF blocks use lowercase=True, so a case flip is annihilated before featurization and the delta must be exactly 0.0 with CI [0, 0]. Reported as an end-to-end control on the perturbation plumbing, not as a robustness finding; the informative version of this arm is Tier B / Tier C."
+    },
+    {
+      "arm": "logreg_word_only",
+      "arm_label": "LogReg word-only (sensitivity arm)",
+      "clean_config": "tier_a_logreg_word_test_iid",
+      "clean_run_id": "8dacc1b9a8966530ff3ec011f8ef6516b47fca07bb7d45a3dfe5704a15162071",
+      "family": "typo",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0389300863,
+          "ci_lo": -0.0425689132,
+          "clean": 0.8478883219,
+          "delta": -0.0407877981,
+          "perturbed": 0.8071005237
+        },
+        "macro_f1": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0626211611,
+          "ci_lo": -0.0697241623,
+          "clean": 0.7676265111,
+          "delta": -0.0661393019,
+          "perturbed": 0.7014872092
+        }
+      },
+      "n_rows": 104443,
+      "perturbed_config": "tier_a_logreg_word_test_iid_perturb_typo_10",
+      "perturbed_run_id": "dcfb1beefd13d98934ceaca6c103c92a968d54ce8aa2e6ef8c33d2170bf69d5f",
+      "rate": 0.1,
+      "rate_tag": "10",
+      "recorded_perturbation": {
+        "family": "typo",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "structural_expectation": null
+    },
+    {
+      "arm": "logreg_word_only",
+      "arm_label": "LogReg word-only (sensitivity arm)",
+      "clean_config": "tier_a_logreg_word_test_iid",
+      "clean_run_id": "8dacc1b9a8966530ff3ec011f8ef6516b47fca07bb7d45a3dfe5704a15162071",
+      "family": "ocr",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0090381835,
+          "ci_lo": -0.0114610362,
+          "clean": 0.8478883219,
+          "delta": -0.0102160987,
+          "perturbed": 0.8376722231
+        },
+        "macro_f1": {
+          "ci_excludes_zero": true,
+          "ci_hi": -0.0144702704,
+          "ci_lo": -0.019087238,
+          "clean": 0.7676265111,
+          "delta": -0.0166769539,
+          "perturbed": 0.7509495572
+        }
+      },
+      "n_rows": 104443,
+      "perturbed_config": "tier_a_logreg_word_test_iid_perturb_ocr_10",
+      "perturbed_run_id": "e94b4e5104e0f83dcd1bdeb022bc0fa53cf703d025bc70056ee669dc249db98f",
+      "rate": 0.1,
+      "rate_tag": "10",
+      "recorded_perturbation": {
+        "family": "ocr",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "structural_expectation": null
+    },
+    {
+      "arm": "logreg_word_only",
+      "arm_label": "LogReg word-only (sensitivity arm)",
+      "clean_config": "tier_a_logreg_word_test_iid",
+      "clean_run_id": "8dacc1b9a8966530ff3ec011f8ef6516b47fca07bb7d45a3dfe5704a15162071",
+      "family": "case",
+      "metrics": {
+        "accuracy": {
+          "ci_excludes_zero": false,
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "clean": 0.8478883219,
+          "delta": 0.0,
+          "perturbed": 0.8478883219
+        },
+        "macro_f1": {
+          "ci_excludes_zero": false,
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "clean": 0.7676265111,
+          "delta": 0.0,
+          "perturbed": 0.7676265111
+        }
+      },
+      "n_rows": 104443,
+      "perturbed_config": "tier_a_logreg_word_test_iid_perturb_case_10",
+      "perturbed_run_id": "3f5eff598bdda3b714420fa7882d4203bfd9f6833504b702ab52a5d1fcd54432",
+      "rate": 0.1,
+      "rate_tag": "10",
+      "recorded_perturbation": {
+        "family": "case",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "structural_expectation": "Predicted STRUCTURAL ZERO for Tier A: both TF-IDF blocks use lowercase=True, so a case flip is annihilated before featurization and the delta must be exactly 0.0 with CI [0, 0]. Reported as an end-to-end control on the perturbation plumbing, not as a robustness finding; the informative version of this arm is Tier B / Tier C."
+    }
+  ],
+  "schema_version": 1,
+  "split": "test_iid"
+}

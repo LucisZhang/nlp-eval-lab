@@ -1160,3 +1160,101 @@ reported runs. Every portfolio-bound number carries its reproduction command
   artifacts. Outputs: `results/oov/{train,test_iid,test_drift_*}.json` + `summary.json`.
   Tests: `uv run pytest tests/test_oov.py -q` (33 passed; full suite 432 passed,
   1 skipped).
+
+## 2026-08-09 — Phase 5 task 5: perturbation robustness on TEST-IID (Tier A full grid; Tier C pending cost approval)
+
+- **Context:** UPGRADE_PLAN §6.3.4 — "typo/OCR-noise/case-mangling perturbations at fixed
+  rates on TEST-IID; report per-tier deltas. (Char-n-gram TF-IDF vs subword vs LLM is a
+  genuinely interesting comparison here.)" This session runs the **Tier A** grid only
+  ($0 API spend). The Tier C arm needs owner cost approval (projection below, per the
+  session budget gate); Tier B rows pending GPU. Splits frozen; perturbation is applied
+  to the eval slice's `narrative` only — TRAIN fitting and CAL calibration stay clean.
+- **Hypothesis:** the Phase 1 rung-2 rationale claimed the `char_wb` 3–5-gram block buys
+  typo/OOV robustness. Prediction: word+char Tier A degrades under character noise but
+  less than a word-only variant; case-mangling is a structural no-op for Tier A
+  (both TF-IDF blocks set `lowercase=True`).
+- **Method (new modules `src/triage_lab/perturb.py` + `perturb_report.py`; 54 unit tests):**
+  three families — **typo** (QWERTY-adjacency ops over all non-whitespace chars, frozen op
+  mix sub .40 / del .20 / transpose .20 / insert .20, adjacency derived from 4-row layout
+  geometry), **ocr** (fixed ASCII confusion table l↔1, O↔0, S↔5, B↔8, e↔c, rn↔m, cl↔d;
+  greedy longest-match non-overlapping site scan computed *before* any random draw, so the
+  site set is a pure function of the text), **case** (flip alphabetic case). `rate` =
+  independent per-**site** perturbation probability over the family's eligible set — a
+  protocol constant, not a realized changed-char fraction; the three families are therefore
+  NOT comparable at equal nominal rate (documented in the module). Determinism: per-document
+  RNG keyed `blake2b(f"{seed}:{family}:{rate}:{complaint_id}")` (the splits.py convention),
+  frozen seed 20260805 — output is independent of row order and batch size, and the 0.05 /
+  0.10 arms are independent draws (rate in the key ⇒ no dose-response claim across rates).
+  Harness carries an optional `data.perturbation` block, validates it pre-runner, and
+  **hard-fails any run whose runner does not echo the applied block back** — a tier that
+  silently ignored the perturbation cannot emit a clean record under a perturbed config
+  hash. Report joins per-example artifacts (`data/preds/<run_id>.parquet`, provenance-gated
+  via `cost_model.load_artifact_verified`) perturbed-vs-clean on `complaint_id` and reuses
+  `harness.paired_bootstrap_delta` (n=1,000, seed 20260805). Clean baselines: existing
+  TEST-IID finals `8e4d6345` (logreg word+char) / `c20cd14a` (cnb) + new word-only clean
+  run `8dacc1b9`.
+- **Result (evidence class: measured; n=104,443; paired 95% bootstrap CIs; delta = perturbed − clean macro-F1):**
+
+  | model | family | rate 0.05 | rate 0.10 |
+  |---|---|---|---|
+  | logreg word+char (clean 0.7605) | typo | −0.0168 [−0.0194, −0.0142] ✓ | −0.0436 [−0.0469, −0.0403] ✓ |
+  | logreg word+char | ocr | −0.0056 [−0.0077, −0.0038] ✓ | −0.0095 [−0.0116, −0.0072] ✓ |
+  | logreg word+char | case | +0.0000 [0, 0] (structural) | +0.0000 [0, 0] (structural) |
+  | cnb word+char (clean 0.7265) | typo | −0.0128 [−0.0156, −0.0101] ✓ | −0.0434 [−0.0468, −0.0401] ✓ |
+  | cnb word+char | ocr | −0.0050 [−0.0068, −0.0033] ✓ | −0.0103 [−0.0127, −0.0078] ✓ |
+  | cnb word+char | case | +0.0000 [0, 0] (structural) | +0.0000 [0, 0] (structural) |
+  | logreg word-only, sensitivity arm (clean 0.7676) | typo | — | −0.0661 [−0.0697, −0.0626] ✓ |
+  | logreg word-only | ocr | — | −0.0167 [−0.0191, −0.0145] ✓ |
+  | logreg word-only | case | — | +0.0000 [0, 0] (structural) |
+
+  ✓ = paired CI excludes zero. Accuracy deltas in `results/perturbation/summary.json`.
+- **Findings:** (1) **Typo is the damaging family** for Tier A: −4.4 macro-F1 points at
+  rate 0.10 for both models; OCR noise costs only ~1 point at the same nominal rate.
+  (2) **Case-mangling is an exact structural zero for Tier A** — `lowercase=True`
+  annihilates it before featurization; the delta is bit-exact 0.0 with CI [0, 0]
+  (pinned by an end-to-end unit test *and* measured here as the plumbing control). This
+  is precisely the family where Tier B/C subword/LLM tokenizers CAN be hurt — the
+  cross-tier exhibit's most interesting cell is one Tier A cannot occupy.
+  (3) **The char-n-gram shield is real (point estimates):** at typo 0.10 the word-only
+  model loses −0.0661 vs word+char's −0.0436 — char n-grams absorb ~34% of the typo
+  damage (ocr 0.10: −0.0167 vs −0.0095, ~43%). No CI is attached to this
+  difference-of-differences by design: two independently-bootstrapped paired deltas do
+  not compose into an honest interval, and a joint 4-artifact bootstrap was deliberately
+  not built (`methods_notes.char_shield`). Directional-only, same label discipline as the
+  Phase 4 cross-family delta. (4) **Honest observation, not a claim:** the word-only
+  clean TEST-IID macro-F1 (0.7676) is *higher* than the shipped word+char final (0.7605,
+  point estimates; no paired delta computed). The word+char choice was made on the CAL
+  ladder (Phase 1) and is kept — but under this grid the word-only model is better clean
+  and markedly worse under noise, i.e. the char block trades ~0.7 clean points for typo
+  robustness. Flagged for the drift chapter as a labelled sensitivity finding.
+- **Deviations / limits:** per-site rate semantics means realized changed-char fractions
+  differ across families at equal nominal rate; the realized fraction is computable from
+  the frozen perturbation function but not yet emitted — required before any cross-tier
+  comparability chart (flagged). The 0.05/0.10 arms are independent draws — no
+  dose-response claim. `case` rows are labelled structural-zero in every report row.
+- **Tier C projection (NO API calls made — awaiting owner approval per budget gate;
+  remaining OpenRouter envelope ≈ $7.6):** measured Haiku 4.5 zero-shot TEST-IID cost is
+  $0.001315/call (Phase 3 step 4, run `70a1b0c4`). Mirroring the full Tier A grid
+  (3 families × 2 rates × 5,000 rows) = 30,000 calls ≈ **$39.5 — over the envelope,
+  not proposed.** Proposed subsample options (all rate 0.10 only, on the frozen
+  1,500-row paired subset whose clean Haiku predictions already exist as a strict subset
+  of the clean 5,000-row run — zero additional clean calls):
+  **A (recommended):** all 3 families × 1,500 = 4,500 calls ≈ $5.92 nominal, ≈$6.8 with
+  a +15% margin for perturbed-text token inflation (typos fragment subwords). Leaves
+  ≥$0.8 headroom. **B:** typo + case only × 1,500 = 3,000 calls ≈ $3.95 (≤$4.5 with
+  margin) — drops OCR, the smallest Tier A effect. **C:** typo only × 5,000 = 5,000
+  calls ≈ $6.58 nominal but ≈$7.5 with margin — tightest CI, single family, risks the
+  envelope; not recommended. Sonnet excluded at ~2.8× Haiku's per-call cost.
+- **Verdict:** hypothesis confirmed with CIs on both legs — Tier A word+char degrades
+  under character noise (typo ≫ ocr), the char block demonstrably buys robustness
+  (directional), and the case no-op prediction held bit-exactly. Tier A rows of the
+  §6.3.4 exhibit are done; Tier C arm awaits cost approval; Tier B pending GPU.
+- **Repro:** `make perturb` (16 runs: 1 clean word-only + 15 perturbed; sequential,
+  ~8.6 h summed wall-clock, $0) then `make perturb-report`
+  (= `uv run python -m triage_lab.perturb_report --all`) →
+  `results/perturbation/summary.json` (15 rows, 0 missing). Run ids: logreg word+char
+  perturb `4bbd26c4`/`0c9308be` (typo 05/10), `cd8be5b7`/`acb00456` (ocr), `5e5e030c`/
+  `96a13428` (case); cnb `6b6c7825`/`61f786be`, `169d5c91`/`84c34754`, `9882794f`/
+  `3ddd0a7f`; word-only clean `8dacc1b9`, perturbed `dcfb1bee`/`e94b4e51`/`3f5eff59`.
+  Tests: `uv run pytest tests/test_perturb.py -q` (54 passed; full suite 486 passed,
+  1 skipped).
