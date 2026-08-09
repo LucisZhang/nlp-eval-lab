@@ -8,7 +8,7 @@ _what's next_.
 - **Owner decision (2026-08-06):** The A6000 is unavailable until the weekend, so **all Tier B
   training and eval is BLOCKED-until-weekend.** Work has been reordered to make maximal progress on
   the tiers and infrastructure that do not need the GPU.
-- Last updated: 2026-08-07.
+- Last updated: 2026-08-09.
 
 ---
 
@@ -73,7 +73,7 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 | Task | Status | Evidence |
 |---|---|---|
 | Rolling yearly evals (2023–2026) | **Tier A done** (2026-08-08); **Tier C done** (2026-08-09, owner-approved; 8 runs, $30.48 actual vs $30.94 projected, cumulative $67.38 of ≈$75); Tier B rows **pending Tier B** | EXPERIMENT_LOG 2026-08-08 Phase 5 task 1 (Tier A: macro-F1 0.758→0.748→0.730→0.666, 2026-H1 cliff = credit_reporting prior shift) + 2026-08-09 tasks 2a/2b (Tier C: Haiku/Sonnet tied 2023–25 paired CIs ∋ 0; 2026-H1 Sonnet +0.054 F1 paired CI excl. 0, p≈1e-15; Tier C degrades slower than Tier A — 2026-H1: A 0.666 / Haiku 0.728 / Sonnet 0.782) |
-| Prior-shift decomposition | pending | — |
+| Prior-shift decomposition | **done for available tiers** (2026-08-09; Tier B rows pending Tier B) | EXPERIMENT_LOG 2026-08-09 Phase 5 task 3; `results/prior_shift/` (12 decompositions + summary.json); Tier A 2026-H1: 4.2 of 9.2 pts prior-shift alone [3.9, 4.5], credit_reporting = 7.6 pts; LLMs pay the prior penalty (Haiku +3.0 [1.4, 4.4]) but within-class holds (≈0/negative) |
 | OOV tracking | pending | — |
 | Perturbation robustness | pending | — |
 | Novel-class probe (stretch) | pending | — |

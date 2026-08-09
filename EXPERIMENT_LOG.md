@@ -971,3 +971,95 @@ reported runs. Every portfolio-bound number carries its reproduction command
   results/tier_c_raw/tier_c_sonnet_zeroshot_test_drift_2023/<ts>/calls.jsonl
   results/tier_c_raw/tier_c_haiku_zeroshot_test_drift_2023/<ts>/calls.jsonl
   --split test_drift_2023` (and per-slice analogues).
+
+## 2026-08-09 — Phase 5 task 3: prior-shift decomposition (reweighted-F1 counterfactual, Tiers A + C)
+
+- **Context:** UPGRADE_PLAN §6.3.2 — "show how much yearly degradation is explained
+  by class-mix change alone (reweighted-F1 counterfactual) vs within-class drift."
+  Post-hoc analysis of the frozen per-example prediction artifacts from tasks 1/2b
+  (12 yearly runs, `data/preds/<run_id>.parquet`); zero new model calls, $0 spend.
+  Methodology designed by two independent passes (deep-reasoner + Codex) and
+  synthesized; both converged on the four-cell counterfactual with exact per-replicate
+  additivity.
+- **Hypothesis:** Tier A's 2026-H1 cliff (task 1) is substantially explained by the
+  class-mix change alone (credit_reporting 47.2% → 2.9% of the slice), with a
+  prior-shift component whose CI excludes zero; Tier C's flat curves reflect
+  within-class stability (within-class component ≈ 0 or negative), i.e. the LLMs
+  survive drifted data because their per-class behavior does not degrade, not because
+  they are exempt from the mix change.
+- **Method (new module `src/triage_lab/prior_shift.py`; 43 unit tests):** every
+  macro-F1 is an exact function of the class prior π and the row-normalized confusion
+  C (per-class recall = C[k,k] is invariant to true-class reweighting; all prior
+  sensitivity flows through precision). Four cells: A = F1(π_2023, C_2023),
+  B = F1(π_Y, C_2023), C = F1(π_2023, C_Y), D = F1(π_Y, C_Y); total Δ = A − D.
+  **Primary = Path P (prior-first, reference-anchored):** prior = A − B,
+  within = B − D. Always-stored labeled sensitivities: Path Q, Shapley average,
+  ANOVA main effects + interaction I = B + C − A − D, and the two-path prior bracket
+  (mandatory — the paths differ by up to 3.8 F1 points, so no single path is ever
+  quoted alone). Bootstrap: n=1,000, seed 20260805, both slices resampled
+  independently per replicate (ref-then-year draw order), components sum exactly to
+  the total on every replicate (asserted ≤1e-12); `ref_fixed` variant stored as
+  sensitivity. Guards: identity gates (cells A and D reproduce the logged
+  `macro_f1`/`accuracy`/`balanced_accuracy` of runs.jsonl at ≤1e-12, hard fail);
+  Kish n_eff + max/min weight diagnostics instead of weight caps; share = prior/total
+  emitted only when the total CI excludes 0 AND |Δ| ≥ 0.02 (else null + reason);
+  empty-class-replicate counter with ci_valid rule. Complements: exact linear
+  accuracy decomposition (validator), balanced-accuracy delta (prior-free anchor),
+  exact additive per-class contributions, one-at-a-time credit_reporting prior
+  counterfactual (labeled non-additive). Tier C: own-subsample π primary (preserves
+  the D == logged-macro-F1 traceability identity), full-slice π stored as
+  lower-variance sensitivity with π-deviation diagnostics. Extra scope:
+  `tier_a__<year>__paired_subsample` restricts Tier A to the exact 1,500 Tier C rows
+  so the cross-tier claim is row-paired.
+- **Result (evidence class: measured, frozen artifacts, post-hoc decomposition;
+  sign convention: positive = degradation vs 2023; 95% bootstrap CI n=1,000):**
+
+  | tier | year | total Δ | prior (Path P) | within (Path P) | interaction | share_prior |
+  |---|---|---|---|---|---|---|
+  | tier_a | 2024 | +0.0101 [−0.0027, +0.0232] | +0.0075 [+0.0052, +0.0098] | +0.0026 | −0.0017 | suppressed (total ∋ 0) |
+  | tier_a | 2025 | +0.0284 [+0.0157, +0.0406] | +0.0099 [+0.0074, +0.0125] | +0.0185 | −0.0075 | 0.348 |
+  | tier_a | **2026h1** | **+0.0924 [+0.0802, +0.1042]** | **+0.0420 [+0.0385, +0.0454]** | **+0.0503 [+0.0385, +0.0625]** | **−0.0382** | **0.455 [0.395, 0.524]** |
+  | tier_c_haiku | 2026h1 | +0.0078 [−0.0349, +0.0487] | +0.0305 [+0.0145, +0.0438] | −0.0227 | −0.0119 | suppressed |
+  | tier_c_sonnet | 2026h1 | −0.0277 [−0.0710, +0.0124] | +0.0009 [−0.0177, +0.0167] | −0.0287 | −0.0179 | suppressed |
+  | tier_a (paired 1.5k rows) | 2026h1 | +0.0690 [+0.0236, +0.1087] | +0.0356 [+0.0199, +0.0498] | +0.0333 | −0.0374 | 0.517 (do not quote; CI [0.24, 1.55]) |
+
+  (Tier C 2024/2025 rows: all total CIs ∋ 0, shares suppressed; Haiku/Sonnet 2025
+  prior terms +0.0162/+0.0157 marginally exclude 0. Full grid incl. Path Q, Shapley,
+  ANOVA, ref_fixed, and full-slice-π sensitivities: `results/prior_shift/`.)
+- **Findings:** (1) **Tier A 2026-H1: 4.2 of the 9.2-point macro-F1 drop
+  (CI [3.9, 4.5]) is the class-mix change alone**, holding 2023 per-class behavior
+  fixed; 5.0 points is within-class drift. The effects are sub-additive by 3.8
+  points because both hit the same class — the two decomposition paths bracket the
+  prior contribution at [0.4, 4.2] points, so the interaction is part of the claim,
+  not a footnote. (2) Per-class attribution: **credit_reporting alone contributes
+  7.6 of the 9.2 points** (prior +6.55, within +1.06; its F1 0.900 → 0.310 under
+  the mix change alone → 0.215 realized). One-at-a-time counterfactual: moving only
+  credit_reporting's share 47.2% → 2.9% (others renormalized, 2023 behavior fixed)
+  costs 4.0 points [3.7, 4.3] — 44% of the drop (non-additive diagnostic).
+  (3) **Prior-free anchor (balanced accuracy, no counterfactual needed):** Tier A
+  −7.2 points [−8.4, −5.9] 2023→2026-H1 vs Haiku +0.8 and Sonnet +2.7 — Tier A's
+  per-class behavior genuinely collapsed; the LLMs' did not. (4) **The
+  metric-structural prior penalty reaches the LLMs too** — Haiku's 2026-H1 prior
+  component +3.0 points [+1.4, +4.4] excludes zero — but their within-class terms
+  are ≈0/negative (Haiku −2.3, Sonnet −2.9), which is precisely what saves them.
+  Case-study sentence: *the free model dies on drifted data because prior collapse
+  and within-class collapse compound on its dominant class; the LLMs pay the same
+  prior penalty but their within-class behavior holds, netting ≈0 degradation.*
+  (5) Cross-tier on identical rows (paired_subsample): Tier A still degrades +6.9
+  points [+2.4, +10.9] on the exact 1,500 rows where Haiku is +0.8 ∋ 0 — the
+  comparison is not a sampling artifact. Caveats: paired scope is only sound for
+  2026-H1 (small-Δ years flip sign at n=1,500); quote share ratios from native
+  Tier A rows only; accuracy decomposition (exact) corroborates: prior +9.1 /
+  within +9.8 / interaction −4.7 accuracy points. (6) Amendments recorded:
+  `model_id` resolves model slug/runner (per-run `model.name` embeds the year);
+  interaction sign identity is I = (C−D) − (A−B) (spec prose initially inverted;
+  implementation and tests pin the correct sign).
+- **Verdict:** hypothesis supported and quantified. The decomposition licenses the
+  drift chapter's central causal-shaped claim with CIs on every component, and the
+  suppression gates prevent the two dishonest numbers this analysis could have
+  produced (a single-path prior share, and a share ratio on a ≈0 denominator).
+- **Repro:** `make prior-shift` (= `uv run python -m triage_lab.prior_shift --all`);
+  deterministic (seed 20260805), ~6 s, byte-identical output modulo `generated_at`;
+  requires `make preds` artifacts + `data/splits/splits_stats.yaml`. Tests:
+  `uv run pytest tests/test_prior_shift.py -q` (43 passed; full suite 399 passed,
+  1 skipped).

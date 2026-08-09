@@ -1,0 +1,614 @@
+{
+  "accuracy_decomposition": {
+    "acc_ref": 0.83385,
+    "acc_year": 0.8304,
+    "interaction": -0.000898132,
+    "per_class": {
+      "card": {
+        "interaction": -0.0004673612,
+        "prior": 0.0079503753,
+        "within": 0.0054669859
+      },
+      "credit_reporting": {
+        "interaction": -0.0002339597,
+        "prior": -0.0464672843,
+        "within": -0.002198756
+      },
+      "debt_collection": {
+        "interaction": 0.0001891498,
+        "prior": -0.0057011673,
+        "within": 0.0027620175
+      },
+      "deposit_account": {
+        "interaction": -0.0001401646,
+        "prior": 0.0192817735,
+        "within": 0.000708391
+      },
+      "money_service": {
+        "interaction": -1.45879e-05,
+        "prior": 0.0017213675,
+        "within": 0.0001932203
+      },
+      "mortgage": {
+        "interaction": 0.0001025533,
+        "prior": 0.0138682961,
+        "within": -0.0003708494
+      },
+      "payday_personal_loan": {
+        "interaction": 3.859e-06,
+        "prior": 0.0007433803,
+        "within": -4.72393e-05
+      },
+      "student_loan": {
+        "interaction": -2.2128e-06,
+        "prior": 8.57422e-05,
+        "within": 0.0005664706
+      },
+      "vehicle_loan": {
+        "interaction": -0.000335408,
+        "prior": 0.0042506623,
+        "within": 0.0015347458
+      }
+    },
+    "prior": -0.0042668544,
+    "total": 0.00345,
+    "within": 0.0086149864
+  },
+  "balanced_accuracy": {
+    "ci_hi": 0.0294083501,
+    "ci_lo": 0.0013665784,
+    "ci_valid": true,
+    "note": "macro-recall; population target independent of class mix, so this is the counterfactual-free within-class drift channel",
+    "point": 0.015263768,
+    "ref": 0.7531929623,
+    "year": 0.7379291943
+  },
+  "bootstrap": {
+    "ci_note": "marginal percentile intervals; components sum exactly at the point estimate, not at the interval endpoints",
+    "ci_pct": [
+      2.5,
+      97.5
+    ],
+    "ci_valid": true,
+    "ci_valid_rule": "no class empty in more than 0.5% of replicates",
+    "components_sum_to_total_per_replicate": true,
+    "draw_order": "ref_then_year",
+    "method": "percentile",
+    "n_replicates_with_empty_class": {
+      "card": 0,
+      "credit_reporting": 0,
+      "debt_collection": 0,
+      "deposit_account": 0,
+      "money_service": 0,
+      "mortgage": 0,
+      "payday_personal_loan": 0,
+      "student_loan": 0,
+      "vehicle_loan": 0
+    },
+    "n_resamples": 1000,
+    "resample": "both_slices_independent",
+    "seed": 20260805
+  },
+  "cells": {
+    "A_ref_mix_ref_behavior": {
+      "macro_f1": 0.757909508,
+      "per_class_f1": {
+        "card": 0.7831578947,
+        "credit_reporting": 0.9000412201,
+        "debt_collection": 0.7259646828,
+        "deposit_account": 0.8281283195,
+        "money_service": 0.6594360087,
+        "mortgage": 0.8844797178,
+        "payday_personal_loan": 0.511954993,
+        "student_loan": 0.8607843137,
+        "vehicle_loan": 0.667238422
+      }
+    },
+    "B_year_mix_ref_behavior": {
+      "macro_f1": 0.7503966279,
+      "per_class_f1": {
+        "card": 0.7774053671,
+        "credit_reporting": 0.9067668941,
+        "debt_collection": 0.7278640796,
+        "deposit_account": 0.8160540464,
+        "money_service": 0.668246494,
+        "mortgage": 0.8576837086,
+        "payday_personal_loan": 0.5048157358,
+        "student_loan": 0.8583560282,
+        "vehicle_loan": 0.6363772974
+      }
+    },
+    "C_ref_mix_year_behavior": {
+      "macro_f1": 0.7536014858,
+      "per_class_f1": {
+        "card": 0.7661444187,
+        "credit_reporting": 0.8894260611,
+        "debt_collection": 0.7056284427,
+        "deposit_account": 0.8180948935,
+        "money_service": 0.6688050919,
+        "mortgage": 0.892982625,
+        "payday_personal_loan": 0.5298722197,
+        "student_loan": 0.8571436617,
+        "vehicle_loan": 0.6543159583
+      }
+    },
+    "D_year_mix_year_behavior": {
+      "macro_f1": 0.7478134297,
+      "per_class_f1": {
+        "card": 0.7623809524,
+        "credit_reporting": 0.897638523,
+        "debt_collection": 0.7070914697,
+        "deposit_account": 0.8051880674,
+        "money_service": 0.677471637,
+        "mortgage": 0.8671411625,
+        "payday_personal_loan": 0.526645768,
+        "student_loan": 0.8554216867,
+        "vehicle_loan": 0.6313416009
+      }
+    }
+  },
+  "class_labels": [
+    "card",
+    "credit_reporting",
+    "debt_collection",
+    "deposit_account",
+    "money_service",
+    "mortgage",
+    "payday_personal_loan",
+    "student_loan",
+    "vehicle_loan"
+  ],
+  "decomposition": {
+    "interaction": {
+      "ci_hi": -0.0006445542,
+      "ci_lo": -0.0027998301,
+      "ci_valid": true,
+      "point": -0.001724824
+    },
+    "primary": {
+      "note": "within-term carries the whole interaction; never quote without it",
+      "path": "P_prior_first",
+      "prior": {
+        "ci_hi": 0.0098108284,
+        "ci_lo": 0.0052199606,
+        "ci_valid": true,
+        "point": 0.0075128801
+      },
+      "within": {
+        "ci_hi": 0.016127042,
+        "ci_lo": -0.0100659177,
+        "ci_valid": true,
+        "point": 0.0025831982
+      }
+    },
+    "prior_bracket": {
+      "hi": 0.0075128801,
+      "lo": 0.0057880561,
+      "note": "Path Q .. Path P; the width IS the interaction magnitude"
+    },
+    "sensitivity": {
+      "anova": {
+        "interaction": {
+          "ci_hi": -0.0006445542,
+          "ci_lo": -0.0027998301,
+          "ci_valid": true,
+          "point": -0.001724824
+        },
+        "prior_main": {
+          "ci_hi": 0.0098108284,
+          "ci_lo": 0.0052199606,
+          "ci_valid": true,
+          "point": 0.0075128801
+        },
+        "within_main": {
+          "ci_hi": 0.0176394526,
+          "ci_lo": -0.0083246218,
+          "ci_valid": true,
+          "point": 0.0043080222
+        }
+      },
+      "path_Q_behavior_first": {
+        "prior": {
+          "ci_hi": 0.0077630562,
+          "ci_lo": 0.003886793,
+          "ci_valid": true,
+          "point": 0.0057880561
+        },
+        "within": {
+          "ci_hi": 0.0176394526,
+          "ci_lo": -0.0083246218,
+          "ci_valid": true,
+          "point": 0.0043080222
+        }
+      },
+      "pi_full_slice": {
+        "cells": {
+          "A_ref_mix_ref_behavior": 0.757909508,
+          "B_year_mix_ref_behavior": 0.7503966279,
+          "C_ref_mix_year_behavior": 0.7536014858,
+          "D_year_mix_year_behavior": 0.7478134297
+        },
+        "note": "priors pinned to the frozen full-slice mix (zero sampling error); lower variance but cell D no longer equals the logged macro_f1, which is why it is not primary",
+        "pi_source": "full_slice",
+        "prior": {
+          "ci_hi": 0.0082254579,
+          "ci_lo": 0.0067965126,
+          "ci_valid": true,
+          "point": 0.0075128801
+        },
+        "total": {
+          "ci_hi": 0.0236278505,
+          "ci_lo": -0.0023621037,
+          "ci_valid": true,
+          "point": 0.0100960783
+        },
+        "within": {
+          "ci_hi": 0.0161466619,
+          "ci_lo": -0.010088298,
+          "ci_valid": true,
+          "point": 0.0025831982
+        }
+      },
+      "ref_fixed_bootstrap": {
+        "note": "reference sample held at its observed value; isolates the shape of the year-over-year trend from the shared 2023 offset",
+        "prior": {
+          "ci_hi": 0.0093991427,
+          "ci_lo": 0.0060148787,
+          "ci_valid": true,
+          "point": 0.0075128801
+        },
+        "total": {
+          "ci_hi": 0.019584908,
+          "ci_lo": 0.000979566,
+          "ci_valid": true,
+          "point": 0.0100960783
+        },
+        "within": {
+          "ci_hi": 0.0121231407,
+          "ci_lo": -0.0064761989,
+          "ci_valid": true,
+          "point": 0.0025831982
+        }
+      },
+      "shapley": {
+        "prior": {
+          "ci_hi": 0.0087506861,
+          "ci_lo": 0.0046079594,
+          "ci_valid": true,
+          "point": 0.0066504681
+        },
+        "within": {
+          "ci_hi": 0.0167914398,
+          "ci_lo": -0.009110163,
+          "ci_valid": true,
+          "point": 0.0034456102
+        }
+      }
+    },
+    "share_prior": null,
+    "share_suppressed_reason": "total degradation CI [-0.0027, 0.0232] includes 0; a share of an indistinguishable-from-zero total is not a finding",
+    "total": {
+      "ci_hi": 0.0231582833,
+      "ci_lo": -0.0027061381,
+      "ci_valid": true,
+      "point": 0.0100960783
+    }
+  },
+  "generated_at": "2026-08-09T04:06:12.203819Z",
+  "git_sha": "3fac5e25988d1856632a17e9301ccb9ce61a3c49",
+  "model_id": "tier_a",
+  "model_name": {
+    "ref": "tier_a_logreg_test_drift_2023",
+    "year": "tier_a_logreg_test_drift_2024"
+  },
+  "one_at_a_time_prior": {
+    "credit_reporting": {
+      "additive": false,
+      "ci_hi": 0.0049526469,
+      "ci_lo": 0.0032289071,
+      "ci_valid": true,
+      "note": "only this class's share moves to its year-Y value; the other classes are renormalised pro rata and C_ref is held fixed. One-at-a-time effects do NOT sum to the prior term",
+      "point": 0.004091288
+    }
+  },
+  "per_class": {
+    "card": {
+      "f1_A": 0.7831578947,
+      "f1_B": 0.7774053671,
+      "f1_D": 0.7623809524,
+      "pi_ref": 0.1199,
+      "pi_year": 0.10965,
+      "prior_contrib": 0.0006391697,
+      "recall_ref": 0.775646372,
+      "recall_year": 0.7300501596,
+      "support_ref": 2398,
+      "support_year": 2193,
+      "within_contrib": 0.0016693794
+    },
+    "credit_reporting": {
+      "f1_A": 0.9000412201,
+      "f1_B": 0.9067668941,
+      "f1_D": 0.897638523,
+      "pi_ref": 0.47225,
+      "pi_year": 0.5225,
+      "prior_contrib": -0.0007472971,
+      "recall_ref": 0.9247220752,
+      "recall_year": 0.9293779904,
+      "support_ref": 9445,
+      "support_year": 10450,
+      "within_contrib": 0.0010142634
+    },
+    "debt_collection": {
+      "f1_A": 0.7259646828,
+      "f1_B": 0.7278640796,
+      "f1_D": 0.7070914697,
+      "pi_ref": 0.1285,
+      "pi_year": 0.1373,
+      "prior_contrib": -0.0002110441,
+      "recall_ref": 0.6478599222,
+      "recall_year": 0.6263656227,
+      "support_ref": 2570,
+      "support_year": 2746,
+      "within_contrib": 0.0023080678
+    },
+    "deposit_account": {
+      "f1_A": 0.8281283195,
+      "f1_B": 0.8160540464,
+      "f1_D": 0.8051880674,
+      "pi_ref": 0.117,
+      "pi_year": 0.09385,
+      "prior_contrib": 0.0013415859,
+      "recall_ref": 0.8329059829,
+      "recall_year": 0.8268513586,
+      "support_ref": 2340,
+      "support_year": 1877,
+      "within_contrib": 0.001207331
+    },
+    "money_service": {
+      "f1_A": 0.6594360087,
+      "f1_B": 0.668246494,
+      "f1_D": 0.677471637,
+      "pi_ref": 0.0351,
+      "pi_year": 0.03245,
+      "prior_contrib": -0.0009789428,
+      "recall_ref": 0.6495726496,
+      "recall_year": 0.6440677966,
+      "support_ref": 702,
+      "support_year": 649,
+      "within_contrib": -0.0010250159
+    },
+    "mortgage": {
+      "f1_A": 0.8844797178,
+      "f1_B": 0.8576837086,
+      "f1_D": 0.8671411625,
+      "pi_ref": 0.0537,
+      "pi_year": 0.03885,
+      "prior_contrib": 0.0029773344,
+      "recall_ref": 0.9338919926,
+      "recall_year": 0.9407979408,
+      "support_ref": 1074,
+      "support_year": 777,
+      "within_contrib": -0.0010508282
+    },
+    "payday_personal_loan": {
+      "f1_A": 0.511954993,
+      "f1_B": 0.5048157358,
+      "f1_D": 0.526645768,
+      "pi_ref": 0.01775,
+      "pi_year": 0.0163,
+      "prior_contrib": 0.0007932508,
+      "recall_ref": 0.5126760563,
+      "recall_year": 0.5153374233,
+      "support_ref": 355,
+      "support_year": 326,
+      "within_contrib": -0.0024255591
+    },
+    "student_loan": {
+      "f1_A": 0.8607843137,
+      "f1_B": 0.8583560282,
+      "f1_D": 0.8554216867,
+      "pi_ref": 0.0256,
+      "pi_year": 0.0255,
+      "prior_contrib": 0.0002698095,
+      "recall_ref": 0.857421875,
+      "recall_year": 0.8352941176,
+      "support_ref": 512,
+      "support_year": 510,
+      "within_contrib": 0.0003260379
+    },
+    "vehicle_loan": {
+      "f1_A": 0.667238422,
+      "f1_B": 0.6363772974,
+      "f1_D": 0.6313416009,
+      "pi_ref": 0.0302,
+      "pi_year": 0.0236,
+      "prior_contrib": 0.0034290138,
+      "recall_ref": 0.6440397351,
+      "recall_year": 0.593220339,
+      "support_ref": 604,
+      "support_year": 472,
+      "within_contrib": 0.0005595218
+    }
+  },
+  "pi_source": "artifact",
+  "primary_path": "P_prior_first",
+  "priors": {
+    "chi2_sub_vs_full_ref": 0.0,
+    "chi2_sub_vs_full_year": 0.0,
+    "full_slice_ref": {
+      "card": 0.1199,
+      "credit_reporting": 0.47225,
+      "debt_collection": 0.1285,
+      "deposit_account": 0.117,
+      "money_service": 0.0351,
+      "mortgage": 0.0537,
+      "payday_personal_loan": 0.01775,
+      "student_loan": 0.0256,
+      "vehicle_loan": 0.0302
+    },
+    "full_slice_year": {
+      "card": 0.10965,
+      "credit_reporting": 0.5225,
+      "debt_collection": 0.1373,
+      "deposit_account": 0.09385,
+      "money_service": 0.03245,
+      "mortgage": 0.03885,
+      "payday_personal_loan": 0.0163,
+      "student_loan": 0.0255,
+      "vehicle_loan": 0.0236
+    },
+    "pi_max_abs_dev_vs_full_ref": 0.0,
+    "pi_max_abs_dev_vs_full_year": 0.0,
+    "ref": {
+      "card": 0.1199,
+      "credit_reporting": 0.47225,
+      "debt_collection": 0.1285,
+      "deposit_account": 0.117,
+      "money_service": 0.0351,
+      "mortgage": 0.0537,
+      "payday_personal_loan": 0.01775,
+      "student_loan": 0.0256,
+      "vehicle_loan": 0.0302
+    },
+    "year": {
+      "card": 0.10965,
+      "credit_reporting": 0.5225,
+      "debt_collection": 0.1373,
+      "deposit_account": 0.09385,
+      "money_service": 0.03245,
+      "mortgage": 0.03885,
+      "payday_personal_loan": 0.0163,
+      "student_loan": 0.0255,
+      "vehicle_loan": 0.0236
+    }
+  },
+  "ref_year": "2023",
+  "repro_command": "uv run python -m triage_lab.prior_shift --tier tier_a --year 2024",
+  "runner": "tier_a",
+  "schema_version": 1,
+  "scope": "native",
+  "sign_convention": "positive = degradation relative to ref_year",
+  "source": {
+    "identity_check": {
+      "applicable": true,
+      "checks": [
+        {
+          "abs_delta": 0.0,
+          "applicable": true,
+          "computed": 0.757909508,
+          "logged": 0.757909508,
+          "name": "cell_A_vs_logged_macro_f1",
+          "ok": true
+        },
+        {
+          "abs_delta": 0.0,
+          "applicable": true,
+          "computed": 0.7478134297,
+          "logged": 0.7478134297,
+          "name": "cell_D_vs_logged_macro_f1",
+          "ok": true
+        },
+        {
+          "abs_delta": 0.0,
+          "applicable": true,
+          "computed": 0.7531929623,
+          "logged": 0.7531929623,
+          "name": "balanced_accuracy_ref_vs_logged",
+          "ok": true
+        },
+        {
+          "abs_delta": 0.0,
+          "applicable": true,
+          "computed": 0.7379291943,
+          "logged": 0.7379291943,
+          "name": "balanced_accuracy_year_vs_logged",
+          "ok": true
+        },
+        {
+          "abs_delta": 0.0,
+          "applicable": true,
+          "computed": 0.83385,
+          "logged": 0.83385,
+          "name": "accuracy_ref_vs_logged",
+          "ok": true
+        }
+      ],
+      "tol": 0.0
+    },
+    "logged_macro_f1": {
+      "ref": 0.757909508,
+      "year": 0.7478134297
+    },
+    "ref": {
+      "config_name": "tier_a_logreg_test_drift_2023",
+      "config_sha256": "68ea22911c1792a763c1ecd6afc9054a824863d6e6bdf5352712d03376f93102",
+      "git_sha": "831ac6e521d83e5e6e367b96f36db6378d67d415",
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "n_artifact": 20000,
+      "n_used": 20000,
+      "predictions_path": "data/preds/389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1.parquet",
+      "run_id": "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+      "split": "test_drift_2023",
+      "split_sha256": "debbd70416a816faa04b51cac994697b07bc70914e1f3e9d49b27b443a5a5475"
+    },
+    "restricted_to_rows_of": null,
+    "year": {
+      "config_name": "tier_a_logreg_test_drift_2024",
+      "config_sha256": "4a8f8bc78eba1529fd9fae4d1765064f86c0f0641eeef8e6c951ef1b51c0c608",
+      "git_sha": "831ac6e521d83e5e6e367b96f36db6378d67d415",
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "n_artifact": 20000,
+      "n_used": 20000,
+      "predictions_path": "data/preds/c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e.parquet",
+      "run_id": "c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e",
+      "split": "test_drift_2024",
+      "split_sha256": "b61db6317217e664d69df19aaa7d84737f0e6d8b3169729795bf18616375c6ec"
+    }
+  },
+  "tier": "tier_a",
+  "weights": {
+    "to_ref_mix": {
+      "cap": null,
+      "cap_note": "no cap by design: capping would change the estimand, so exposure is reported via n_eff/max instead",
+      "degenerate_zero_share_class": false,
+      "max": 1.3822393822,
+      "min": 0.9038277512,
+      "n_data": 20000,
+      "n_eff": 19609.130013836,
+      "note": "w_k = pi_ref/pi_year applied to YEAR rows (cell C; Path Q's direction)",
+      "w": {
+        "card": 1.0934792522,
+        "credit_reporting": 0.9038277512,
+        "debt_collection": 0.9359067735,
+        "deposit_account": 1.2466702184,
+        "money_service": 1.0816640986,
+        "mortgage": 1.3822393822,
+        "payday_personal_loan": 1.0889570552,
+        "student_loan": 1.0039215686,
+        "vehicle_loan": 1.2796610169
+      }
+    },
+    "to_year_mix": {
+      "cap": null,
+      "cap_note": "no cap by design: capping would change the estimand, so exposure is reported via n_eff/max instead",
+      "degenerate_zero_share_class": false,
+      "max": 1.1064055056,
+      "min": 0.7234636872,
+      "n_data": 20000,
+      "n_eff": 19660.3832233874,
+      "note": "w_k = pi_year/pi_ref applied to REFERENCE rows (cell B; Path P's direction)",
+      "w": {
+        "card": 0.9145120934,
+        "credit_reporting": 1.1064055056,
+        "debt_collection": 1.0684824903,
+        "deposit_account": 0.8021367521,
+        "money_service": 0.9245014245,
+        "mortgage": 0.7234636872,
+        "payday_personal_loan": 0.9183098592,
+        "student_loan": 0.99609375,
+        "vehicle_loan": 0.7814569536
+      }
+    }
+  },
+  "year": "2024"
+}

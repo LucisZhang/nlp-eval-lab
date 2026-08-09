@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier prior-shift
 
 setup:
 	uv sync --frozen
@@ -124,3 +124,13 @@ router-sim: thresholds
 # placeholders for every Tier B frontier slot.
 frontier: router-sim
 	uv run python -m triage_lab.frontier --op-version v2-isocal
+
+# Prior-shift decomposition (Phase 5 task 2): how much of each tier's yearly macro-F1 drop
+# vs 2023 is the class-mix change alone (Path P reweighted-F1 counterfactual, primary) vs
+# within-class drift, with the interaction, the Path Q / Shapley / ANOVA sensitivities, the
+# exact accuracy decomposition, and per-class attribution. Offline; reads only the frozen
+# per-example artifacts, so it REQUIRES `make preds` to have been run first. Deliberately
+# standalone (not a prerequisite of anything): it is an analysis of existing runs and
+# appends nothing to results/runs.jsonl.
+prior-shift:
+	uv run python -m triage_lab.prior_shift --all
