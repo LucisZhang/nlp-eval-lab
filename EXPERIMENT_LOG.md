@@ -1494,3 +1494,72 @@ reported runs. Every portfolio-bound number carries its reproduction command
   `demo/` (e.g. `python3 -m http.server -d demo`). Source run ids: Tier A
   `8e4d6345`/`c20cd14a`/`abcadd53`/`40513354`; Tier C `70a1b0c4`/`82af4e01`/
   `e1503146`/`d1c42d7d`; router artifacts opv2 cost config `f76ad15a`.
+
+## 2026-08-10 — Phase 2: Tier B training-results bundle ingest + validation
+
+- **Context:** The real training-results bundle arrived from the shared A6000
+  (`data/checkpoints/incoming/tier_b_training_results_20260807T191924Z.tar.gz`,
+  1,917,787,594 bytes, sha256 `c47f927e333752e014259f453e820c3a890a4a358dd0f02f577094647fbd000e`).
+  The 2026-08-08 incident (outgoing kit shipped back by mistake) does not recur: this
+  archive contains the four trained checkpoints. Owner decision (2026-08-10): ingest
+  takes priority over remaining Phase 6 tasks; eval backfill follows in later sessions.
+- **Hypothesis:** the bundle contains all four completed runs
+  (B1 ModernBERT s{a,b,c} + B2 DistilBERT s0), trained under the frozen configs,
+  seeds, and data kit, with an intact chain of custody.
+- **Validation (all fail-loud; `scripts/validate_tier_b_bundle.py`):**
+  1. `gzip -t` clean; 52 tar entries, extracted to a staging dir.
+  2. Bundle `manifest.json` re-hash: **51/51 files** sha256+size match; **zero
+     unlisted files** in the archive.
+  3. Chain of custody closed on four anchors: bundled `metadata/configs/*.yaml`
+     **byte-identical** to frozen `configs/` (and manifest job `config_sha256`s match
+     the frozen files); bundled `metadata/train_tier_b.py` byte-identical to
+     `scripts/train_tier_b.py` (`5764a3e1…`); bundle `input_bundle.sha256` ==
+     local `data/tier_b_colab_bundle.tar.gz` (`87e3ddab…`); bundle
+     `data_manifest_sha256` == frozen `data/tier_b_kit/manifest.json` (`91befff3…`),
+     whose `input_sha256` (`170f66cd…`) equals every run's `data_input_sha256`.
+  4. Per-run `training_meta.json` / `status.json`: seeds exactly the frozen list
+     (sa 20260805, sb 20260806, sc 20260807, s0 20260805); base models correct;
+     precision **bf16** on `cuda:NVIDIA RTX A6000` (runbook auto-selection);
+     n_train 300,000 / n_cal 86,972 == kit manifest; all four
+     `exit_status=completed` at step 28125/28125 (= 300k×3/32, effective batch 32 ✓).
+  5. Weights sanity: valid safetensors headers, fp32 tensors, 9-class heads matching
+     the frozen label order; the three B1 `model.safetensors` have **distinct** shas
+     (not copies). Post-placement re-hash at canonical paths: **32/32 files** clean.
+- **Result — per-run training summary (final CAL eval from `training_log.jsonl`;
+  evidence class: training-script numbers — uncalibrated argmax, no CIs, NOT harness
+  records; `results/runs.jsonl` untouched):**
+
+  | run | seed | final CAL macro-F1 | final CAL acc | epoch-2 CAL macro-F1 | train wall-clock | truncation |
+  |---|---|---|---|---|---|---|
+  | tier_b1_sa | 20260805 | 0.7856 | 0.8468 | 0.7974 | 8,054 s | 0.32475 |
+  | tier_b1_sb | 20260806 | 0.7874 | 0.8481 | 0.8005 | 8,143 s | 0.32475 |
+  | tier_b1_sc | 20260807 | 0.7865 | 0.8474 | 0.7942 | 8,190 s | 0.32475 |
+  | tier_b2_s0 | 20260805 | 0.7923 | 0.8536 | 0.7934 | 2,238 s | 0.32825 |
+
+- **Findings:** (1) All three B1 seeds peak at **epoch 2** and dip at epoch 3 with
+  eval-loss rising 0.42–0.44 → 0.57–0.63 — mild late overfit; the frozen protocol
+  ships the final-epoch checkpoint, so the epoch-3 weights stand (no epoch
+  cherry-picking; noted as context for TEST-IID numbers). (2) **B2 DistilBERT's final
+  CAL macro-F1 (0.7923) edges all three B1 finals (0.7856–0.7874)** on these
+  training-script numbers — pre-registered surprise to re-examine under the harness
+  (temperature scaling, CIs) before any claim. (3) B1 seed spread on final CAL
+  macro-F1 is tight: 0.7856–0.7874 (range 0.0018). (4) Truncation rate at
+  max_seq_length 256 is ~32.5% of TRAIN rows for both tokenizers — matches the
+  runbook's long-tail expectation. (5) Bundle also carries supervisor machinery not
+  in the original kit (`tier_b_supervisor.py`, `run_train_py310.py`, per-attempt
+  logs) — retained as receipts, not repo code.
+- **Placement:** checkpoints moved to the canonical config targets
+  `data/checkpoints/tier_b{1_sa,1_sb,1_sc,2_s0}/` (gitignored); bundle receipts
+  (manifest, supervisor metadata, attempt logs) retained at
+  `data/checkpoints/incoming/receipts_20260807T191924Z/`; the original tarball is
+  retained unmodified.
+- **Verdict:** Ingest ACCEPTED — zero mismatches across all five check groups.
+  Phase 2 training rows are done; Tier B is **unblocked** for the eval backfill
+  (harness TEST-IID runs + temperature scaling, then the pending Phase 4/5/6
+  Tier B slots, per STATUS.md §b).
+- **Repro:** `shasum -a 256 data/checkpoints/incoming/tier_b_training_results_20260807T191924Z.tar.gz`
+  (expect `c47f927e…`); then
+  `mkdir -p /tmp/tb_check && tar -xzf data/checkpoints/incoming/tier_b_training_results_20260807T191924Z.tar.gz -C /tmp/tb_check && uv run python scripts/validate_tier_b_bundle.py /tmp/tb_check`
+  (expect `ALL CHECKS PASSED`); final CAL rows:
+  `grep '"eval_macro_f1"' data/checkpoints/tier_b1_sa/training_log.jsonl | tail -1`
+  (and likewise for sb/sc/s0).

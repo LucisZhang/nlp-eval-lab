@@ -8,6 +8,11 @@ _what's next_.
 - **Owner decision (2026-08-06):** The A6000 is unavailable until the weekend, so **all Tier B
   training and eval is BLOCKED-until-weekend.** Work has been reordered to make maximal progress on
   the tiers and infrastructure that do not need the GPU.
+- **Owner decision (2026-08-10):** the real Tier B training-results bundle arrived and its ingest
+  took priority over the remaining Phase 6 tasks. **Ingest + validation complete — Tier B training
+  is DONE and the block is lifted.** Checkpoints sit at the canonical `data/checkpoints/tier_b*`
+  paths; next sessions run the Tier B **eval backfill** (harness TEST-IID finals + temperature
+  scaling, then the pending Phase 4/5/6 Tier B slots), one task per session per §c.
 - Last updated: 2026-08-10.
 
 ---
@@ -36,19 +41,21 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 | Tier A TEST-IID finals (LogReg + CNB, isotonic) | done | `9750d53`; EXPERIMENT_LOG 2026-08-05 finals |
 | ≥3 logged runs in EXPERIMENT_LOG.md | done | 5 runs logged (2026-08-05) |
 
-### Phase 2 — Tier B fine-tuning  🔒 BLOCKED-until-weekend (needs A6000)
+### Phase 2 — Tier B fine-tuning  ▶ IN PROGRESS (training done + ingested 2026-08-10; local eval backfill next)
 | Task | Status | Evidence |
 |---|---|---|
 | Tier B training kit (runner, cloud training script, data export, ONNX parity harness) | done | `ba13a08`, `0dfa94b` |
 | Tier B tokenization OOM fix (chunked + int32) | done | `5a7d641` |
 | Tier B training preemptible + resumable | done | `334a47c` |
-| ModernBERT-base fine-tune ×3 seeds | **blocked** | — needs GPU |
-| DistilBERT fine-tune | **blocked** | — needs GPU |
-| Temperature scaling + TEST-IID eval (both points, CIs) | **blocked** | — needs trained models |
-| B1-vs-A delta, B1-vs-B2 intra-tier delta, seed variance | **blocked** | — needs trained models |
-| DistilBERT int8 ONNX export + parity check (≥99%) | **blocked** | — needs trained model |
+| ModernBERT-base fine-tune ×3 seeds | done (A6000 bf16, 2026-08-07; ingested + validated 2026-08-10) | EXPERIMENT_LOG 2026-08-10 (bundle `c47f927e…`; 51/51 manifest re-hash, configs byte-identical, seeds/precision verified; final CAL macro-F1 0.7856/0.7874/0.7865) |
+| DistilBERT fine-tune | done (A6000 bf16, 2026-08-07; ingested + validated 2026-08-10) | EXPERIMENT_LOG 2026-08-10 (same bundle; final CAL macro-F1 0.7923 — edges B1 on training-script numbers, re-examine under harness) |
+| Temperature scaling + TEST-IID eval (both points, CIs) | pending (unblocked — checkpoints in place) | — |
+| B1-vs-A delta, B1-vs-B2 intra-tier delta, seed variance | pending (unblocked) | — |
+| DistilBERT int8 ONNX export + parity check (≥99%) | pending (unblocked) | — |
 
-> **Kit is ready to launch the moment the A6000 is free.** Only the GPU-bound train/eval steps remain.
+> **Checkpoints validated + placed at `data/checkpoints/tier_b{1_sa,1_sb,1_sc,2_s0}/`** (chain of
+> custody: bundle manifest ↔ frozen configs ↔ frozen kit manifest ↔ CFPB input sha, all verified;
+> receipts at `data/checkpoints/incoming/receipts_20260807T191924Z/`). Only local eval/ONNX steps remain.
 
 ### Phase 3 — Tier C LLM  ✅ **COMPLETE 2026-08-07** (acceptance closed — EXPERIMENT_LOG step 6)
 | Task | Status | Evidence |
@@ -120,9 +127,11 @@ Tier B is **BLOCKED-until-weekend**; do the GPU-free work first, in this exact o
    **pending Tier B**. Remaining Phase 6 tasks, in order: live in-browser Tier A inference +
    case study page (verification + "does not prove"), provenance links, `make reproduce-headline`.
 
-**Tier B (training + eval + ONNX parity): BLOCKED-until-weekend.** Launch the existing training kit
-the moment the A6000 is available; then backfill every item marked **pending Tier B** above
-(Phase 4 frontier points, Phase 5 drift rows, Phase 6 panels).
+**Tier B training: DONE (ingested + validated 2026-08-10).** Backfill order for the coming
+sessions (one task per session): **(1)** Tier B harness finals — the four configs on TEST-IID with
+temperature scaling (runbook §6), then B1-vs-A / B1-vs-B2 paired deltas + seed variance;
+**(2)** DistilBERT int8 ONNX export + parity (runbook §7); **(3)** every item marked
+**pending Tier B** above (Phase 4 frontier points, Phase 5 drift rows, Phase 6 panels).
 
 ---
 
