@@ -41,7 +41,7 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 | Tier A TEST-IID finals (LogReg + CNB, isotonic) | done | `9750d53`; EXPERIMENT_LOG 2026-08-05 finals |
 | ≥3 logged runs in EXPERIMENT_LOG.md | done | 5 runs logged (2026-08-05) |
 
-### Phase 2 — Tier B fine-tuning  ▶ IN PROGRESS (training done + ingested 2026-08-10; local eval backfill next)
+### Phase 2 — Tier B fine-tuning  ▶ IN PROGRESS (harness TEST-IID finals done 2026-08-10; only ONNX export + parity left)
 | Task | Status | Evidence |
 |---|---|---|
 | Tier B training kit (runner, cloud training script, data export, ONNX parity harness) | done | `ba13a08`, `0dfa94b` |
@@ -49,8 +49,8 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 | Tier B training preemptible + resumable | done | `334a47c` |
 | ModernBERT-base fine-tune ×3 seeds | done (A6000 bf16, 2026-08-07; ingested + validated 2026-08-10) | EXPERIMENT_LOG 2026-08-10 (bundle `c47f927e…`; 51/51 manifest re-hash, configs byte-identical, seeds/precision verified; final CAL macro-F1 0.7856/0.7874/0.7865) |
 | DistilBERT fine-tune | done (A6000 bf16, 2026-08-07; ingested + validated 2026-08-10) | EXPERIMENT_LOG 2026-08-10 (same bundle; final CAL macro-F1 0.7923 — edges B1 on training-script numbers, re-examine under harness) |
-| Temperature scaling + TEST-IID eval (both points, CIs) | pending (unblocked — checkpoints in place) | — |
-| B1-vs-A delta, B1-vs-B2 intra-tier delta, seed variance | pending (unblocked) | — |
+| Temperature scaling + TEST-IID eval (both points, CIs) | done (2026-08-10, MPS local) | EXPERIMENT_LOG 2026-08-10 (eval backfill task 1); runs `8071d31d…`/`adb96307…`/`a523049a…`/`5517ebf1…`; B1 macro-F1 0.7878/0.7878/0.7863, B2 **0.7950** [0.7909, 0.7988], full TEST-IID n=104,443 |
+| B1-vs-A delta, B1-vs-B2 intra-tier delta, seed variance | done (2026-08-10) | EXPERIMENT_LOG 2026-08-10; `results/tier_b_compare/summary.json`; B1−A +0.026..+0.027 (CIs excl. 0 ✓); **B1−B2 negative all seeds** (−0.0072..−0.0088, CIs excl. 0, McNemar p≤6e-8) — pre-registered surprise CONFIRMED: B2 DistilBERT is the top Tier B point; seed sd 0.0009 (ddof=1) |
 | DistilBERT int8 ONNX export + parity check (≥99%) | pending (unblocked) | — |
 
 > **Checkpoints validated + placed at `data/checkpoints/tier_b{1_sa,1_sb,1_sc,2_s0}/`** (chain of
@@ -128,9 +128,11 @@ Tier B is **BLOCKED-until-weekend**; do the GPU-free work first, in this exact o
    case study page (verification + "does not prove"), provenance links, `make reproduce-headline`.
 
 **Tier B training: DONE (ingested + validated 2026-08-10).** Backfill order for the coming
-sessions (one task per session): **(1)** Tier B harness finals — the four configs on TEST-IID with
-temperature scaling (runbook §6), then B1-vs-A / B1-vs-B2 paired deltas + seed variance;
-**(2)** DistilBERT int8 ONNX export + parity (runbook §7); **(3)** every item marked
+sessions (one task per session): ~~**(1)** Tier B harness finals — the four configs on TEST-IID with
+temperature scaling (runbook §6), then B1-vs-A / B1-vs-B2 paired deltas + seed variance~~
+**done 2026-08-10** (EXPERIMENT_LOG eval backfill task 1; headline: B2 DistilBERT 0.7950 tops all
+B1 seeds, paired CIs excl. 0 — the pre-registered surprise held under the frozen protocol);
+**(2)** DistilBERT int8 ONNX export + parity (runbook §7) — **next**; **(3)** every item marked
 **pending Tier B** above (Phase 4 frontier points, Phase 5 drift rows, Phase 6 panels).
 
 ---

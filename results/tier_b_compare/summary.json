@@ -1,0 +1,218 @@
+{
+  "bootstrap": {
+    "n_resamples": 1000,
+    "seed": 20260805
+  },
+  "comparisons": [
+    {
+      "a": "b1_sa",
+      "accuracy": {
+        "ci_hi": 0.013844872322702373,
+        "ci_lo": 0.009727554742778293,
+        "delta": 0.011805482416246238
+      },
+      "b": "baseline",
+      "macro_f1": {
+        "ci_hi": 0.03124275272353604,
+        "ci_lo": 0.023375812026473007,
+        "delta": 0.0273157244850305
+      },
+      "mcnemar": {
+        "b": 6366,
+        "c": 5133,
+        "n_discordant": 11499,
+        "p_value": 1.3205179040320069e-30
+      },
+      "n": 104443
+    },
+    {
+      "a": "b1_sa",
+      "accuracy": {
+        "ci_hi": -0.0029489769539365884,
+        "ci_lo": -0.006300565858889528,
+        "delta": -0.004710703445898745
+      },
+      "b": "b2",
+      "macro_f1": {
+        "ci_hi": -0.00377773045818553,
+        "ci_lo": -0.0105799779391627,
+        "delta": -0.007196299579458776
+      },
+      "mcnemar": {
+        "b": 3875,
+        "c": 4367,
+        "n_discordant": 8242,
+        "p_value": 6.30593364159821e-08
+      },
+      "n": 104443
+    },
+    {
+      "a": "b1_sb",
+      "accuracy": {
+        "ci_hi": 0.01322300202024077,
+        "ci_lo": 0.009304596765699922,
+        "delta": 0.01130760319025692
+      },
+      "b": "baseline",
+      "macro_f1": {
+        "ci_hi": 0.031109727750242618,
+        "ci_lo": 0.023495940237536966,
+        "delta": 0.027269620730721034
+      },
+      "mcnemar": {
+        "b": 6416,
+        "c": 5235,
+        "n_discordant": 11651,
+        "p_value": 7.312705910593135e-28
+      },
+      "n": 104443
+    },
+    {
+      "a": "b1_sb",
+      "accuracy": {
+        "ci_hi": -0.003561512020910912,
+        "ci_lo": -0.0069418247273632825,
+        "delta": -0.005208582671888062
+      },
+      "b": "b2",
+      "macro_f1": {
+        "ci_hi": -0.0040057786692007805,
+        "ci_lo": -0.010625999472333909,
+        "delta": -0.007242403333768244
+      },
+      "mcnemar": {
+        "b": 3871,
+        "c": 4415,
+        "n_discordant": 8286,
+        "p_value": 2.4119632995334786e-09
+      },
+      "n": 104443
+    },
+    {
+      "a": "b1_sc",
+      "accuracy": {
+        "ci_hi": 0.012974780502283593,
+        "ci_lo": 0.008923288300795678,
+        "delta": 0.010915044569765331
+      },
+      "b": "baseline",
+      "macro_f1": {
+        "ci_hi": 0.02967155453980513,
+        "ci_lo": 0.021965190369895964,
+        "delta": 0.025752073537913645
+      },
+      "mcnemar": {
+        "b": 6325,
+        "c": 5185,
+        "n_discordant": 11510,
+        "p_value": 2.2744588064149698e-26
+      },
+      "n": 104443
+    },
+    {
+      "a": "b1_sc",
+      "accuracy": {
+        "ci_hi": -0.003915054144365813,
+        "ci_lo": -0.00734419731336714,
+        "delta": -0.005601141292379652
+      },
+      "b": "b2",
+      "macro_f1": {
+        "ci_hi": -0.005362972420848756,
+        "ci_lo": -0.011904690570944431,
+        "delta": -0.008759950526575633
+      },
+      "mcnemar": {
+        "b": 3724,
+        "c": 4309,
+        "n_discordant": 8033,
+        "p_value": 7.091889282195299e-11
+      },
+      "n": 104443
+    },
+    {
+      "a": "b2",
+      "accuracy": {
+        "ci_hi": 0.018393286290129516,
+        "ci_lo": 0.01470610763765875,
+        "delta": 0.016516185862144983
+      },
+      "b": "baseline",
+      "macro_f1": {
+        "ci_hi": 0.038242068454834834,
+        "ci_lo": 0.030999073924854743,
+        "delta": 0.03451202406448928
+      },
+      "mcnemar": {
+        "b": 6025,
+        "c": 4300,
+        "n_discordant": 10325,
+        "p_value": 7.390267640604365e-65
+      },
+      "n": 104443
+    }
+  ],
+  "provenance": {
+    "b1_sa": {
+      "config_path": "configs/tier_b1_modernbert_sa.yaml",
+      "config_sha256": "5eba3ca79b4ce044de00eed5d62b1df5bf816d155d1e88ce1741d74a238e69e1",
+      "inference_hardware": "mps",
+      "macro_f1_point": 0.7878427991951781,
+      "run_id": "8071d31db244e4dc67ca134ac60517718ac512ff1fe8d0740acd559feb92c270",
+      "temperature": 1.7747434556073847,
+      "timestamp_utc": "2026-08-10T07:25:02.385360+00:00"
+    },
+    "b1_sb": {
+      "config_path": "configs/tier_b1_modernbert_sb.yaml",
+      "config_sha256": "0d72fb6a87202cf37e7c3ce999f206c0264ead93ac7b6faa3771988ae7a80cce",
+      "inference_hardware": "mps",
+      "macro_f1_point": 0.7877966954408686,
+      "run_id": "adb96307e2e08f701d88f6f1ed0d66314d55489f9f411da7bc588eaa93dfa9d0",
+      "temperature": 1.952978645978566,
+      "timestamp_utc": "2026-08-10T10:24:45.580236+00:00"
+    },
+    "b1_sc": {
+      "config_path": "configs/tier_b1_modernbert_sc.yaml",
+      "config_sha256": "02fdb3352b83676b2eba4aedf2ce9f6b002ae59534f345dd4527714e731b560b",
+      "inference_hardware": "mps",
+      "macro_f1_point": 0.7862791482480612,
+      "run_id": "a523049a7ea5ec4d920f41e838e326c65518e5cb68b4cc96904f12cb8a3e4206",
+      "temperature": 1.7500314335188512,
+      "timestamp_utc": "2026-08-10T14:37:50.068400+00:00"
+    },
+    "b2": {
+      "config_path": "configs/tier_b2_distilbert_s0.yaml",
+      "config_sha256": "c7fda31fd88ae6eb90dae3bbf522a86cf2ba56445cd5b450814e3b666efe5ab8",
+      "inference_hardware": "mps",
+      "macro_f1_point": 0.7950390987746369,
+      "run_id": "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687",
+      "temperature": 1.3191720008827763,
+      "timestamp_utc": "2026-08-10T15:48:51.561913+00:00"
+    },
+    "baseline": {
+      "config_path": "configs/tier_a_logreg_test_iid.yaml",
+      "config_sha256": "b22be1e963760c2f277562c4afa89eb1014dd6bc0fd1cb86fd588c12d6f3b8c0",
+      "macro_f1_point": 0.7605270747101476,
+      "run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+      "timestamp_utc": "2026-08-05T15:28:12.656709+00:00"
+    }
+  },
+  "runs_jsonl": "/Users/hsiangkuochang/nlp-eval-lab/results/runs.jsonl",
+  "seed_variance": {
+    "max": 0.7878427991951781,
+    "mean": 0.7873062142947026,
+    "metric": "macro_f1",
+    "min": 0.7862791482480612,
+    "n_seeds": 3,
+    "points": [
+      0.7878427991951781,
+      0.7877966954408686,
+      0.7862791482480612
+    ],
+    "range": 0.001563650947116857,
+    "sd": 0.0008897639502492088,
+    "sd_ddof": 1,
+    "source": "run record metrics.macro_f1.point (TEST-IID)"
+  },
+  "superseded": {}
+}

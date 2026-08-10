@@ -1563,3 +1563,79 @@ reported runs. Every portfolio-bound number carries its reproduction command
   (expect `ALL CHECKS PASSED`); final CAL rows:
   `grep '"eval_macro_f1"' data/checkpoints/tier_b1_sa/training_log.jsonl | tail -1`
   (and likewise for sb/sc/s0).
+
+## 2026-08-10 — Phase 2: Tier B harness TEST-IID finals + paired deltas (eval backfill task 1)
+
+- **Context:** first Tier B eval-backfill session (STATUS.md §b item 1; runbook §6).
+  Checkpoints are the 2026-08-10-validated set at `data/checkpoints/tier_b{1_sa,1_sb,1_sc,2_s0}/`.
+- **Accept criteria restated (UPGRADE_PLAN §8 Phase 2, eval portion — ONNX parity is
+  the next session's task):** both Tier B points evaluated with CIs; B1 beats Tier A
+  on macro-F1 with CI excluding zero *(expected; if not, that is the finding)*;
+  B1-vs-B2 delta reported (intra-tier trade-off exhibit); seed variance reported;
+  temperature scaling fit on CAL.
+- **Hypothesis (two-part):** (1) plan expectation — B1 ModernBERT beats Tier A LogReg
+  on TEST-IID macro-F1 with paired CI excluding zero. (2) The **pre-registered
+  surprise** from the ingest entry above — B2 DistilBERT's final CAL macro-F1 edging
+  all three B1 seeds — either survives or dissolves under the frozen harness protocol
+  (temperature scaling on CAL, full TEST-IID, bootstrap CIs).
+- **Method:** four harness runs (one per frozen config; single-variable: only the four
+  final-eval configs, nothing else changed), temperature fit on CAL (n=86,972), eval
+  on **full TEST-IID (n=104,443)**, MPS inference, git sha `25c3b0b`; bootstrap
+  n=1,000 seed 20260805. Paired comparisons via `harness.paired_bootstrap_delta` +
+  exact McNemar on complaint_id-aligned prediction artifacts (new
+  `scripts/compare_tier_b.py` → `results/tier_b_compare/summary.json`; script
+  smoke-validated on Tier A artifacts: self-comparison → delta exactly 0, 0 discordant
+  pairs; LogReg-vs-CNB reproduces the known +0.0340). Tier A baseline = run
+  `8e4d6345…` (`tier_a_logreg_test_iid`, macro-F1 0.7605 [0.7564, 0.7643]).
+- **Result — final TEST-IID records (all appended to `results/runs.jsonl`):**
+
+  | run | run_id | macro-F1 [95% CI] | acc | ECE | fitted T | wall-clock |
+  |---|---|---|---|---|---|---|
+  | tier_b1_sa | `8071d31d…` | 0.7878 [0.7836, 0.7918] | 0.8562 | 0.0061 | 1.775 | 13,225 s |
+  | tier_b1_sb | `adb96307…` | 0.7878 [0.7838, 0.7914] | 0.8557 | 0.0051 | 1.953 | 10,752 s |
+  | tier_b1_sc | `a523049a…` | 0.7863 [0.7821, 0.7898] | 0.8553 | 0.0076 | 1.750 | 15,155 s |
+  | tier_b2_s0 | `5517ebf1…` | **0.7950 [0.7909, 0.7988]** | 0.8609 | 0.0092 | 1.319 | 4,230 s |
+
+  **B1 seed variance (macro-F1):** mean **0.7873 ± 0.0009** (sd, ddof=1), range
+  0.0016 (0.7863–0.7878) — as tight as the training-script CAL spread.
+
+  **Paired deltas (macro-F1, paired bootstrap; McNemar exact, n=104,443):**
+
+  | comparison | Δ macro-F1 [95% CI] | Δ acc [95% CI] | McNemar p |
+  |---|---|---|---|
+  | B1 sa − A logreg | +0.0273 [+0.0234, +0.0312] | +0.0118 [+0.0097, +0.0138] | 1.3e-30 |
+  | B1 sb − A logreg | +0.0273 [+0.0235, +0.0311] | +0.0113 [+0.0093, +0.0132] | 7.3e-28 |
+  | B1 sc − A logreg | +0.0258 [+0.0220, +0.0297] | +0.0109 [+0.0089, +0.0130] | 2.3e-26 |
+  | B1 sa − B2 | **−0.0072 [−0.0106, −0.0038]** | −0.0047 [−0.0063, −0.0029] | 6.3e-08 |
+  | B1 sb − B2 | **−0.0072 [−0.0106, −0.0040]** | −0.0052 [−0.0069, −0.0036] | 2.4e-09 |
+  | B1 sc − B2 | **−0.0088 [−0.0119, −0.0054]** | −0.0056 [−0.0073, −0.0039] | 7.1e-11 |
+  | B2 − A logreg | +0.0345 [+0.0310, +0.0382] | +0.0165 [+0.0147, +0.0184] | 7.4e-65 |
+
+- **Findings:** (1) **B1 beats Tier A** — every seed's paired CI excludes zero
+  (+0.026 to +0.027 macro-F1); the plan's expected direction, now certified.
+  (2) **The pre-registered surprise is CONFIRMED on the frozen protocol: B2
+  DistilBERT beats B1 ModernBERT** — all three per-seed B1−B2 deltas are negative
+  with CIs excluding zero (−0.0072 to −0.0088) and McNemar p ≤ 6.3e-08. The
+  "headline accuracy model" is not the top Tier B point; the deployment point is,
+  and it also beats Tier A by +0.0345. (3) Fitted temperatures are all > 1
+  (B1 1.75–1.95, B2 1.32) — overconfident raw heads, consistent with the epoch-3
+  eval-loss rise seen in the training logs; post-scaling ECE lands at 0.005–0.009.
+  (4) B2 is also better calibrated in raw form (smallest T) and dominates on
+  AURC (0.0365 vs B1's 0.0420–0.0460), which matters for router thresholds.
+- **Interpretation caution (protocol-scoped claim):** "B2 > B1" is a claim about
+  *these frozen recipes* (max_seq_length 256, 3 epochs, published-recipe LRs,
+  final-epoch checkpoint) on *this task*, not about the architectures. The B1
+  training curves peak at epoch 2 then overfit; the frozen protocol ships the
+  final epoch, and no re-training or checkpoint cherry-picking is permitted.
+  The honest headline: under this protocol the 66M deployment model is the best
+  Tier B point. That is the finding, exactly as the Phase 2 accept line anticipates.
+- **Verdict:** ACCEPTED — Phase 2 eval-side criteria all met: both points CI'd on
+  TEST-IID ✓; B1-vs-A CI excludes zero ✓; B1-vs-B2 delta reported (sign inverted —
+  the finding) ✓; seed variance reported ✓; temperature scaling on CAL ✓.
+  Remaining Phase 2 task: DistilBERT int8 ONNX export + parity (next session).
+- **Repro:**
+  `uv run python -m triage_lab.harness configs/tier_b1_modernbert_sa.yaml` (and
+  `…_sb.yaml`, `…_sc.yaml`, `configs/tier_b2_distilbert_s0.yaml`) — one record each;
+  then `uv run python scripts/compare_tier_b.py` (defaults select the latest run per
+  config + the `8e4d6345…` Tier A baseline; expect the two tables above; writes
+  `results/tier_b_compare/summary.json`).
