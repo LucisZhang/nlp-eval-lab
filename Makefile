@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier prior-shift oov perturb perturb-tier-c perturb-report
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier prior-shift oov perturb perturb-tier-c perturb-report drift-charts
 
 setup:
 	uv sync --frozen
@@ -192,3 +192,14 @@ perturb-tier-c:
 # Exits nonzero (naming the cells) if any run in `make perturb` is still missing.
 perturb-report:
 	uv run python -m triage_lab.perturb_report --all
+
+# Drift rollup + charts (Phase 5 task 5): results/drift/summary.json — the 2022-H2 -> 2026-H1
+# timeline of every tier's LOGGED metrics (copied from runs.jsonl, never recomputed) plus
+# escalation-rate-over-time computed fresh from the frozen artifacts under the frozen v2-isocal
+# thresholds — and the three committed SVGs rendered from it. Offline; appends nothing to
+# results/runs.jsonl. Needs `make preds` (artifacts) and `make thresholds` (tau* constants).
+#
+# Rendering lives in the OPTIONAL `charts` extra so `uv sync --frozen` stays lean; the extra is
+# requested here explicitly. `--skip-charts` writes summary.json alone with no matplotlib.
+drift-charts:
+	uv run --extra charts python -m triage_lab.drift_charts --all

@@ -1328,3 +1328,100 @@ reported runs. Every portfolio-bound number carries its reproduction command
   clean baseline `70a1b0c4` (Phase 3). Raw receipts under
   `results/tier_c_raw/tier_c_haiku_zeroshot_test_iid_perturb_*_10/`.
   Tests: `uv run pytest tests/test_perturb.py -q` (70 passed).
+
+## 2026-08-10 — Phase 5 task 6: drift charts + escalation-rate-over-time rollup ($0, derivation-only)
+
+- **Context:** last pending non-stretch Phase 5 item; owner constraint: API budget
+  effectively exhausted (≈$1.3 left), so this task is **$0 by construction** — every
+  number derives from `results/runs.jsonl`, the frozen v2-isocal thresholds
+  (`results/thresholds/summary__v2-isocal__cost-f76ad15a.json`), committed Tier C
+  receipts, and the verified per-example artifacts (`data/preds/`). **No new
+  runs.jsonl records** (append-only log untouched; derivation outputs only, under
+  `results/drift/`).
+- **Hypothesis (§6.3.1's explicit question):** the router's escalation rate
+  self-adjusts as confidence drops under drift — i.e. the frozen CAL-derived τ*
+  produces a rising escalation rate as the 2026-H1 prior shift erodes Tier A
+  confidence, rather than silently answering at degraded quality.
+- **Method:** new `src/triage_lab/drift_charts.py` (+ `make drift-charts`, matplotlib
+  behind a new optional `charts` extra mirroring `tierc`; core `uv sync --frozen`
+  unchanged). Logged metrics (macro-F1/ECE/accuracy + CIs) are **copied** from
+  runs.jsonl, never recomputed. Escalation series computed fresh by applying the
+  frozen v2-isocal τ* to yearly `p_max` artifacts — calibration-space-consistent by
+  construction (yearly Tier A configs are isotonic-calibrated, byte-matching the
+  derivation rung's feature/param config; the v1 raw-vs-isocal mismatch cannot recur).
+  τ* values **loaded** from the thresholds file (family-matched: `a_to_human`
+  full_cal 0.500519 / paired 0.496807; `a_to_c_parsefail_human` paired 0.421712),
+  never transcribed; τ exempted from JSON rounding (`NO_ROUND_KEYS`) per the
+  `threshold_opt._tau_json` lesson. Parse-fail rows recovered per the Phase 4
+  convention (`cost_model.join_parse_failed` off committed receipts, joined on
+  `complaint_id`; escalated parse-fail → human, Tier C fallback label discarded, not
+  scored); receipt-joined counts cross-checked against each run's logged
+  `extra.parse_failures`. Paired arms: Sonnet artifact ids per slice (exactly 1,500,
+  asserted; identical to Haiku's on all four drift years, ⊂ Haiku's 5,000 at
+  test_iid). Bootstrap CIs n=1,000, percentile, seed 20260805 (harness convention).
+- **Result — escalation-rate-over-time (evidence class: measured, derived from frozen
+  artifacts under frozen τ; a_to_human on full slices, τ=0.500519, CAL operating
+  point 0.0994):**
+
+  | slice | n | escalation [95% CI] | answered-set acc | answered-set macro-F1 |
+  |---|---|---|---|---|
+  | 2022-H2 | 104,443 | 0.0947 [0.0930, 0.0964] | 0.8829 | 0.8110 |
+  | 2023 | 20,000 | 0.1032 [0.0992, 0.1076] | 0.8742 | 0.8077 |
+  | 2024 | 20,000 | 0.0993 [0.0951, 0.1033] | 0.8707 | 0.8076 |
+  | 2025 | 20,000 | 0.1003 [0.0961, 0.1047] | 0.8479 | 0.7776 |
+  | 2026-H1 | 20,000 | **0.1674 [0.1623, 0.1724]** | 0.7436 | 0.7178 |
+
+  `a_to_c_parsefail_human` (paired n=1,500, τ=0.4217, CAL point 0.0400): escalated→C
+  0.0320 / 0.0293 / 0.0380 / 0.0300 / **0.0513 [0.0407, 0.0627]**; escalation is
+  identical across terminal models by construction (pure Tier A property — built-in
+  consistency check). Parse-fail→human: Haiku 0 on every slice; Sonnet 1/4/1/0/4 of
+  12/19/10/16/26 slice-level parse-fails (human arm ≤0.27% of the paired subset).
+  Charts (3 SVGs under `results/drift/charts/`): macro-F1-over-time (all available
+  tiers, CI whiskers, taxonomy annotation), ECE-over-time (Tier A only — Tier C
+  structured-output p_max is a degenerate one-hot, ECE not meaningful, stated on the
+  chart), escalation-over-time (all three arms vs CAL reference lines). Every chart
+  carries an evidence-class footnote and support-size labels; `summary.json` carries
+  a full `evidence_class` block (Tier B series labeled "pending").
+- **Findings:** (1) **Hypothesis confirmed, with a sharper shape than expected:** the
+  frozen gate holds *flat at the CAL operating point for three straight years* (0.095–
+  0.103 vs 0.0994) and then jumps **+68% relative in 2026-H1** — escalation
+  self-adjusts late and abruptly, co-timed with the credit_reporting prior shift
+  (task 3), not gradually. The router's confidence signal sees the same cliff the
+  F1 curve does. (2) The selective gate is worth ~5 accuracy points at the cliff:
+  answered-set accuracy 0.7436 vs 0.6918 full-slice Tier A, bought with a 16.7%
+  human/escalation load. (3) The a_to_c arm's Tier C human-fallback stays ≤0.27%
+  everywhere — parse-failure is a stable, near-silent escape hatch, and Haiku's is
+  exactly zero on all 7,500 paired rows (5 slices × 1,500). (4) 2026-H1 is the only
+  slice where every series moves together: Tier A F1 cliff (task 1), prior-shift
+  decomposition (task 3), escalation-rate jump (this task) — one drift event, three
+  independent measurements.
+- **Deviations / limits:** (a) orchestrator's brief mis-assigned the a_to_human
+  paired τ (0.4968) to the a_to_c family; implementation caught it and used the
+  family-matched τ* loaded from the thresholds file — transplanting an argmin across
+  families is the same error class as the v1 calibration mismatch. (b) The a_to_c
+  2022-H2 point is on the 1,500 paired ids (consistent timeline support), NOT the
+  5,000-row support Phase 4's router_sim reported — the two numbers intentionally
+  differ; support sizes are labeled on the chart and recorded per row. (c) The 2023
+  taxonomy consolidation was announced 2023-04 but first observed in the snapshot at
+  2023-08, so the 2023 slice *straddles* it; charts mark the test_iid|2023 boundary
+  and shade the 2023 bucket rather than drawing a falsely precise dated line.
+  (d) `accuracy_system`/`macro_f1_system` credit human-routed rows as correct — the
+  cost model's P(error|human)=0 ASSUMPTION, labeled as such; `*_answered` views carry
+  no assumption. (e) CI note: `uv sync --frozen --extra charts` alone uninstalls the
+  tierb/tierc extras (4 tests then fail on missing torch/openai); full suite needs
+  all extras — 502 passed, 1 skipped with `--extra charts --extra tierb --extra
+  tierc`. (f) Determinism: with `--generated-at` pinned, `summary.json` + all SVGs
+  are byte-identical across runs; unpinned, only the `generated_at` line differs
+  (SVGs byte-identical regardless).
+- **Verdict:** Phase 5 acceptance line closed for available tiers — drift charts
+  rendered from the results log ✓, escalation-rate-over-time computed ✓, every
+  chart's evidence class labeled ✓. Tier B series/rows pending GPU; novel-class
+  probe remains the only (stretch) Phase 5 item. Cost: **$0.000** (no API calls).
+- **Repro:** `make drift-charts` (equivalently
+  `uv run --extra charts python -m triage_lab.drift_charts --all`); prerequisites
+  `make preds` and `make thresholds`. Outputs: `results/drift/summary.json`
+  (15 logged rows + 20 escalation rows) and `results/drift/charts/{macro_f1,ece,
+  escalation}_over_time.svg`. Source run ids: Tier A `8e4d6345`/`389d3e69`/
+  `c1c810e2`/`cef3a58c`/`2ae5d8ea`; Haiku `70a1b0c4`/`cf190ce2`/`b83b2d0d`/
+  `446fa236`/`aa2bc9a0`; Sonnet `e1503146`/`c82988bd`/`9d54ec58`/`daa58725`/
+  `55cffcbe`; thresholds run `40513354`, cost config `f76ad15a`.

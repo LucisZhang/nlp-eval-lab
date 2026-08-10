@@ -1,0 +1,1910 @@
+{
+  "arm_order": [
+    "a_to_human__full_slice",
+    "a_to_human__paired_subset",
+    "a_to_c_parsefail_human__paired_subset"
+  ],
+  "bootstrap": {
+    "applies_to": "escalation series ONLY; the logged series carries the CIs the harness recorded at run time and is not re-bootstrapped here",
+    "ci_pct": [
+      2.5,
+      97.5
+    ],
+    "method": "percentile",
+    "n_resamples": 1000,
+    "note": "one index draw per replicate feeds every statistic of that arm/slice",
+    "resample": "rows_within_slice",
+    "seed": 20260805
+  },
+  "cost_model": {
+    "evidence_class": {
+      "api_cost.tier_a": "estimated",
+      "api_cost.tier_c": "measured",
+      "params.c_human_usd": "estimated",
+      "params.c_misroute_usd": "estimated"
+    },
+    "params": {
+      "c_human_usd": 2.5,
+      "c_misroute_usd": 6.0
+    },
+    "path": "configs/cost_model_v1.yaml",
+    "sha256": "f76ad15a87457db64f50392d3a7bdd9ea65a581fa06478b6759538d16b5143d0",
+    "version": "v1"
+  },
+  "evidence_class": {
+    "cost_model.api_cost.tier_a": "estimated",
+    "cost_model.api_cost.tier_c": "measured",
+    "cost_model.params.c_human_usd": "estimated",
+    "cost_model.params.c_misroute_usd": "estimated",
+    "series.escalation.*.accuracy_answered": "measured (derived from frozen artifacts under frozen tau)",
+    "series.escalation.*.accuracy_machine": "measured (derived from frozen artifacts under frozen tau)",
+    "series.escalation.*.accuracy_system": "measured (derived from frozen artifacts under frozen tau); credits human-routed rows as correct per the cost model's P(error|human)=0 ASSUMPTION",
+    "series.escalation.*.coverage": "measured (derived from frozen artifacts under frozen tau)",
+    "series.escalation.*.escalation_rate": "measured (derived from frozen artifacts under frozen tau)",
+    "series.escalation.*.human_rate": "measured (derived from frozen artifacts under frozen tau)",
+    "series.escalation.*.macro_f1_answered": "measured (derived from frozen artifacts under frozen tau)",
+    "series.escalation.*.macro_f1_system": "measured (derived from frozen artifacts under frozen tau); credits human-routed rows as correct per the cost model's P(error|human)=0 ASSUMPTION",
+    "series.escalation.*.n_parse_failed": "measured (per-call receipts, committed under results/tier_c_raw/)",
+    "series.escalation.tier_b": "pending",
+    "series.logged.*.accuracy": "measured",
+    "series.logged.*.ece": "measured",
+    "series.logged.*.macro_f1": "measured",
+    "series.logged.*.n": "measured",
+    "series.logged.tier_b": "pending",
+    "taxonomy_change": "documented",
+    "thresholds.*.cal_escalation_rate": "derived on CAL",
+    "thresholds.*.tau_star": "derived on CAL (cost argmin) under cost-model parameters that are ESTIMATED"
+  },
+  "generated_at": "2026-08-10T01:57:40.175160Z",
+  "git_sha": "c08d740f876aaa0e7e8d5127e5ce9a5fe7e4a23c",
+  "notes": {
+    "calibration_space": "Only the v2-isocal derivation is used. The yearly Tier A runs are isotonic-calibrated in the same p_max space as the CAL rung the tau was fit on (tier_a_logreg_wordchar_isocal_cal), so the constants transfer without crossing a probability-space boundary. The v1 raw-CAL derivation is the documented calibration-mismatch lesson and is not reachable from this module.",
+    "ece_tier_c_excluded": "Tier C is excluded from the ECE chart. Its p_max is degenerate: structured output returns one label, the artifact's probability vector is one-hot, so every prediction carries confidence 1.0 and ECE collapses to the error rate rather than measuring calibration (Phase 4 finding). Plotting it beside Tier A's isotonic-calibrated ECE would invite a comparison that is not defined.",
+    "human_credit": "accuracy_system and macro_f1_system credit every human-routed row as correct (y_pred := y_true), matching the cost model's P(error|human)=0 assumption. That flatters any policy with a human arm, so accuracy_machine and macro_f1_answered are reported alongside over machine-answered rows only, where no assumption applies. Compare policies with different human rates using both.",
+    "parse_failures": "Per-row parse failure is read from the run's committed per-call receipts via cost_model.join_parse_failed (joined ON complaint_id, missing/non-boolean flag = hard failure), NOT from the predictions parquet: a parse-failed row's y_pred there is the frozen fallback label ('card') and is indistinguishable from a real prediction. Scoring follows router_sim.a_to_c_policy: an escalated parse-failed row routes to a human and its fallback label is discarded, never scored.",
+    "supports": "Supports differ by tier and are NOT comparable as populations: Tier A is the full slice (104,443 rows at 2022-H2, 20,000 per drift year); Tier C is a uniform-random subsample (5,000 at 2022-H2 for Haiku, 1,500 elsewhere). Paired arms are pinned to the 1,500 ids of that slice's Sonnet artifact, verified identical to Haiku's on the drift years and a verified subset of Haiku's 5,000 at 2022-H2.",
+    "tau_per_family": "Each arm uses the tau its OWN policy family's CAL sweep produced. The a_to_c cascade's tau is NOT the a_to_human tau: at CAL prices the cascade's argmin escalates 4.0% where the human arm escalates 10.7% on the same rows."
+  },
+  "op_version": "v2-isocal",
+  "repro_command": "uv run --extra charts python -m triage_lab.drift_charts --all",
+  "schema_version": 1,
+  "series": {
+    "escalation": [
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8848044266,
+          "ci_lo": 0.8809358403,
+          "point": 0.8828854553
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8957615637,
+          "ci_lo": 0.8921964612,
+          "point": 0.8939708741
+        },
+        "coverage_a": {
+          "ci_hi": 0.9069829955,
+          "ci_lo": 0.9035741984,
+          "point": 0.9053454995
+        },
+        "coverage_machine": {
+          "ci_hi": 0.9069829955,
+          "ci_lo": 0.9035741984,
+          "point": 0.9053454995
+        },
+        "dataset": "full_cal",
+        "escalation_rate": {
+          "ci_hi": 0.0964258016,
+          "ci_lo": 0.0930170045,
+          "point": 0.0946545005
+        },
+        "gate_config": null,
+        "gate_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+        "human_rate": {
+          "ci_hi": 0.0964258016,
+          "ci_lo": 0.0930170045,
+          "point": 0.0946545005
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.8151039858,
+          "ci_lo": 0.8067504913,
+          "point": 0.8110155527
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.8507373402,
+          "ci_lo": 0.8439215727,
+          "point": 0.8474809318
+        },
+        "n": 104443,
+        "n_answered_a": 94557,
+        "n_artifact": 104443,
+        "n_escalated": 9886,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 9886,
+        "policy": "a_to_human",
+        "slice": "test_iid",
+        "slice_label": "2022-H2",
+        "tau": 0.500518783264516,
+        "terminal_model": "human",
+        "terminal_run_id": null
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8966789668,
+          "ci_lo": 0.8599974055,
+          "point": 0.8771280533
+        },
+        "accuracy_system": {
+          "ci_hi": 0.9066666667,
+          "ci_lo": 0.8739833333,
+          "point": 0.8893333333
+        },
+        "coverage_a": {
+          "ci_hi": 0.916,
+          "ci_lo": 0.8853333333,
+          "point": 0.9006666667
+        },
+        "coverage_machine": {
+          "ci_hi": 0.916,
+          "ci_lo": 0.8853333333,
+          "point": 0.9006666667
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.1146666667,
+          "ci_lo": 0.084,
+          "point": 0.0993333333
+        },
+        "gate_config": null,
+        "gate_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+        "human_rate": {
+          "ci_hi": 0.1146666667,
+          "ci_lo": 0.084,
+          "point": 0.0993333333
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.8431838543,
+          "ci_lo": 0.7573877668,
+          "point": 0.8035203568
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.8742404207,
+          "ci_lo": 0.80716992,
+          "point": 0.8418804991
+        },
+        "n": 1500,
+        "n_answered_a": 1351,
+        "n_artifact": 104443,
+        "n_escalated": 149,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 149,
+        "policy": "a_to_human",
+        "slice": "test_iid",
+        "slice_label": "2022-H2",
+        "tau": 0.49680671423332523,
+        "terminal_model": "human",
+        "terminal_run_id": null
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8573333333,
+          "ci_lo": 0.82,
+          "point": 0.8373333333
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8573333333,
+          "ci_lo": 0.82,
+          "point": 0.8373333333
+        },
+        "coverage_a": {
+          "ci_hi": 0.9766666667,
+          "ci_lo": 0.9593333333,
+          "point": 0.968
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.0406666667,
+          "ci_lo": 0.0233333333,
+          "point": 0.032
+        },
+        "gate_config": "tier_a_logreg_test_iid",
+        "gate_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7964951603,
+          "ci_lo": 0.718938085,
+          "point": 0.7601622433
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7964951603,
+          "ci_lo": 0.718938085,
+          "point": 0.7601622433
+        },
+        "n": 1500,
+        "n_answered_a": 1452,
+        "n_artifact": 5000,
+        "n_escalated": 48,
+        "n_parse_failed_escalated": 0,
+        "n_parse_failed_slice": 0,
+        "n_to_human": 0,
+        "policy": "a_to_c_parsefail_human",
+        "slice": "test_iid",
+        "slice_label": "2022-H2",
+        "tau": 0.4217123129176118,
+        "terminal_model": "tier_c_haiku",
+        "terminal_run_id": "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e"
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8604806409,
+          "ci_lo": 0.8233333333,
+          "point": 0.841227485
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8606666667,
+          "ci_lo": 0.8233333333,
+          "point": 0.8413333333
+        },
+        "coverage_a": {
+          "ci_hi": 0.9766666667,
+          "ci_lo": 0.9593333333,
+          "point": 0.968
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 0.998,
+          "point": 0.9993333333
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.0406666667,
+          "ci_lo": 0.0233333333,
+          "point": 0.032
+        },
+        "gate_config": "tier_a_logreg_test_iid",
+        "gate_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+        "human_rate": {
+          "ci_hi": 0.002,
+          "ci_lo": 0.0,
+          "point": 0.0006666667
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.8042374007,
+          "ci_lo": 0.7278807795,
+          "point": 0.7672450014
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.8043367737,
+          "ci_lo": 0.7280562996,
+          "point": 0.7673709064
+        },
+        "n": 1500,
+        "n_answered_a": 1452,
+        "n_artifact": 1500,
+        "n_escalated": 48,
+        "n_parse_failed_escalated": 1,
+        "n_parse_failed_slice": 12,
+        "n_to_human": 1,
+        "policy": "a_to_c_parsefail_human",
+        "slice": "test_iid",
+        "slice_label": "2022-H2",
+        "tau": 0.4217123129176118,
+        "terminal_model": "tier_c_sonnet",
+        "terminal_run_id": "e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a"
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8792067847,
+          "ci_lo": 0.8690690762,
+          "point": 0.8741707086
+        },
+        "accuracy_system": {
+          "ci_hi": 0.89165,
+          "ci_lo": 0.8825,
+          "point": 0.88715
+        },
+        "coverage_a": {
+          "ci_hi": 0.90085,
+          "ci_lo": 0.8924,
+          "point": 0.89685
+        },
+        "coverage_machine": {
+          "ci_hi": 0.90085,
+          "ci_lo": 0.8924,
+          "point": 0.89685
+        },
+        "dataset": "full_cal",
+        "escalation_rate": {
+          "ci_hi": 0.1076,
+          "ci_lo": 0.09915,
+          "point": 0.10315
+        },
+        "gate_config": null,
+        "gate_run_id": "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+        "human_rate": {
+          "ci_hi": 0.1076,
+          "ci_lo": 0.09915,
+          "point": 0.10315
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.8170010484,
+          "ci_lo": 0.7990133719,
+          "point": 0.8077019057
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.8540971086,
+          "ci_lo": 0.8391142593,
+          "point": 0.8465296075
+        },
+        "n": 20000,
+        "n_answered_a": 17937,
+        "n_artifact": 20000,
+        "n_escalated": 2063,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 2063,
+        "policy": "a_to_human",
+        "slice": "test_drift_2023",
+        "slice_label": "2023",
+        "tau": 0.500518783264516,
+        "terminal_model": "human",
+        "terminal_run_id": null
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8834498854,
+          "ci_lo": 0.8461538462,
+          "point": 0.8646063282
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8946666667,
+          "ci_lo": 0.8606666667,
+          "point": 0.8773333333
+        },
+        "coverage_a": {
+          "ci_hi": 0.9206666667,
+          "ci_lo": 0.892,
+          "point": 0.906
+        },
+        "coverage_machine": {
+          "ci_hi": 0.9206666667,
+          "ci_lo": 0.892,
+          "point": 0.906
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.108,
+          "ci_lo": 0.0793333333,
+          "point": 0.094
+        },
+        "gate_config": null,
+        "gate_run_id": "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+        "human_rate": {
+          "ci_hi": 0.108,
+          "ci_lo": 0.0793333333,
+          "point": 0.094
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.8293283694,
+          "ci_lo": 0.7592109192,
+          "point": 0.7972954884
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.8617457907,
+          "ci_lo": 0.8037302085,
+          "point": 0.8344612695
+        },
+        "n": 1500,
+        "n_answered_a": 1359,
+        "n_artifact": 20000,
+        "n_escalated": 141,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 141,
+        "policy": "a_to_human",
+        "slice": "test_drift_2023",
+        "slice_label": "2023",
+        "tau": 0.49680671423332523,
+        "terminal_model": "human",
+        "terminal_run_id": null
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8506666667,
+          "ci_lo": 0.8126666667,
+          "point": 0.8313333333
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8506666667,
+          "ci_lo": 0.8126666667,
+          "point": 0.8313333333
+        },
+        "coverage_a": {
+          "ci_hi": 0.9786666667,
+          "ci_lo": 0.9613333333,
+          "point": 0.9706666667
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.0386666667,
+          "ci_lo": 0.0213333333,
+          "point": 0.0293333333
+        },
+        "gate_config": "tier_a_logreg_test_drift_2023",
+        "gate_run_id": "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7811257293,
+          "ci_lo": 0.7124984453,
+          "point": 0.7474435071
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7811257293,
+          "ci_lo": 0.7124984453,
+          "point": 0.7474435071
+        },
+        "n": 1500,
+        "n_answered_a": 1456,
+        "n_artifact": 1500,
+        "n_escalated": 44,
+        "n_parse_failed_escalated": 0,
+        "n_parse_failed_slice": 0,
+        "n_to_human": 0,
+        "policy": "a_to_c_parsefail_human",
+        "slice": "test_drift_2023",
+        "slice_label": "2023",
+        "tau": 0.4217123129176118,
+        "terminal_model": "tier_c_haiku",
+        "terminal_run_id": "cf190ce25eceb5a6d149e932dfe3e82fb5fe0d882730efaeec8718a604eb6911"
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8535165984,
+          "ci_lo": 0.8160504336,
+          "point": 0.8342245989
+        },
+        "accuracy_system": {
+          "ci_hi": 0.854,
+          "ci_lo": 0.8166666667,
+          "point": 0.8346666667
+        },
+        "coverage_a": {
+          "ci_hi": 0.9786666667,
+          "ci_lo": 0.9613333333,
+          "point": 0.9706666667
+        },
+        "coverage_machine": {
+          "ci_hi": 0.9993333333,
+          "ci_lo": 0.9946666667,
+          "point": 0.9973333333
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.0386666667,
+          "ci_lo": 0.0213333333,
+          "point": 0.0293333333
+        },
+        "gate_config": "tier_a_logreg_test_drift_2023",
+        "gate_run_id": "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+        "human_rate": {
+          "ci_hi": 0.0053333333,
+          "ci_lo": 0.0006666667,
+          "point": 0.0026666667
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7834047653,
+          "ci_lo": 0.7134955788,
+          "point": 0.7494125541
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7843038877,
+          "ci_lo": 0.7146495945,
+          "point": 0.7505336194
+        },
+        "n": 1500,
+        "n_answered_a": 1456,
+        "n_artifact": 1500,
+        "n_escalated": 44,
+        "n_parse_failed_escalated": 4,
+        "n_parse_failed_slice": 19,
+        "n_to_human": 4,
+        "policy": "a_to_c_parsefail_human",
+        "slice": "test_drift_2023",
+        "slice_label": "2023",
+        "tau": 0.4217123129176118,
+        "terminal_model": "tier_c_sonnet",
+        "terminal_run_id": "c82988bd748b509131bfc91a50baf97eb0d64df0f4cab36a8d2db37832af4ace"
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8753834566,
+          "ci_lo": 0.8656760853,
+          "point": 0.8706561563
+        },
+        "accuracy_system": {
+          "ci_hi": 0.88770125,
+          "ci_lo": 0.87904875,
+          "point": 0.8835
+        },
+        "coverage_a": {
+          "ci_hi": 0.90485125,
+          "ci_lo": 0.89665,
+          "point": 0.9007
+        },
+        "coverage_machine": {
+          "ci_hi": 0.90485125,
+          "ci_lo": 0.89665,
+          "point": 0.9007
+        },
+        "dataset": "full_cal",
+        "escalation_rate": {
+          "ci_hi": 0.10335,
+          "ci_lo": 0.09514875,
+          "point": 0.0993
+        },
+        "gate_config": null,
+        "gate_run_id": "c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e",
+        "human_rate": {
+          "ci_hi": 0.10335,
+          "ci_lo": 0.09514875,
+          "point": 0.0993
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.8172755776,
+          "ci_lo": 0.7972593205,
+          "point": 0.8076258038
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.8547749555,
+          "ci_lo": 0.8397044395,
+          "point": 0.8473982714
+        },
+        "n": 20000,
+        "n_answered_a": 18014,
+        "n_artifact": 20000,
+        "n_escalated": 1986,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 1986,
+        "policy": "a_to_human",
+        "slice": "test_drift_2024",
+        "slice_label": "2024",
+        "tau": 0.500518783264516,
+        "terminal_model": "human",
+        "terminal_run_id": null
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8833117742,
+          "ci_lo": 0.8464884747,
+          "point": 0.8661710037
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8953333333,
+          "ci_lo": 0.862,
+          "point": 0.88
+        },
+        "coverage_a": {
+          "ci_hi": 0.912,
+          "ci_lo": 0.8813333333,
+          "point": 0.8966666667
+        },
+        "coverage_machine": {
+          "ci_hi": 0.912,
+          "ci_lo": 0.8813333333,
+          "point": 0.8966666667
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.1186666667,
+          "ci_lo": 0.088,
+          "point": 0.1033333333
+        },
+        "gate_config": null,
+        "gate_run_id": "c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e",
+        "human_rate": {
+          "ci_hi": 0.1186666667,
+          "ci_lo": 0.088,
+          "point": 0.1033333333
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.8322705786,
+          "ci_lo": 0.7634612007,
+          "point": 0.8026070922
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.8671382739,
+          "ci_lo": 0.8113338619,
+          "point": 0.843134217
+        },
+        "n": 1500,
+        "n_answered_a": 1345,
+        "n_artifact": 20000,
+        "n_escalated": 155,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 155,
+        "policy": "a_to_human",
+        "slice": "test_drift_2024",
+        "slice_label": "2024",
+        "tau": 0.49680671423332523,
+        "terminal_model": "human",
+        "terminal_run_id": null
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.846,
+          "ci_lo": 0.8093166667,
+          "point": 0.828
+        },
+        "accuracy_system": {
+          "ci_hi": 0.846,
+          "ci_lo": 0.8093166667,
+          "point": 0.828
+        },
+        "coverage_a": {
+          "ci_hi": 0.9713333333,
+          "ci_lo": 0.9526666667,
+          "point": 0.962
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.0473333333,
+          "ci_lo": 0.0286666667,
+          "point": 0.038
+        },
+        "gate_config": "tier_a_logreg_test_drift_2024",
+        "gate_run_id": "c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7789524658,
+          "ci_lo": 0.716032498,
+          "point": 0.7501958945
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7789524658,
+          "ci_lo": 0.716032498,
+          "point": 0.7501958945
+        },
+        "n": 1500,
+        "n_answered_a": 1443,
+        "n_artifact": 1500,
+        "n_escalated": 57,
+        "n_parse_failed_escalated": 0,
+        "n_parse_failed_slice": 0,
+        "n_to_human": 0,
+        "policy": "a_to_c_parsefail_human",
+        "slice": "test_drift_2024",
+        "slice_label": "2024",
+        "tau": 0.4217123129176118,
+        "terminal_model": "tier_c_haiku",
+        "terminal_run_id": "b83b2d0d0854f9fadf4378e72d3896d33684e15c5be0af9fea54ebf328e18e4a"
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8526666667,
+          "ci_lo": 0.816,
+          "point": 0.8352234823
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8526666667,
+          "ci_lo": 0.816,
+          "point": 0.8353333333
+        },
+        "coverage_a": {
+          "ci_hi": 0.9713333333,
+          "ci_lo": 0.9526666667,
+          "point": 0.962
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 0.998,
+          "point": 0.9993333333
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.0473333333,
+          "ci_lo": 0.0286666667,
+          "point": 0.038
+        },
+        "gate_config": "tier_a_logreg_test_drift_2024",
+        "gate_run_id": "c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e",
+        "human_rate": {
+          "ci_hi": 0.002,
+          "ci_lo": 0.0,
+          "point": 0.0006666667
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7890204283,
+          "ci_lo": 0.7300279401,
+          "point": 0.7618199739
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7894751335,
+          "ci_lo": 0.7302145622,
+          "point": 0.7619846547
+        },
+        "n": 1500,
+        "n_answered_a": 1443,
+        "n_artifact": 1500,
+        "n_escalated": 57,
+        "n_parse_failed_escalated": 1,
+        "n_parse_failed_slice": 10,
+        "n_to_human": 1,
+        "policy": "a_to_c_parsefail_human",
+        "slice": "test_drift_2024",
+        "slice_label": "2024",
+        "tau": 0.4217123129176118,
+        "terminal_model": "tier_c_sonnet",
+        "terminal_run_id": "9d54ec585e65b249a3490a1989611c4c39b938df7e9734017068e5d0b9a6e0a4"
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8530122847,
+          "ci_lo": 0.8431447223,
+          "point": 0.8478937424
+        },
+        "accuracy_system": {
+          "ci_hi": 0.86775,
+          "ci_lo": 0.8588,
+          "point": 0.86315
+        },
+        "coverage_a": {
+          "ci_hi": 0.90385125,
+          "ci_lo": 0.89535,
+          "point": 0.8997
+        },
+        "coverage_machine": {
+          "ci_hi": 0.90385125,
+          "ci_lo": 0.89535,
+          "point": 0.8997
+        },
+        "dataset": "full_cal",
+        "escalation_rate": {
+          "ci_hi": 0.10465,
+          "ci_lo": 0.09614875,
+          "point": 0.1003
+        },
+        "gate_config": null,
+        "gate_run_id": "cef3a58caf5261da12e083e33712480a10dee3d09667985646bb484e5fadcf47",
+        "human_rate": {
+          "ci_hi": 0.10465,
+          "ci_lo": 0.09614875,
+          "point": 0.1003
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.787170213,
+          "ci_lo": 0.7678531945,
+          "point": 0.7776419227
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.8297778051,
+          "ci_lo": 0.8142108387,
+          "point": 0.8220104373
+        },
+        "n": 20000,
+        "n_answered_a": 17994,
+        "n_artifact": 20000,
+        "n_escalated": 2006,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 2006,
+        "policy": "a_to_human",
+        "slice": "test_drift_2025",
+        "slice_label": "2025",
+        "tau": 0.500518783264516,
+        "terminal_model": "human",
+        "terminal_run_id": null
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8349380478,
+          "ci_lo": 0.7914784836,
+          "point": 0.8133725202
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8506666667,
+          "ci_lo": 0.81,
+          "point": 0.8306666667
+        },
+        "coverage_a": {
+          "ci_hi": 0.922,
+          "ci_lo": 0.892,
+          "point": 0.9073333333
+        },
+        "coverage_machine": {
+          "ci_hi": 0.922,
+          "ci_lo": 0.892,
+          "point": 0.9073333333
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.108,
+          "ci_lo": 0.078,
+          "point": 0.0926666667
+        },
+        "gate_config": null,
+        "gate_run_id": "cef3a58caf5261da12e083e33712480a10dee3d09667985646bb484e5fadcf47",
+        "human_rate": {
+          "ci_hi": 0.108,
+          "ci_lo": 0.078,
+          "point": 0.0926666667
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.765247304,
+          "ci_lo": 0.677331348,
+          "point": 0.7260841927
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.8090432242,
+          "ci_lo": 0.7399539268,
+          "point": 0.7765669881
+        },
+        "n": 1500,
+        "n_answered_a": 1361,
+        "n_artifact": 20000,
+        "n_escalated": 139,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 139,
+        "policy": "a_to_human",
+        "slice": "test_drift_2025",
+        "slice_label": "2025",
+        "tau": 0.49680671423332523,
+        "terminal_model": "human",
+        "terminal_run_id": null
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8046666667,
+          "ci_lo": 0.7633166667,
+          "point": 0.784
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8046666667,
+          "ci_lo": 0.7633166667,
+          "point": 0.784
+        },
+        "coverage_a": {
+          "ci_hi": 0.9786666667,
+          "ci_lo": 0.9613166667,
+          "point": 0.97
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.0386833333,
+          "ci_lo": 0.0213333333,
+          "point": 0.03
+        },
+        "gate_config": "tier_a_logreg_test_drift_2025",
+        "gate_run_id": "cef3a58caf5261da12e083e33712480a10dee3d09667985646bb484e5fadcf47",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.743348567,
+          "ci_lo": 0.6676973105,
+          "point": 0.7088408548
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.743348567,
+          "ci_lo": 0.6676973105,
+          "point": 0.7088408548
+        },
+        "n": 1500,
+        "n_answered_a": 1455,
+        "n_artifact": 1500,
+        "n_escalated": 45,
+        "n_parse_failed_escalated": 0,
+        "n_parse_failed_slice": 0,
+        "n_to_human": 0,
+        "policy": "a_to_c_parsefail_human",
+        "slice": "test_drift_2025",
+        "slice_label": "2025",
+        "tau": 0.4217123129176118,
+        "terminal_model": "tier_c_haiku",
+        "terminal_run_id": "446fa23682d51469f7c2fe8732aaf0b8f72e3b243026e039de752daaf1f901dc"
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8046666667,
+          "ci_lo": 0.7626666667,
+          "point": 0.784
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8046666667,
+          "ci_lo": 0.7626666667,
+          "point": 0.784
+        },
+        "coverage_a": {
+          "ci_hi": 0.9786666667,
+          "ci_lo": 0.9613166667,
+          "point": 0.97
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.0386833333,
+          "ci_lo": 0.0213333333,
+          "point": 0.03
+        },
+        "gate_config": "tier_a_logreg_test_drift_2025",
+        "gate_run_id": "cef3a58caf5261da12e083e33712480a10dee3d09667985646bb484e5fadcf47",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7368145543,
+          "ci_lo": 0.6592111733,
+          "point": 0.7008920375
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7368145543,
+          "ci_lo": 0.6592111733,
+          "point": 0.7008920375
+        },
+        "n": 1500,
+        "n_answered_a": 1455,
+        "n_artifact": 1500,
+        "n_escalated": 45,
+        "n_parse_failed_escalated": 0,
+        "n_parse_failed_slice": 16,
+        "n_to_human": 0,
+        "policy": "a_to_c_parsefail_human",
+        "slice": "test_drift_2025",
+        "slice_label": "2025",
+        "tau": 0.4217123129176118,
+        "terminal_model": "tier_c_sonnet",
+        "terminal_run_id": "daa587253ea2b2fac263eedbfcc6b132b2b123caa25933740553d23e2d604068"
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.750194959,
+          "ci_lo": 0.7364710456,
+          "point": 0.7436343983
+        },
+        "accuracy_system": {
+          "ci_hi": 0.79200125,
+          "ci_lo": 0.78049875,
+          "point": 0.78655
+        },
+        "coverage_a": {
+          "ci_hi": 0.83770125,
+          "ci_lo": 0.8276,
+          "point": 0.8326
+        },
+        "coverage_machine": {
+          "ci_hi": 0.83770125,
+          "ci_lo": 0.8276,
+          "point": 0.8326
+        },
+        "dataset": "full_cal",
+        "escalation_rate": {
+          "ci_hi": 0.1724,
+          "ci_lo": 0.16229875,
+          "point": 0.1674
+        },
+        "gate_config": null,
+        "gate_run_id": "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb",
+        "human_rate": {
+          "ci_hi": 0.1724,
+          "ci_lo": 0.16229875,
+          "point": 0.1674
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7253132379,
+          "ci_lo": 0.7094850363,
+          "point": 0.7178222314
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7760364624,
+          "ci_lo": 0.7636397196,
+          "point": 0.7701096738
+        },
+        "n": 20000,
+        "n_answered_a": 16652,
+        "n_artifact": 20000,
+        "n_escalated": 3348,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 3348,
+        "policy": "a_to_human",
+        "slice": "test_drift_2026h1",
+        "slice_label": "2026-H1",
+        "tau": 0.500518783264516,
+        "terminal_model": "human",
+        "terminal_run_id": null
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.763393323,
+          "ci_lo": 0.7159767067,
+          "point": 0.7403008709
+        },
+        "accuracy_system": {
+          "ci_hi": 0.802,
+          "ci_lo": 0.7606666667,
+          "point": 0.7813333333
+        },
+        "coverage_a": {
+          "ci_hi": 0.86,
+          "ci_lo": 0.8233333333,
+          "point": 0.842
+        },
+        "coverage_machine": {
+          "ci_hi": 0.86,
+          "ci_lo": 0.8233333333,
+          "point": 0.842
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.1766666667,
+          "ci_lo": 0.14,
+          "point": 0.158
+        },
+        "gate_config": null,
+        "gate_run_id": "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb",
+        "human_rate": {
+          "ci_hi": 0.1766666667,
+          "ci_lo": 0.14,
+          "point": 0.158
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7494281462,
+          "ci_lo": 0.6932116578,
+          "point": 0.722585448
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7934422678,
+          "ci_lo": 0.7493812878,
+          "point": 0.7721390218
+        },
+        "n": 1500,
+        "n_answered_a": 1263,
+        "n_artifact": 20000,
+        "n_escalated": 237,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 237,
+        "policy": "a_to_human",
+        "slice": "test_drift_2026h1",
+        "slice_label": "2026-H1",
+        "tau": 0.49680671423332523,
+        "terminal_model": "human",
+        "terminal_run_id": null
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.7240166667,
+          "ci_lo": 0.6793333333,
+          "point": 0.7013333333
+        },
+        "accuracy_system": {
+          "ci_hi": 0.7240166667,
+          "ci_lo": 0.6793333333,
+          "point": 0.7013333333
+        },
+        "coverage_a": {
+          "ci_hi": 0.9593333333,
+          "ci_lo": 0.9373166667,
+          "point": 0.9486666667
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.0626833333,
+          "ci_lo": 0.0406666667,
+          "point": 0.0513333333
+        },
+        "gate_config": "tier_a_logreg_test_drift_2026h1",
+        "gate_run_id": "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7117252954,
+          "ci_lo": 0.6620488556,
+          "point": 0.6873074414
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7117252954,
+          "ci_lo": 0.6620488556,
+          "point": 0.6873074414
+        },
+        "n": 1500,
+        "n_answered_a": 1423,
+        "n_artifact": 1500,
+        "n_escalated": 77,
+        "n_parse_failed_escalated": 0,
+        "n_parse_failed_slice": 0,
+        "n_to_human": 0,
+        "policy": "a_to_c_parsefail_human",
+        "slice": "test_drift_2026h1",
+        "slice_label": "2026-H1",
+        "tau": 0.4217123129176118,
+        "terminal_model": "tier_c_haiku",
+        "terminal_run_id": "aa2bc9a0ea889fbb058f1ad3eec943937ad0af025be0dd2462e78f1b4282e072"
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.7319596344,
+          "ci_lo": 0.6875792668,
+          "point": 0.7092245989
+        },
+        "accuracy_system": {
+          "ci_hi": 0.7326666667,
+          "ci_lo": 0.688,
+          "point": 0.71
+        },
+        "coverage_a": {
+          "ci_hi": 0.9593333333,
+          "ci_lo": 0.9373166667,
+          "point": 0.9486666667
+        },
+        "coverage_machine": {
+          "ci_hi": 0.9993333333,
+          "ci_lo": 0.9946666667,
+          "point": 0.9973333333
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.0626833333,
+          "ci_lo": 0.0406666667,
+          "point": 0.0513333333
+        },
+        "gate_config": "tier_a_logreg_test_drift_2026h1",
+        "gate_run_id": "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb",
+        "human_rate": {
+          "ci_hi": 0.0053333333,
+          "ci_lo": 0.0006666667,
+          "point": 0.0026666667
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7227590302,
+          "ci_lo": 0.6728483833,
+          "point": 0.6980852458
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7230193738,
+          "ci_lo": 0.6732659324,
+          "point": 0.698538829
+        },
+        "n": 1500,
+        "n_answered_a": 1423,
+        "n_artifact": 1500,
+        "n_escalated": 77,
+        "n_parse_failed_escalated": 4,
+        "n_parse_failed_slice": 26,
+        "n_to_human": 4,
+        "policy": "a_to_c_parsefail_human",
+        "slice": "test_drift_2026h1",
+        "slice_label": "2026-H1",
+        "tau": 0.4217123129176118,
+        "terminal_model": "tier_c_sonnet",
+        "terminal_run_id": "55cffcbe955034ee72ef4c65432cacd2d513b31df3c4498970c9f1f53ab7b825"
+      }
+    ],
+    "logged": [
+      {
+        "accuracy": {
+          "ci_hi": 0.8465105368,
+          "ci_lo": 0.8422582174,
+          "point": 0.8444318911
+        },
+        "config_name": "tier_a_logreg_test_iid",
+        "config_sha256": "b22be1e963760c2f277562c4afa89eb1014dd6bc0fd1cb86fd588c12d6f3b8c0",
+        "ece": {
+          "ci_hi": 0.1079057163,
+          "ci_lo": 0.1039554617,
+          "point": 0.1059189721
+        },
+        "evidence_class": "measured",
+        "git_sha": "c61b4641963178c09a69c67f7b440e9d5e813c87",
+        "macro_f1": {
+          "ci_hi": 0.7643278637,
+          "ci_lo": 0.7563731957,
+          "point": 0.7605270747
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.8444318911,
+          "logged": 0.8444318911,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 104443,
+        "n_split_full": 104443,
+        "run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+        "slice": "test_iid",
+        "slice_label": "2022-H2",
+        "split": "test_iid",
+        "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2",
+        "support": "full_slice",
+        "tier": "tier_a",
+        "tier_display": "Tier A (LogReg word+char, isotonic)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.839,
+          "ci_lo": 0.8286,
+          "point": 0.83385
+        },
+        "config_name": "tier_a_logreg_test_drift_2023",
+        "config_sha256": "68ea22911c1792a763c1ecd6afc9054a824863d6e6bdf5352712d03376f93102",
+        "ece": {
+          "ci_hi": 0.1091192905,
+          "ci_lo": 0.099725146,
+          "point": 0.1039172368
+        },
+        "evidence_class": "measured",
+        "git_sha": "831ac6e521d83e5e6e367b96f36db6378d67d415",
+        "macro_f1": {
+          "ci_hi": 0.7662506595,
+          "ci_lo": 0.7496179885,
+          "point": 0.757909508
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.83385,
+          "logged": 0.83385,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 20000,
+        "n_split_full": 20000,
+        "run_id": "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+        "slice": "test_drift_2023",
+        "slice_label": "2023",
+        "split": "test_drift_2023",
+        "split_sha256": "debbd70416a816faa04b51cac994697b07bc70914e1f3e9d49b27b443a5a5475",
+        "support": "full_slice",
+        "tier": "tier_a",
+        "tier_display": "Tier A (LogReg word+char, isotonic)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.83555,
+          "ci_lo": 0.8253475,
+          "point": 0.8304
+        },
+        "config_name": "tier_a_logreg_test_drift_2024",
+        "config_sha256": "4a8f8bc78eba1529fd9fae4d1765064f86c0f0641eeef8e6c951ef1b51c0c608",
+        "ece": {
+          "ci_hi": 0.1018406128,
+          "ci_lo": 0.0920681193,
+          "point": 0.0969839106
+        },
+        "evidence_class": "measured",
+        "git_sha": "831ac6e521d83e5e6e367b96f36db6378d67d415",
+        "macro_f1": {
+          "ci_hi": 0.7568683124,
+          "ci_lo": 0.7375927223,
+          "point": 0.7478134297
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.8304,
+          "logged": 0.8304,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 20000,
+        "n_split_full": 20000,
+        "run_id": "c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e",
+        "slice": "test_drift_2024",
+        "slice_label": "2024",
+        "split": "test_drift_2024",
+        "split_sha256": "b61db6317217e664d69df19aaa7d84737f0e6d8b3169729795bf18616375c6ec",
+        "support": "full_slice",
+        "tier": "tier_a",
+        "tier_display": "Tier A (LogReg word+char, isotonic)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.8159525,
+          "ci_lo": 0.80574875,
+          "point": 0.81085
+        },
+        "config_name": "tier_a_logreg_test_drift_2025",
+        "config_sha256": "d911ceaf446d5f26467deba3ebc128e1ec15e6451ca0102d4fd93722f3f7c469",
+        "ece": {
+          "ci_hi": 0.09029763,
+          "ci_lo": 0.0809719702,
+          "point": 0.08545465
+        },
+        "evidence_class": "measured",
+        "git_sha": "831ac6e521d83e5e6e367b96f36db6378d67d415",
+        "macro_f1": {
+          "ci_hi": 0.7385667475,
+          "ci_lo": 0.7205498948,
+          "point": 0.729477821
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.81085,
+          "logged": 0.81085,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 20000,
+        "n_split_full": 20000,
+        "run_id": "cef3a58caf5261da12e083e33712480a10dee3d09667985646bb484e5fadcf47",
+        "slice": "test_drift_2025",
+        "slice_label": "2025",
+        "split": "test_drift_2025",
+        "split_sha256": "3c4ea70e7d489ba37963cca3512ea09d952b3c85a587752c96a1a13d5760f56f",
+        "support": "full_slice",
+        "tier": "tier_a",
+        "tier_display": "Tier A (LogReg word+char, isotonic)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.6982,
+          "ci_lo": 0.68579875,
+          "point": 0.69185
+        },
+        "config_name": "tier_a_logreg_test_drift_2026h1",
+        "config_sha256": "8f71b1290461c9aab4fcb7afc2332cf949edf928eeaf8e46af46587ad6c6e89e",
+        "ece": {
+          "ci_hi": 0.0488327321,
+          "ci_lo": 0.0373912963,
+          "point": 0.0422399658
+        },
+        "evidence_class": "measured",
+        "git_sha": "831ac6e521d83e5e6e367b96f36db6378d67d415",
+        "macro_f1": {
+          "ci_hi": 0.6728713604,
+          "ci_lo": 0.6584781441,
+          "point": 0.6655573869
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.69185,
+          "logged": 0.69185,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 20000,
+        "n_split_full": 20000,
+        "run_id": "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb",
+        "slice": "test_drift_2026h1",
+        "slice_label": "2026-H1",
+        "split": "test_drift_2026h1",
+        "split_sha256": "c0cecbdb41aa24b29dba171f42ad593441af9fe355d358e4367596468901a264",
+        "support": "full_slice",
+        "tier": "tier_a",
+        "tier_display": "Tier A (LogReg word+char, isotonic)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.857,
+          "ci_lo": 0.8368,
+          "point": 0.8474
+        },
+        "config_name": "tier_c_haiku_zeroshot_test_iid",
+        "config_sha256": "32a286d7169cc5619533cc574f600c5ecc359aed4242d901b7045b75e960b7ee",
+        "ece": {
+          "ci_hi": 0.1632,
+          "ci_lo": 0.143,
+          "point": 0.1526
+        },
+        "evidence_class": "measured",
+        "git_sha": "9812499cb07c23b5a6f615b32d29a5d65d0c4098",
+        "macro_f1": {
+          "ci_hi": 0.7886063648,
+          "ci_lo": 0.7499398191,
+          "point": 0.7697019858
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.8474,
+          "logged": 0.8474,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 5000,
+        "n_split_full": 104443,
+        "run_id": "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e",
+        "slice": "test_iid",
+        "slice_label": "2022-H2",
+        "split": "test_iid",
+        "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2",
+        "support": "uniform_random_subsample_5000",
+        "tier": "tier_c_haiku",
+        "tier_display": "Tier C Haiku 4.5 (zero-shot)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.8333333333,
+          "ci_lo": 0.79465,
+          "point": 0.8133333333
+        },
+        "config_name": "tier_c_haiku_zeroshot_test_drift_2023",
+        "config_sha256": "d53d928f4613e540da195e77c308df38b1aba3581a8186d843045bcbd6c33006",
+        "ece": {
+          "ci_hi": 0.20535,
+          "ci_lo": 0.1666666667,
+          "point": 0.1866666667
+        },
+        "evidence_class": "measured",
+        "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+        "macro_f1": {
+          "ci_hi": 0.769200004,
+          "ci_lo": 0.6993574295,
+          "point": 0.7356587664
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.8133333333,
+          "logged": 0.8133333333,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 1500,
+        "n_split_full": 20000,
+        "run_id": "cf190ce25eceb5a6d149e932dfe3e82fb5fe0d882730efaeec8718a604eb6911",
+        "slice": "test_drift_2023",
+        "slice_label": "2023",
+        "split": "test_drift_2023",
+        "split_sha256": "debbd70416a816faa04b51cac994697b07bc70914e1f3e9d49b27b443a5a5475",
+        "support": "uniform_random_subsample_1500",
+        "tier": "tier_c_haiku",
+        "tier_display": "Tier C Haiku 4.5 (zero-shot)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.8466666667,
+          "ci_lo": 0.8113333333,
+          "point": 0.83
+        },
+        "config_name": "tier_c_haiku_zeroshot_test_drift_2024",
+        "config_sha256": "c3a85ccf9173b31e33515ceda0c87bfd4115d811fb0bd5c248f7d4071e0cecad",
+        "ece": {
+          "ci_hi": 0.1886666667,
+          "ci_lo": 0.1533333333,
+          "point": 0.17
+        },
+        "evidence_class": "measured",
+        "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+        "macro_f1": {
+          "ci_hi": 0.7918241394,
+          "ci_lo": 0.7274290752,
+          "point": 0.7617287978
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.83,
+          "logged": 0.83,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 1500,
+        "n_split_full": 20000,
+        "run_id": "b83b2d0d0854f9fadf4378e72d3896d33684e15c5be0af9fea54ebf328e18e4a",
+        "slice": "test_drift_2024",
+        "slice_label": "2024",
+        "split": "test_drift_2024",
+        "split_sha256": "b61db6317217e664d69df19aaa7d84737f0e6d8b3169729795bf18616375c6ec",
+        "support": "uniform_random_subsample_1500",
+        "tier": "tier_c_haiku",
+        "tier_display": "Tier C Haiku 4.5 (zero-shot)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.8246833333,
+          "ci_lo": 0.7846666667,
+          "point": 0.8053333333
+        },
+        "config_name": "tier_c_haiku_zeroshot_test_drift_2025",
+        "config_sha256": "6b04fce58013fb84cdcc78e967d3e78e536a04161b4ae2fcd3382298043d44ac",
+        "ece": {
+          "ci_hi": 0.2153333333,
+          "ci_lo": 0.1753166667,
+          "point": 0.1946666667
+        },
+        "evidence_class": "measured",
+        "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+        "macro_f1": {
+          "ci_hi": 0.7903436073,
+          "ci_lo": 0.7295503814,
+          "point": 0.7638782235
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.8053333333,
+          "logged": 0.8053333333,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 1500,
+        "n_split_full": 20000,
+        "run_id": "446fa23682d51469f7c2fe8732aaf0b8f72e3b243026e039de752daaf1f901dc",
+        "slice": "test_drift_2025",
+        "slice_label": "2025",
+        "split": "test_drift_2025",
+        "split_sha256": "3c4ea70e7d489ba37963cca3512ea09d952b3c85a587752c96a1a13d5760f56f",
+        "support": "uniform_random_subsample_1500",
+        "tier": "tier_c_haiku",
+        "tier_display": "Tier C Haiku 4.5 (zero-shot)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.7446833333,
+          "ci_lo": 0.7013333333,
+          "point": 0.7226666667
+        },
+        "config_name": "tier_c_haiku_zeroshot_test_drift_2026h1",
+        "config_sha256": "0f8da3cdb81ee25f89c20a085de5dfbe00bdd64661019e815783978339052e6f",
+        "ece": {
+          "ci_hi": 0.2986666667,
+          "ci_lo": 0.2553166667,
+          "point": 0.2773333333
+        },
+        "evidence_class": "measured",
+        "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+        "macro_f1": {
+          "ci_hi": 0.7508320741,
+          "ci_lo": 0.7047830351,
+          "point": 0.7278480316
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.7226666667,
+          "logged": 0.7226666667,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 1500,
+        "n_split_full": 20000,
+        "run_id": "aa2bc9a0ea889fbb058f1ad3eec943937ad0af025be0dd2462e78f1b4282e072",
+        "slice": "test_drift_2026h1",
+        "slice_label": "2026-H1",
+        "split": "test_drift_2026h1",
+        "split_sha256": "c0cecbdb41aa24b29dba171f42ad593441af9fe355d358e4367596468901a264",
+        "support": "uniform_random_subsample_1500",
+        "tier": "tier_c_haiku",
+        "tier_display": "Tier C Haiku 4.5 (zero-shot)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.8593333333,
+          "ci_lo": 0.822,
+          "point": 0.8413333333
+        },
+        "config_name": "tier_c_sonnet_zeroshot_test_iid",
+        "config_sha256": "ee874a9a114611887b8062879cf3b49f584748e8ae86babbb0b9d2b05c23295f",
+        "ece": {
+          "ci_hi": 0.178,
+          "ci_lo": 0.1406666667,
+          "point": 0.1586666667
+        },
+        "evidence_class": "measured",
+        "git_sha": "f67cf6ad3cfb7ee2a2c05556b41ac5ef648cf20d",
+        "macro_f1": {
+          "ci_hi": 0.7730001275,
+          "ci_lo": 0.7014555324,
+          "point": 0.7417927865
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.8413333333,
+          "logged": 0.8413333333,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 1500,
+        "n_split_full": 104443,
+        "run_id": "e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a",
+        "slice": "test_iid",
+        "slice_label": "2022-H2",
+        "split": "test_iid",
+        "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2",
+        "support": "uniform_random_subsample_1500",
+        "tier": "tier_c_sonnet",
+        "tier_display": "Tier C Sonnet 5 (zero-shot)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.842,
+          "ci_lo": 0.8033333333,
+          "point": 0.822
+        },
+        "config_name": "tier_c_sonnet_zeroshot_test_drift_2023",
+        "config_sha256": "ed3647f7f38c9a4e3bfbe75242a5bc4eb0e14b1c6d7195ec1ad7378445af45c9",
+        "ece": {
+          "ci_hi": 0.1966666667,
+          "ci_lo": 0.158,
+          "point": 0.178
+        },
+        "evidence_class": "measured",
+        "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+        "macro_f1": {
+          "ci_hi": 0.7863023888,
+          "ci_lo": 0.7188202819,
+          "point": 0.7543520719
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.822,
+          "logged": 0.822,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 1500,
+        "n_split_full": 20000,
+        "run_id": "c82988bd748b509131bfc91a50baf97eb0d64df0f4cab36a8d2db37832af4ace",
+        "slice": "test_drift_2023",
+        "slice_label": "2023",
+        "split": "test_drift_2023",
+        "split_sha256": "debbd70416a816faa04b51cac994697b07bc70914e1f3e9d49b27b443a5a5475",
+        "support": "uniform_random_subsample_1500",
+        "tier": "tier_c_sonnet",
+        "tier_display": "Tier C Sonnet 5 (zero-shot)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.8533333333,
+          "ci_lo": 0.8173333333,
+          "point": 0.8353333333
+        },
+        "config_name": "tier_c_sonnet_zeroshot_test_drift_2024",
+        "config_sha256": "490d7df411419c56e26a690a8c5449f57477b20c50fe42276816748b9e6d18b1",
+        "ece": {
+          "ci_hi": 0.1826666667,
+          "ci_lo": 0.1466666667,
+          "point": 0.1646666667
+        },
+        "evidence_class": "measured",
+        "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+        "macro_f1": {
+          "ci_hi": 0.8074904799,
+          "ci_lo": 0.7462444258,
+          "point": 0.7795433628
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.8353333333,
+          "logged": 0.8353333333,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 1500,
+        "n_split_full": 20000,
+        "run_id": "9d54ec585e65b249a3490a1989611c4c39b938df7e9734017068e5d0b9a6e0a4",
+        "slice": "test_drift_2024",
+        "slice_label": "2024",
+        "split": "test_drift_2024",
+        "split_sha256": "b61db6317217e664d69df19aaa7d84737f0e6d8b3169729795bf18616375c6ec",
+        "support": "uniform_random_subsample_1500",
+        "tier": "tier_c_sonnet",
+        "tier_display": "Tier C Sonnet 5 (zero-shot)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.8300166667,
+          "ci_lo": 0.7913333333,
+          "point": 0.8113333333
+        },
+        "config_name": "tier_c_sonnet_zeroshot_test_drift_2025",
+        "config_sha256": "4513c3696f1dce71cb4950df41f84c6e232fd34bfac86775427ca6515415b836",
+        "ece": {
+          "ci_hi": 0.2086666667,
+          "ci_lo": 0.1699833333,
+          "point": 0.1886666667
+        },
+        "evidence_class": "measured",
+        "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+        "macro_f1": {
+          "ci_hi": 0.7905904804,
+          "ci_lo": 0.7273250179,
+          "point": 0.7633527788
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.8113333333,
+          "logged": 0.8113333333,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 1500,
+        "n_split_full": 20000,
+        "run_id": "daa587253ea2b2fac263eedbfcc6b132b2b123caa25933740553d23e2d604068",
+        "slice": "test_drift_2025",
+        "slice_label": "2025",
+        "split": "test_drift_2025",
+        "split_sha256": "3c4ea70e7d489ba37963cca3512ea09d952b3c85a587752c96a1a13d5760f56f",
+        "support": "uniform_random_subsample_1500",
+        "tier": "tier_c_sonnet",
+        "tier_display": "Tier C Sonnet 5 (zero-shot)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.81735,
+          "ci_lo": 0.7759833333,
+          "point": 0.7966666667
+        },
+        "config_name": "tier_c_sonnet_zeroshot_test_drift_2026h1",
+        "config_sha256": "65f18c3fa9c7942b84b6f31ddcd49c0e43ef9f722ddcae26fd76746bf7f716e7",
+        "ece": {
+          "ci_hi": 0.2240166667,
+          "ci_lo": 0.18265,
+          "point": 0.2033333333
+        },
+        "evidence_class": "measured",
+        "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+        "macro_f1": {
+          "ci_hi": 0.8046404807,
+          "ci_lo": 0.7586629776,
+          "point": 0.7820744482
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.7966666667,
+          "logged": 0.7966666667,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 1500,
+        "n_split_full": 20000,
+        "run_id": "55cffcbe955034ee72ef4c65432cacd2d513b31df3c4498970c9f1f53ab7b825",
+        "slice": "test_drift_2026h1",
+        "slice_label": "2026-H1",
+        "split": "test_drift_2026h1",
+        "split_sha256": "c0cecbdb41aa24b29dba171f42ad593441af9fe355d358e4367596468901a264",
+        "support": "uniform_random_subsample_1500",
+        "tier": "tier_c_sonnet",
+        "tier_display": "Tier C Sonnet 5 (zero-shot)"
+      }
+    ]
+  },
+  "slice_labels": {
+    "test_drift_2023": "2023",
+    "test_drift_2024": "2024",
+    "test_drift_2025": "2025",
+    "test_drift_2026h1": "2026-H1",
+    "test_iid": "2022-H2"
+  },
+  "slice_order": [
+    "test_iid",
+    "test_drift_2023",
+    "test_drift_2024",
+    "test_drift_2025",
+    "test_drift_2026h1"
+  ],
+  "slice_sizes": {
+    "test_drift_2023": 20000,
+    "test_drift_2024": 20000,
+    "test_drift_2025": 20000,
+    "test_drift_2026h1": 20000,
+    "test_iid": 104443
+  },
+  "taxonomy_change": {
+    "affected_class": "credit_reporting",
+    "announced": "2023-04",
+    "era_boundary": "B2",
+    "event": "CFPB credit-reporting product consolidation",
+    "evidence_class": "documented",
+    "first_affected_slice": "test_drift_2023",
+    "last_unaffected_slice": "test_iid",
+    "note": "Announced 2023-04, first observed in the frozen snapshot at 2023-08, so the test_drift_2023 slice STRADDLES the change rather than sitting after it. Charts draw the marker at the test_iid|2023 boundary (the last slice fully before the change) and shade the 2023 slice as the straddling one; a single dated vertical line inside a yearly bucket would claim a resolution the x-axis does not have.",
+    "observed_in_data": "2023-08",
+    "source": "taxonomy_map.yaml (frozen with the snapshot); UPGRADE_PLAN.md \u00a75"
+  },
+  "thresholds": {
+    "a_to_c_parsefail_human__paired_subset": {
+      "cal_coverage_a": 0.96,
+      "cal_dataset": "paired_subset",
+      "cal_escalation_rate": 0.04,
+      "cal_n_answered_at_tau_star": 1440,
+      "evidence_class": "derived on CAL (cost argmin) under cost-model parameters that are ESTIMATED",
+      "policy_family": "a_to_c_parsefail_human",
+      "source_file": "results/thresholds/a_to_c_parsefail_human__paired_subset__40513354__cost-f76ad15a.json",
+      "source_sha256": "90c75af2ac723b05d9ef19903dd6059e834b85060c8bc1484c77d72f8f599f73",
+      "tau_star": 0.4217123129176118,
+      "tier_a_cal_config": "tier_a_logreg_wordchar_isocal_cal",
+      "tier_a_cal_run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc"
+    },
+    "a_to_human__full_slice": {
+      "cal_coverage_a": 0.900634687,
+      "cal_dataset": "full_cal",
+      "cal_escalation_rate": 0.099365313,
+      "cal_n_answered_at_tau_star": 78330,
+      "evidence_class": "derived on CAL (cost argmin) under cost-model parameters that are ESTIMATED",
+      "policy_family": "a_to_human",
+      "source_file": "results/thresholds/a_to_human__full_cal__40513354__cost-f76ad15a.json",
+      "source_sha256": "726cf6e2dd9740cb606bcb23aca462561adcd925c700e73a21fbd2cc5eb57107",
+      "tau_star": 0.500518783264516,
+      "tier_a_cal_config": "tier_a_logreg_wordchar_isocal_cal",
+      "tier_a_cal_run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc"
+    },
+    "a_to_human__paired_subset": {
+      "cal_coverage_a": 0.8933333333,
+      "cal_dataset": "paired_subset",
+      "cal_escalation_rate": 0.1066666667,
+      "cal_n_answered_at_tau_star": 1340,
+      "evidence_class": "derived on CAL (cost argmin) under cost-model parameters that are ESTIMATED",
+      "policy_family": "a_to_human",
+      "source_file": "results/thresholds/a_to_human__paired_subset__40513354__cost-f76ad15a.json",
+      "source_sha256": "12c95b66e3b41d5dd9ca9859711154743b59d582bbf1abb61fa9e8915c6aac2e",
+      "tau_star": 0.49680671423332523,
+      "tier_a_cal_config": "tier_a_logreg_wordchar_isocal_cal",
+      "tier_a_cal_run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc"
+    }
+  },
+  "tier_b": {
+    "evidence_class": "pending",
+    "note": "Tier B has no yearly drift runs, so it has no series on any chart. Reported as an explicit pending slot rather than omitted: 'not measured' and 'measured to be absent' are different claims. When Tier B lands, one entry in TIER_CONFIGS adds its series with no other change.",
+    "status": "pending",
+    "tiers": [
+      "tier_b1_modernbert",
+      "tier_b2_distilbert"
+    ]
+  },
+  "tier_order": [
+    "tier_a",
+    "tier_c_haiku",
+    "tier_c_sonnet"
+  ]
+}
