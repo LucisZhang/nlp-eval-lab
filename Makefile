@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier prior-shift oov perturb perturb-tier-c perturb-report drift-charts
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier prior-shift oov perturb perturb-tier-c perturb-report drift-charts demo-data
 
 setup:
 	uv sync --frozen
@@ -203,3 +203,17 @@ perturb-report:
 # requested here explicitly. `--skip-charts` writes summary.json alone with no matplotlib.
 drift-charts:
 	uv run --extra charts python -m triage_lab.drift_charts --all
+
+# Static demo payload (Phase 6): the nine committed JSON files under demo/data/ that
+# demo/DATA_CONTRACT.md specifies — run index, frontier points, router policies + the CAL
+# tau sweep, drift rollup, calibration bins, the frozen 200-row curated sample set with its
+# per-tier receipts, and the receipts rollup. Deterministic (no wall-clock stamp, sorted
+# keys), offline, and append-nothing: every number is copied from results/ or derived from
+# a frozen per-example artifact.
+#
+# Needs `make preds` (artifacts), `make router-sim`/`make frontier` (op-v2 evidence) and
+# `make drift-charts` (summary.json), plus data/splits for the narratives. The curated set
+# is FROZEN: this target regenerates the selection and fails loud if it no longer matches
+# demo/data/curated_ids.json (CLAUDE.md rule 2).
+demo-data:
+	uv run python -m triage_lab.demo_build --all

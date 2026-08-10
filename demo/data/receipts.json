@@ -1,0 +1,395 @@
+{
+  "repro": {
+    "note": "append-only; corrections reference superseded run ids",
+    "results_log": "results/runs.jsonl"
+  },
+  "runs": {
+    "182774b6977de8625c08a7a351c6eca98cf72aa51aedcaae0c3eb6f1596b301a": {
+      "config_name": "tier_c_haiku_zeroshot_test_iid_perturb_typo_10",
+      "evidence_class": "measured",
+      "logged_cost_usd": 2.121648,
+      "model": "anthropic/claude-haiku-4.5",
+      "n_calls": 1500,
+      "parse_failures": 0,
+      "provider_mix": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_iid_perturb_typo_10/20260809T160937Z/calls.jsonl",
+      "receipts_sha256": "a6cab75768c5579dfa7013a5e6da0b50e151ef9a9a62832ace006c94e591467d",
+      "run_id": "182774b6977de8625c08a7a351c6eca98cf72aa51aedcaae0c3eb6f1596b301a",
+      "token_totals": {
+        "completion": 16062,
+        "prompt": 2041338
+      },
+      "total_cost_usd": 2.1216479999999995
+    },
+    "1f2b8f2acde66690d6841d48c8cbdeb15b7abc340a3b6af9a0e17f107743b1f9": {
+      "config_name": "tier_c_sonnet_zeroshot_v2params_test_postcutoff",
+      "evidence_class": "measured",
+      "logged_cost_usd": 5.805496,
+      "model": "anthropic/claude-sonnet-5",
+      "n_calls": 1500,
+      "parse_failures": 3,
+      "provider_mix": {
+        "Amazon Bedrock": 1495,
+        "Azure": 5
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_sonnet_zeroshot_v2params_test_postcutoff/20260807T040553Z/calls.jsonl",
+      "receipts_sha256": "db3041cca6d943a4ef7f6ffa5eef9da99b7453fcb27c4b01ec632b681fdaf27f",
+      "run_id": "1f2b8f2acde66690d6841d48c8cbdeb15b7abc340a3b6af9a0e17f107743b1f9",
+      "token_totals": {
+        "completion": 24582,
+        "prompt": 2779838
+      },
+      "total_cost_usd": 5.805496
+    },
+    "237bffae43f102aa11be8f85f349c5666b22fdbd9f99cfefa267d11fc8bcbe47": {
+      "config_name": "tier_c_haiku_zeroshot_test_iid_perturb_ocr_10",
+      "evidence_class": "measured",
+      "logged_cost_usd": 2.025869,
+      "model": "anthropic/claude-haiku-4.5",
+      "n_calls": 1500,
+      "parse_failures": 0,
+      "provider_mix": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_iid_perturb_ocr_10/20260809T161520Z/calls.jsonl",
+      "receipts_sha256": "b177c1924a7c689dcaefba4516cfd56f85de67910e59352b1547e9f2f8650121",
+      "run_id": "237bffae43f102aa11be8f85f349c5666b22fdbd9f99cfefa267d11fc8bcbe47",
+      "token_totals": {
+        "completion": 16081,
+        "prompt": 1945464
+      },
+      "total_cost_usd": 2.025869
+    },
+    "3f3109515f37c1f30de9436d39f271d36d5e4497e050b2de9e9788708df686e5": {
+      "config_name": "tier_c_haiku_ablation_zeroshot_cal",
+      "evidence_class": "measured",
+      "logged_cost_usd": 1.962928,
+      "model": "anthropic/claude-haiku-4.5",
+      "n_calls": 1500,
+      "parse_failures": 0,
+      "provider_mix": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_ablation_zeroshot_cal/20260806T160510Z/calls.jsonl",
+      "receipts_sha256": "7b7e1984b61e7310ce9541da855a19e5cff7841d8697737c530b4d43c680c0de",
+      "run_id": "3f3109515f37c1f30de9436d39f271d36d5e4497e050b2de9e9788708df686e5",
+      "token_totals": {
+        "completion": 16091,
+        "prompt": 1882473
+      },
+      "total_cost_usd": 1.9629279999999998
+    },
+    "446fa23682d51469f7c2fe8732aaf0b8f72e3b243026e039de752daaf1f901dc": {
+      "config_name": "tier_c_haiku_zeroshot_test_drift_2025",
+      "evidence_class": "measured",
+      "logged_cost_usd": 2.022696,
+      "model": "anthropic/claude-haiku-4.5",
+      "n_calls": 1500,
+      "parse_failures": 0,
+      "provider_mix": {
+        "Amazon Bedrock": 1493,
+        "Anthropic": 7
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_drift_2025/20260808T162206Z/calls.jsonl",
+      "receipts_sha256": "61d2c30c2f77fe71291752b5ca0163179db448323519ce178ff4476f710fd282",
+      "run_id": "446fa23682d51469f7c2fe8732aaf0b8f72e3b243026e039de752daaf1f901dc",
+      "token_totals": {
+        "completion": 16206,
+        "prompt": 1941666
+      },
+      "total_cost_usd": 2.022696
+    },
+    "55cffcbe955034ee72ef4c65432cacd2d513b31df3c4498970c9f1f53ab7b825": {
+      "config_name": "tier_c_sonnet_zeroshot_test_drift_2026h1",
+      "evidence_class": "measured",
+      "logged_cost_usd": 5.714067999999995,
+      "model": "anthropic/claude-sonnet-5",
+      "n_calls": 1500,
+      "parse_failures": 26,
+      "provider_mix": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_sonnet_zeroshot_test_drift_2026h1/20260808T170245Z/calls.jsonl",
+      "receipts_sha256": "819006c16d4c53d44f22d8ee7a75f70e0cc9ebe38355f5fc692c3a02783c8980",
+      "run_id": "55cffcbe955034ee72ef4c65432cacd2d513b31df3c4498970c9f1f53ab7b825",
+      "token_totals": {
+        "completion": 21484,
+        "prompt": 2749614
+      },
+      "total_cost_usd": 5.714068
+    },
+    "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e": {
+      "config_name": "tier_c_haiku_zeroshot_test_iid",
+      "evidence_class": "measured",
+      "logged_cost_usd": 6.575085999999997,
+      "model": "anthropic/claude-haiku-4.5",
+      "n_calls": 5000,
+      "parse_failures": 0,
+      "provider_mix": {
+        "Amazon Bedrock": 4984,
+        "Anthropic": 16
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_iid/20260807T004109Z/calls.jsonl",
+      "receipts_sha256": "6c26f0f9bbf65316a48617a89dacd0f4d92bd97b9cae1d078b2ee902629ff62e",
+      "run_id": "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e",
+      "token_totals": {
+        "completion": 53557,
+        "prompt": 6307301
+      },
+      "total_cost_usd": 6.575086
+    },
+    "77cbd36f53b0b49ed392fe80ff622857204b70697669da84192888f957a417a3": {
+      "config_name": "tier_c_haiku_smoke_zeroshot_cal",
+      "evidence_class": "measured",
+      "logged_cost_usd": 0.033745,
+      "model": "anthropic/claude-haiku-4.5",
+      "n_calls": 25,
+      "parse_failures": 0,
+      "provider_mix": {
+        "Amazon Bedrock": 25
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_smoke_zeroshot_cal/20260806T152544Z/calls.jsonl",
+      "receipts_sha256": "f2173df2416ce89c2da06bd5ebb2ff715644e422e54169f176dc946a9b431f84",
+      "run_id": "77cbd36f53b0b49ed392fe80ff622857204b70697669da84192888f957a417a3",
+      "token_totals": {
+        "completion": 263,
+        "prompt": 32430
+      },
+      "total_cost_usd": 0.033745
+    },
+    "82af4e01cf6ed6cb628f719fe3d7d2d3cebb0abe0f334c8cce71312a2f6666f1": {
+      "config_name": "tier_c_haiku_zeroshot_test_postcutoff",
+      "evidence_class": "measured",
+      "logged_cost_usd": 6.852128000000005,
+      "model": "anthropic/claude-haiku-4.5",
+      "n_calls": 5000,
+      "parse_failures": 0,
+      "provider_mix": {
+        "Amazon Bedrock": 4998,
+        "Anthropic": 2
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_postcutoff/20260807T005820Z/calls.jsonl",
+      "receipts_sha256": "b9bb5b82da51ef9e42bad1fcbf32afed009d0dad0733f18d763eff86bcf0df44",
+      "run_id": "82af4e01cf6ed6cb628f719fe3d7d2d3cebb0abe0f334c8cce71312a2f6666f1",
+      "token_totals": {
+        "completion": 52828,
+        "prompt": 6587988
+      },
+      "total_cost_usd": 6.8521279999999996
+    },
+    "9d54ec585e65b249a3490a1989611c4c39b938df7e9734017068e5d0b9a6e0a4": {
+      "config_name": "tier_c_sonnet_zeroshot_test_drift_2024",
+      "evidence_class": "measured",
+      "logged_cost_usd": 5.565741999999987,
+      "model": "anthropic/claude-sonnet-5",
+      "n_calls": 1500,
+      "parse_failures": 10,
+      "provider_mix": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_sonnet_zeroshot_test_drift_2024/20260808T164302Z/calls.jsonl",
+      "receipts_sha256": "8e72c63726290b24d85b8ebbe9e4644838fe9a40c8422f5fd31913592c88d377",
+      "run_id": "9d54ec585e65b249a3490a1989611c4c39b938df7e9734017068e5d0b9a6e0a4",
+      "token_totals": {
+        "completion": 21945,
+        "prompt": 2673146
+      },
+      "total_cost_usd": 5.565742
+    },
+    "aa2bc9a0ea889fbb058f1ad3eec943937ad0af025be0dd2462e78f1b4282e072": {
+      "config_name": "tier_c_haiku_zeroshot_test_drift_2026h1",
+      "evidence_class": "measured",
+      "logged_cost_usd": 2.037794000000003,
+      "model": "anthropic/claude-haiku-4.5",
+      "n_calls": 1500,
+      "parse_failures": 0,
+      "provider_mix": {
+        "Amazon Bedrock": 1476,
+        "Anthropic": 24
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_drift_2026h1/20260808T162714Z/calls.jsonl",
+      "receipts_sha256": "a2469ccdac082b8190c9f3a564a1ccf675daff1fb64f8d50aa1c4285f955006c",
+      "run_id": "aa2bc9a0ea889fbb058f1ad3eec943937ad0af025be0dd2462e78f1b4282e072",
+      "token_totals": {
+        "completion": 15929,
+        "prompt": 1958149
+      },
+      "total_cost_usd": 2.037794
+    },
+    "b83b2d0d0854f9fadf4378e72d3896d33684e15c5be0af9fea54ebf328e18e4a": {
+      "config_name": "tier_c_haiku_zeroshot_test_drift_2024",
+      "evidence_class": "measured",
+      "logged_cost_usd": 1.9898130000000014,
+      "model": "anthropic/claude-haiku-4.5",
+      "n_calls": 1500,
+      "parse_failures": 0,
+      "provider_mix": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_drift_2024/20260808T161749Z/calls.jsonl",
+      "receipts_sha256": "ac2f37293e36a3dd1cbbd1d6179fe60284b969e93ba53639ccdd5acdbee9982f",
+      "run_id": "b83b2d0d0854f9fadf4378e72d3896d33684e15c5be0af9fea54ebf328e18e4a",
+      "token_totals": {
+        "completion": 16178,
+        "prompt": 1908923
+      },
+      "total_cost_usd": 1.9898129999999998
+    },
+    "c7598f8489a93a0e36f7b2c9fe8fa1313bdb9ce76c630fc4c29e8e4353e21541": {
+      "config_name": "tier_c_haiku_ablation_fewshot_cal",
+      "evidence_class": "measured",
+      "logged_cost_usd": 3.9217780000000064,
+      "model": "anthropic/claude-haiku-4.5",
+      "n_calls": 1500,
+      "parse_failures": 0,
+      "provider_mix": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_ablation_fewshot_cal/20260806T160011Z/calls.jsonl",
+      "receipts_sha256": "62d858095bffacd6d4b6691fc2a1297122a892cd7db1018b2826a70d662adc26",
+      "run_id": "c7598f8489a93a0e36f7b2c9fe8fa1313bdb9ce76c630fc4c29e8e4353e21541",
+      "token_totals": {
+        "completion": 14561,
+        "prompt": 3848973
+      },
+      "total_cost_usd": 3.9217779999999998
+    },
+    "c7e53e2a9c31a0b7019697569ec5e9d07b41b1059eaacd01155cc07830cdcd35": {
+      "config_name": "tier_c_haiku_zeroshot_test_iid_perturb_case_10",
+      "evidence_class": "measured",
+      "logged_cost_usd": 2.139367999999999,
+      "model": "anthropic/claude-haiku-4.5",
+      "n_calls": 1500,
+      "parse_failures": 0,
+      "provider_mix": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_iid_perturb_case_10/20260809T162012Z/calls.jsonl",
+      "receipts_sha256": "4aaee57c4c1560c4b2d4bde5942e076c29401f433dcf53e872c88c46956a781e",
+      "run_id": "c7e53e2a9c31a0b7019697569ec5e9d07b41b1059eaacd01155cc07830cdcd35",
+      "token_totals": {
+        "completion": 16073,
+        "prompt": 2059003
+      },
+      "total_cost_usd": 2.139368
+    },
+    "c82988bd748b509131bfc91a50baf97eb0d64df0f4cab36a8d2db37832af4ace": {
+      "config_name": "tier_c_sonnet_zeroshot_test_drift_2023",
+      "evidence_class": "measured",
+      "logged_cost_usd": 5.504483999999994,
+      "model": "anthropic/claude-sonnet-5",
+      "n_calls": 1500,
+      "parse_failures": 19,
+      "provider_mix": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_sonnet_zeroshot_test_drift_2023/20260808T163321Z/calls.jsonl",
+      "receipts_sha256": "d61e694e1a5e2e45183bb4f54fc1439b325c88856d8d36cbe974bae747e518cb",
+      "run_id": "c82988bd748b509131bfc91a50baf97eb0d64df0f4cab36a8d2db37832af4ace",
+      "token_totals": {
+        "completion": 22064,
+        "prompt": 2641922
+      },
+      "total_cost_usd": 5.504484
+    },
+    "cf190ce25eceb5a6d149e932dfe3e82fb5fe0d882730efaeec8718a604eb6911": {
+      "config_name": "tier_c_haiku_zeroshot_test_drift_2023",
+      "evidence_class": "measured",
+      "logged_cost_usd": 1.9749710000000003,
+      "model": "anthropic/claude-haiku-4.5",
+      "n_calls": 1500,
+      "parse_failures": 0,
+      "provider_mix": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_drift_2023/20260808T161326Z/calls.jsonl",
+      "receipts_sha256": "f1d3720a3e59fb3a9c5752f7db3210649e2081408d9c43d5643939b3edcfe256",
+      "run_id": "cf190ce25eceb5a6d149e932dfe3e82fb5fe0d882730efaeec8718a604eb6911",
+      "token_totals": {
+        "completion": 16043,
+        "prompt": 1894756
+      },
+      "total_cost_usd": 1.9749709999999998
+    },
+    "d1c42d7d977d80bcd4e1958f9cbe3fc2e37858814fa27eaf08f742420dedf0a1": {
+      "config_name": "tier_c_sonnet_zeroshot_test_postcutoff",
+      "evidence_class": "measured",
+      "logged_cost_usd": 5.7794659999999975,
+      "model": "anthropic/claude-sonnet-5",
+      "n_calls": 1500,
+      "parse_failures": 37,
+      "provider_mix": {
+        "Amazon Bedrock": 1493,
+        "Azure": 7
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_sonnet_zeroshot_test_postcutoff/20260807T020907Z/calls.jsonl",
+      "receipts_sha256": "f7369d80c4087c98dfc2d1924fac117e9e07f2d272c424c3ef094dcfe725d4c3",
+      "run_id": "d1c42d7d977d80bcd4e1958f9cbe3fc2e37858814fa27eaf08f742420dedf0a1",
+      "token_totals": {
+        "completion": 21979,
+        "prompt": 2779838
+      },
+      "total_cost_usd": 5.779465999999999
+    },
+    "daa587253ea2b2fac263eedbfcc6b132b2b123caa25933740553d23e2d604068": {
+      "config_name": "tier_c_sonnet_zeroshot_test_drift_2025",
+      "evidence_class": "measured",
+      "logged_cost_usd": 5.672699999999995,
+      "model": "anthropic/claude-sonnet-5",
+      "n_calls": 1500,
+      "parse_failures": 16,
+      "provider_mix": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_sonnet_zeroshot_test_drift_2025/20260808T165249Z/calls.jsonl",
+      "receipts_sha256": "14f830f8f982795af53d3d39e800453e678520da3c567e7c09454f9c5959ae69",
+      "run_id": "daa587253ea2b2fac263eedbfcc6b132b2b123caa25933740553d23e2d604068",
+      "token_totals": {
+        "completion": 22005,
+        "prompt": 2726325
+      },
+      "total_cost_usd": 5.6727
+    },
+    "e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a": {
+      "config_name": "tier_c_sonnet_zeroshot_test_iid",
+      "evidence_class": "measured",
+      "logged_cost_usd": 5.4880739999999975,
+      "model": "anthropic/claude-sonnet-5",
+      "n_calls": 1500,
+      "parse_failures": 12,
+      "provider_mix": {
+        "Amazon Bedrock": 1495,
+        "Azure": 5
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_sonnet_zeroshot_test_iid/20260807T015725Z/calls.jsonl",
+      "receipts_sha256": "4875d59e388f0cf80aa50d80c5cc7d96014e322fda8ff4b4e20ee1e299485685",
+      "run_id": "e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a",
+      "token_totals": {
+        "completion": 21677,
+        "prompt": 2635652
+      },
+      "total_cost_usd": 5.488073999999999
+    },
+    "e22fba2a2dc1b6fdf34f3aea83c92183e81301c933240457aba13720d74b6893": {
+      "config_name": "tier_c_haiku_smoke_fewshot_cal",
+      "evidence_class": "measured",
+      "logged_cost_usd": 0.066395,
+      "model": "anthropic/claude-haiku-4.5",
+      "n_calls": 25,
+      "parse_failures": 0,
+      "provider_mix": {
+        "Amazon Bedrock": 25
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_smoke_fewshot_cal/20260806T152409Z/calls.jsonl",
+      "receipts_sha256": "d64ed915a2f2d93e6e636ddc42990919ce1f34462e6926958e8fff0e36e390b4",
+      "run_id": "e22fba2a2dc1b6fdf34f3aea83c92183e81301c933240457aba13720d74b6893",
+      "token_totals": {
+        "completion": 238,
+        "prompt": 65205
+      },
+      "total_cost_usd": 0.066395
+    }
+  }
+}

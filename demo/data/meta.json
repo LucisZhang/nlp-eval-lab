@@ -1,0 +1,25 @@
+{
+  "cost_model": {
+    "path": "configs/cost_model_v1.yaml",
+    "sha256": "f76ad15a87457db64f50392d3a7bdd9ea65a581fa06478b6759538d16b5143d0"
+  },
+  "evidence_classes": {
+    "derived": "arithmetic over measured inputs with no free parameters (calibration bins, the CAL threshold sweep, per-sample router paths under a frozen tau)",
+    "estimated": "a modeling assumption the reader is invited to move (c_misroute, c_human, the Tier A amortized-zero compute charge) — never a measurement",
+    "measured": "read off a real observation: a logged run metric, a per-call receipt, or a deterministic derivation from a frozen per-example artifact",
+    "projected": "an extrapolation to conditions not evaluated (e.g. cost at a volume no run reached); carries the assumption that produced it"
+  },
+  "git_sha": "633b1adeeb353c5b19f452edc328958ef57df13a",
+  "op_version": "v2-isocal",
+  "pending_tier_b": [
+    "tier_b1_modernbert",
+    "tier_b2_distilbert",
+    "router_a_b_c",
+    "tier_b1",
+    "tier_b2",
+    "tier_b1_temp_scaling",
+    "tier_b2_temp_scaling"
+  ],
+  "schema_version": "demo-v1",
+  "snapshot_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f"
+}

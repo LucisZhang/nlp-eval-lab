@@ -1425,3 +1425,72 @@ reported runs. Every portfolio-bound number carries its reproduction command
   `c1c810e2`/`cef3a58c`/`2ae5d8ea`; Haiku `70a1b0c4`/`cf190ce2`/`b83b2d0d`/
   `446fa236`/`aa2bc9a0`; Sonnet `e1503146`/`c82988bd`/`9d54ec58`/`daa58725`/
   `55cffcbe`; thresholds run `40513354`, cost config `f76ad15a`.
+
+## 2026-08-10 — Phase 6 task 1: static demo site scaffold ($0, derivation-only)
+
+- **Hypothesis:** All six §7 demo panels (triage playground, cost-quality frontier,
+  router policy builder, drift timeline, calibration panel, receipts drawer) can be
+  scaffolded as a fully static site whose every number is derived from committed
+  results artifacts — including the curated-sample Tier C responses, drawn entirely
+  from existing committed receipts (owner's $0 constraint: **no new API calls**) —
+  with Tier B rendered as explicit pending placeholders wired to backfill slots.
+- **Result:** Confirmed. New `demo/` site: `index.html` + `assets/app.js` +
+  `assets/styles.css` (vanilla JS, zero external dependencies — the only `http://`
+  string in the bundle is the SVG XML namespace constant) + `demo/data/` (9 committed
+  JSON payloads, 965 KB total) built deterministically by new
+  `src/triage_lab/demo_build.py` (`make demo-data`); schema contract in
+  `demo/DATA_CONTRACT.md`. Curated sample set: n=200, seed 20260806, class-stratified
+  (largest remainder, min 1/class; credit_reporting 101 … vehicle_loan 3) from the
+  pool of 1,500 TEST-IID complaint_ids scored by BOTH Haiku (`70a1b0c4`) and Sonnet
+  (`e1503146`) finals; pool_sha256 `3b31a165…`; selection FROZEN in
+  `demo/data/curated_ids.json` (rebuild hard-fails on mismatch, exemplar-style).
+  Narratives joined from the frozen split parquet (CFPB, US-gov public domain);
+  Tier C labels/cost/latency/provider/tokens per sample copied from committed
+  receipts only; per-sample router path recomputed with the frozen v2-isocal op via
+  `router_sim` logic (τ_a_to_human 0.5005, τ_a_to_c 0.4217, loaded from
+  `results/thresholds/`, never transcribed) and cross-checked against router_sim's
+  own to_human vector (hard gate). Calibration bins (15) derived from frozen
+  per-example artifacts must reproduce each run's logged ECE to 1e-9 (hard gate).
+  Router paths over the 200: 187 answered-at-A, 13 escalated→C-answered, 0 →human
+  (Haiku parse-fail = 0 on TEST-IID). Verified in-browser (local static server):
+  all six panels render, receipts drawer opens from any run chip, policy-builder
+  client re-solve reproduces the measured $872.81/1k at default sliders exactly and
+  switches to "derived (client re-solve)" labeling off-defaults; light + dark themes;
+  zero console errors. One integration fix during verification: app.js read
+  `expected_cost_per_1k` as a flat metric — it is a breakdown object; now reads
+  `.total`.
+- **Findings:** (1) The owner's $0 gate closes with no gap: committed receipts +
+  frozen artifacts fully determine the curated set; the only data not in git
+  (narratives) is public-domain and reproduced byte-identically by `make data`.
+  (2) Traceability is testable, not aspirational: `tests/test_demo_build.py`
+  (43 tests) asserts every run_id under `demo/data/` exists in `results/runs.jsonl`
+  and every copied metric equals its source record; receipt-consistency and
+  pool-freeze tests run WITHOUT `data/` (CI-safe: 39 passed, 4 skipped in a no-data
+  repo copy; full local: 43 passed). (3) Rebuilds are byte-identical (no wall-clock
+  in outputs). (4) `.gitignore`'s bare `data/` pattern silently ignored `demo/data/`;
+  added `!demo/data/` negation (top-level dataset dir coverage unchanged —
+  `data/preds/*` still ignored).
+- **Deviations / limits:** builder deviations from DATA_CONTRACT.md are enumerated
+  in that file's terms: frontier cost axis uses `expected_cost_per_1k.total` with
+  `cost_basis` labels (api-only would park Tier A at $0 — meaningless frontier axis);
+  router frontier points carry point-only macro-F1 (router_sim logs no CI on levels,
+  only on paired deltas); no raw-probability TEST-IID calibration exhibit exists
+  (all TEST-IID finals are isotonic) — three honestly-labeled exhibits emitted
+  instead; τ sweep downsampled to 256 grid points. Live in-browser ONNX inference,
+  case study page, provenance links, and `make reproduce-headline` are LATER Phase 6
+  tasks — the playground states this. All Tier B panels/series/slots render as
+  explicit "pending Tier B" placeholders keyed for backfill
+  (`tier_b1_modernbert`, `tier_b2_distilbert`, `router_a_b_c`, `tier_b1`, `tier_b2`,
+  `tier_b1_temp_scaling`, `tier_b2_temp_scaling`).
+- **Verdict:** Phase 6 scaffold task closed. Site scaffold static/offline ✓, six
+  panels wired to available exhibits ✓, every displayed number traces to a results
+  record (test-enforced) ✓, Tier B pending placeholders ✓, curated set from
+  committed receipts only ✓. Cost: **$0.000** (no API calls; `results/runs.jsonl`
+  untouched — derivation-only).
+- **Repro:** `make demo-data` (equivalently
+  `uv run python -m triage_lab.demo_build --all`; prerequisite `make preds` for the
+  gitignored per-example artifacts) then
+  `uv run pytest tests/test_demo_build.py -q` (43 passed) and any static server on
+  `demo/` (e.g. `python3 -m http.server -d demo`). Source run ids: Tier A
+  `8e4d6345`/`c20cd14a`/`abcadd53`/`40513354`; Tier C `70a1b0c4`/`82af4e01`/
+  `e1503146`/`d1c42d7d`; router artifacts opv2 cost config `f76ad15a`.

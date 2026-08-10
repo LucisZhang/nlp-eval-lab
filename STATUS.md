@@ -79,10 +79,10 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 | Novel-class probe (stretch) | pending | — |
 | Drift charts from results log; escalation-rate-over-time; evidence classes labeled | **done for available tiers** (2026-08-10; $0, derivation-only — no new runs.jsonl records; Tier B series pending Tier B). Escalation self-adjusts late and abruptly: a_to_human flat at CAL op point 2022→2025 (0.095–0.103 vs 0.0994) then **0.1674 [0.1623, 0.1724]** at 2026-H1 (+68% rel.); selective gate worth ~5 acc pts at the cliff (answered 0.7436 vs full 0.6918); a_to_c parse-fail→human ≤0.27% everywhere (Haiku exactly 0) | EXPERIMENT_LOG 2026-08-10 Phase 5 task 6; `results/drift/summary.json` + `results/drift/charts/` (3 SVGs, evidence-class footnotes); `make drift-charts` |
 
-### Phase 6 — Demo + case study  ▶ **NEXT (per §b order — site scaffold; Tier B panels pending Tier B)**
+### Phase 6 — Demo + case study  ▶ **IN PROGRESS (scaffold done 2026-08-10; Tier B panels pending Tier B)**
 | Task | Status | Evidence |
 |---|---|---|
-| Static demo **site scaffold** (triage playground, frontier plot, policy builder, drift timeline, calibration panel, receipts drawer) | pending — scaffold authorized now; Tier B panels **pending Tier B** | — |
+| Static demo **site scaffold** (triage playground, frontier plot, policy builder, drift timeline, calibration panel, receipts drawer) | **done** (2026-08-10, $0, no new API calls, runs.jsonl untouched). `demo/` static site (vanilla JS, no external deps) + `demo/data/` (9 committed JSONs) built deterministically by `make demo-data` (`src/triage_lab/demo_build.py`, contract in `demo/DATA_CONTRACT.md`); curated set n=200 FROZEN (seed 20260806, pool = 1,500 Haiku∩Sonnet TEST-IID receipt ids, narratives from frozen splits); traceability test-enforced (`tests/test_demo_build.py`, 43 passed; CI-safe subset without `data/`); browser-verified light+dark, zero console errors; all Tier B panels explicit **pending Tier B** slot placeholders. Live ONNX inference deferred to a later Phase 6 task | EXPERIMENT_LOG 2026-08-10 Phase 6 task 1 |
 | Case study page (verification + "does not prove" sections) | pending | — |
 | Provenance links to coursework seeds | pending | — |
 | `make reproduce-headline` | pending | — |
@@ -115,8 +115,10 @@ Tier B is **BLOCKED-until-weekend**; do the GPU-free work first, in this exact o
    Any frontier claim requiring Tier B points is **pending Tier B**.
 3. **Phase 5 — Drift** for **available tiers only** (Tier A, then Tier C). Tier B drift rows are
    **pending Tier B**.
-4. **Phase 6 — Site scaffold.** Build the static demo structure and wire in available exhibits.
-   Any panel/number sourced from Tier B is **pending Tier B**.
+4. ~~**Phase 6 — Site scaffold.** Build the static demo structure and wire in available exhibits.~~
+   **Done 2026-08-10** (EXPERIMENT_LOG Phase 6 task 1). Any panel/number sourced from Tier B is
+   **pending Tier B**. Remaining Phase 6 tasks, in order: live in-browser Tier A inference +
+   case study page (verification + "does not prove"), provenance links, `make reproduce-headline`.
 
 **Tier B (training + eval + ONNX parity): BLOCKED-until-weekend.** Launch the existing training kit
 the moment the A6000 is available; then backfill every item marked **pending Tier B** above

@@ -1,0 +1,6080 @@
+{
+  "0c9308be2c9e3f9008ace06f99dfb51e40c56744df3a67a934f6dff695c772ea": {
+    "config_name": "tier_a_logreg_test_iid_perturb_typo_10",
+    "config_path": "configs/tier_a_logreg_test_iid_perturb_typo_10.yaml",
+    "config_sha256": "7c43d3f738d601ae088ca784026d7cec7ce941d2362e8c50a75c8045d66b11e5",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "perturbation": {
+        "family": "typo",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/0c9308be2c9e3f9008ace06f99dfb51e40c56744df3a67a934f6dff695c772ea.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9623152119796254,
+        "ci_lo": 0.9588296120409023,
+        "point": 0.9606487687181647
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8985698043205075,
+        "ci_lo": 0.8943208066542996,
+        "point": 0.8965112799952127
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8642113213970362,
+        "ci_lo": 0.8597322843860041,
+        "point": 0.8619878934882286
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8450025700204594,
+        "ci_lo": 0.8405176323560537,
+        "point": 0.8428256115136916
+      },
+      "accuracy": {
+        "ci_hi": 0.8211084036268587,
+        "ci_lo": 0.8165985274264431,
+        "point": 0.8188868569458939
+      },
+      "aurc": {
+        "ci_hi": 0.05861430271058994,
+        "ci_lo": 0.05601238328917874,
+        "point": 0.057326078258488296
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7024148251305647,
+        "ci_lo": 0.6937210150234243,
+        "point": 0.6983412061887013
+      },
+      "brier": {
+        "ci_hi": 0.2815058329149667,
+        "ci_lo": 0.2768204863390306,
+        "point": 0.27910169258362083
+      },
+      "ece": {
+        "ci_hi": 0.09818168838913502,
+        "ci_lo": 0.09440021870197232,
+        "point": 0.09618798942636872
+      },
+      "f1::card": {
+        "ci_hi": 0.7494957909468273,
+        "ci_lo": 0.7366349405716088,
+        "point": 0.7434359952757337
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.8998860216527771,
+        "ci_lo": 0.8962814689632478,
+        "point": 0.8980755913547399
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7012035675061163,
+        "ci_lo": 0.6880854549325834,
+        "point": 0.6947313145457727
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7726884772058763,
+        "ci_lo": 0.7606275010186823,
+        "point": 0.7668597048384084
+      },
+      "f1::money_service": {
+        "ci_hi": 0.6648605266685016,
+        "ci_lo": 0.6410449161551207,
+        "point": 0.6531257601556799
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8656567341986214,
+        "ci_lo": 0.8527167308868683,
+        "point": 0.8592735145537648
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.43860310106122524,
+        "ci_lo": 0.3924987084351521,
+        "point": 0.41695621959694235
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8119468657578754,
+        "ci_lo": 0.7849258039340936,
+        "point": 0.7978870004593477
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6373327202328858,
+        "ci_lo": 0.6058192041535443,
+        "point": 0.6220871327254306
+      },
+      "macro_f1": {
+        "ci_hi": 0.720664784805917,
+        "ci_lo": 0.7124940583930163,
+        "point": 0.71693691483398
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word+char) [typo @ 0.1]",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T08:14:54.030450+00:00",
+    "wall_clock_seconds": 3838.0374249580054
+  },
+  "169d5c912d009cf0237b2bddd8619f43971d74c0342e1dff0ea610bca937597f": {
+    "config_name": "tier_a_cnb_test_iid_perturb_ocr_05",
+    "config_path": "configs/tier_a_cnb_test_iid_perturb_ocr_05.yaml",
+    "config_sha256": "3fff5a053651c5d296869d918b82b9e67a92b58290385334474a8fe8eeb5db21",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "perturbation": {
+        "family": "ocr",
+        "rate": 0.05,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/169d5c912d009cf0237b2bddd8619f43971d74c0342e1dff0ea610bca937597f.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9566274750105319,
+        "ci_lo": 0.9530648002757458,
+        "point": 0.9549232124392019
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8993237986954701,
+        "ci_lo": 0.8951460116091198,
+        "point": 0.8972652743701753
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8680095001010648,
+        "ci_lo": 0.863732060979372,
+        "point": 0.865945382397685
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8500519043347678,
+        "ci_lo": 0.8454659295915179,
+        "point": 0.8478850243396056
+      },
+      "accuracy": {
+        "ci_hi": 0.8270831937037427,
+        "ci_lo": 0.822582413373802,
+        "point": 0.8249092806602645
+      },
+      "aurc": {
+        "ci_hi": 0.06069615533381734,
+        "ci_lo": 0.05793053805925074,
+        "point": 0.05932975843041578
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7179051742498446,
+        "ci_lo": 0.7094838245355745,
+        "point": 0.7138389473185156
+      },
+      "brier": {
+        "ci_hi": 0.26668090623137103,
+        "ci_lo": 0.2611937252080338,
+        "point": 0.2638863026287098
+      },
+      "ece": {
+        "ci_hi": 0.026008454787581577,
+        "ci_lo": 0.022011065653139154,
+        "point": 0.024075659235275347
+      },
+      "f1::card": {
+        "ci_hi": 0.7390247721879364,
+        "ci_lo": 0.7261281894592462,
+        "point": 0.732988996182349
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.907309461498297,
+        "ci_lo": 0.9037533227879186,
+        "point": 0.9054993885419292
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7343399202803619,
+        "ci_lo": 0.7224783835593379,
+        "point": 0.7285071384233396
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7678933251652915,
+        "ci_lo": 0.7551512366489009,
+        "point": 0.7617399663542418
+      },
+      "f1::money_service": {
+        "ci_hi": 0.6821768695595404,
+        "ci_lo": 0.6583646659677501,
+        "point": 0.671067106710671
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.879020614239687,
+        "ci_lo": 0.8664957803477412,
+        "point": 0.873005535656138
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.37455302864891576,
+        "ci_lo": 0.32790690199118777,
+        "point": 0.35035349567949725
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8433051952508408,
+        "ci_lo": 0.8195286663424483,
+        "point": 0.8314049586776859
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6545328414382614,
+        "ci_lo": 0.6243521472727314,
+        "point": 0.6389108129439621
+      },
+      "macro_f1": {
+        "ci_hi": 0.7255868078251309,
+        "ci_lo": 0.7172026727757819,
+        "point": 0.721497488796646
+      }
+    },
+    "model_label": "Tier A — TF-IDF ComplementNB (word+char) [ocr @ 0.05]",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T13:49:56.489660+00:00",
+    "wall_clock_seconds": 561.1122848749947
+  },
+  "182774b6977de8625c08a7a351c6eca98cf72aa51aedcaae0c3eb6f1596b301a": {
+    "config_name": "tier_c_haiku_zeroshot_test_iid_perturb_typo_10",
+    "config_path": "configs/tier_c_haiku_zeroshot_test_iid_perturb_typo_10.yaml",
+    "config_sha256": "f0f6b4672421052a8f1799a341da00e8bf7302c977be106ff0dc9d9ebdb56f54",
+    "cost_usd": 2.121648,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 16062,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 1403.2863125030417,
+      "latency_ms_p95": 2349.488697911147,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-haiku-4.5",
+      "n_examples": 1500,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 2.121648,
+      "parse_failures": 0,
+      "perturbation": {
+        "family": "typo",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/182774b6977de8625c08a7a351c6eca98cf72aa51aedcaae0c3eb6f1596b301a.parquet",
+      "pricing_snapshot": {
+        "completion_usd_per_token": 5e-06,
+        "prompt_usd_per_token": 1e-06,
+        "retrieved_at": "2026-08-09T16:09:36.938508+00:00",
+        "slug": "anthropic/claude-haiku-4.5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 2041338,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_iid_perturb_typo_10/20260809T160937Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1371.6
+    },
+    "git_sha": "adc8e826a0b1b31a707919d095d48c75d8a5fc6b",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.8506666666666667,
+        "ci_lo": 0.7973333333333333,
+        "point": 0.8333333333333334
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8450208333333333,
+        "ci_lo": 0.8025,
+        "point": 0.8233333333333334
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8437222222222223,
+        "ci_lo": 0.8037037037037037,
+        "point": 0.8274074074074074
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8428070175438597,
+        "ci_lo": 0.8035087719298246,
+        "point": 0.8252631578947368
+      },
+      "accuracy": {
+        "ci_hi": 0.8426666666666667,
+        "ci_lo": 0.804,
+        "point": 0.8226666666666667
+      },
+      "aurc": {
+        "ci_hi": 0.20353364352755524,
+        "ci_lo": 0.14954600234862833,
+        "point": 0.16272502143221904
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7621382633383915,
+        "ci_lo": 0.6843276105383291,
+        "point": 0.7221157261933212
+      },
+      "brier": {
+        "ci_hi": 0.392,
+        "ci_lo": 0.31466666666666665,
+        "point": 0.3546666666666667
+      },
+      "ece": {
+        "ci_hi": 0.19599999999999995,
+        "ci_lo": 0.15733333333333333,
+        "point": 0.17733333333333334
+      },
+      "f1::card": {
+        "ci_hi": 0.7865981510621558,
+        "ci_lo": 0.677204962217837,
+        "point": 0.7296416938110749
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9245947353872978,
+        "ci_lo": 0.8952984953453128,
+        "point": 0.9103803997421018
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7550432276657061,
+        "ci_lo": 0.6440267077555213,
+        "point": 0.7002967359050445
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7745104540489937,
+        "ci_lo": 0.6755979534831492,
+        "point": 0.726790450928382
+      },
+      "f1::money_service": {
+        "ci_hi": 0.7840296296296296,
+        "ci_lo": 0.6037586103623839,
+        "point": 0.704
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9197153284671533,
+        "ci_lo": 0.8,
+        "point": 0.8658536585365854
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.5581860465116278,
+        "ci_lo": 0.10526315789473684,
+        "point": 0.3448275862068966
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.896551724137931,
+        "ci_lo": 0.6530137636449929,
+        "point": 0.7868852459016393
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.8372093023255814,
+        "ci_lo": 0.5185185185185185,
+        "point": 0.6938775510204082
+      },
+      "macro_f1": {
+        "ci_hi": 0.7540993726328354,
+        "ci_lo": 0.6796878199590731,
+        "point": 0.7180614802280147
+      }
+    },
+    "model_label": "Tier C — Claude Haiku 4.5 (zero-shot) [typo @ 0.1]",
+    "slice": "test_iid",
+    "tier": "C",
+    "timestamp_utc": "2026-08-09T16:14:24.273327+00:00",
+    "wall_clock_seconds": 289.3368175000069
+  },
+  "1f2b8f2acde66690d6841d48c8cbdeb15b7abc340a3b6af9a0e17f107743b1f9": {
+    "config_name": "tier_c_sonnet_zeroshot_v2params_test_postcutoff",
+    "config_path": "configs/tier_c_sonnet_zeroshot_v2params_test_postcutoff.yaml",
+    "config_sha256": "538418ee589fc7b76f7dec04f163c02610e3ea8eb7227e33616bc966b291320a",
+    "cost_usd": 5.805496,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_postcutoff",
+      "split_sha256": "ccbd779deff812e8b41dc6aba8c8d9c5c1cf0dcb294063cda0ef6af50dcdc530"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 24582,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 3324.484188007773,
+      "latency_ms_p95": 5791.604719043243,
+      "max_concurrency": 8,
+      "max_tokens": 256,
+      "model_slug": "anthropic/claude-sonnet-5",
+      "n_examples": 1500,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 5.805495999999999,
+      "parse_failures": 3,
+      "pricing_snapshot": {
+        "completion_usd_per_token": 1e-05,
+        "prompt_usd_per_token": 2e-06,
+        "retrieved_at": "2026-08-07T04:05:52.240172+00:00",
+        "slug": "anthropic/claude-sonnet-5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 2779838,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1495,
+        "Azure": 5
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_sonnet_zeroshot_v2params_test_postcutoff/20260807T040553Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1869.6133333333332
+    },
+    "git_sha": "e260c6773ea9a76d9eb3a2c56f69004334df25ad",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.8360333333333333,
+        "ci_lo": 0.78,
+        "point": 0.7973333333333333
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8308333333333333,
+        "ci_lo": 0.7874791666666666,
+        "point": 0.8158333333333333
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8296296296296296,
+        "ci_lo": 0.7881481481481482,
+        "point": 0.8066666666666666
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8287719298245614,
+        "ci_lo": 0.7880701754385965,
+        "point": 0.8077192982456141
+      },
+      "accuracy": {
+        "ci_hi": 0.828,
+        "ci_lo": 0.78865,
+        "point": 0.8086666666666666
+      },
+      "aurc": {
+        "ci_hi": 0.22058321217088142,
+        "ci_lo": 0.16447845900660685,
+        "point": 0.1870474827659326
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.8534297563301642,
+        "ci_lo": 0.8064629892212797,
+        "point": 0.8300076329453225
+      },
+      "brier": {
+        "ci_hi": 0.4227,
+        "ci_lo": 0.344,
+        "point": 0.38266666666666665
+      },
+      "ece": {
+        "ci_hi": 0.21135,
+        "ci_lo": 0.17200000000000004,
+        "point": 0.19133333333333336
+      },
+      "f1::card": {
+        "ci_hi": 0.8649729970229805,
+        "ci_lo": 0.7948669201520913,
+        "point": 0.8320610687022901
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.39626393653516295,
+        "ci_lo": 0.22966114989410935,
+        "point": 0.31413612565445026
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.8647978545900509,
+        "ci_lo": 0.8040920926234896,
+        "point": 0.8365122615803815
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8579977024857444,
+        "ci_lo": 0.7939511114896517,
+        "point": 0.827140549273021
+      },
+      "f1::money_service": {
+        "ci_hi": 0.8000310559006212,
+        "ci_lo": 0.6906474820143885,
+        "point": 0.7482993197278912
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9953488372093023,
+        "ci_lo": 0.9561339009287926,
+        "point": 0.9779735682819384
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.8672663977095263,
+        "ci_lo": 0.7,
+        "point": 0.7894736842105263
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.9830508474576272,
+        "ci_lo": 0.9062433226495726,
+        "point": 0.9465648854961832
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.9378550555230859,
+        "ci_lo": 0.8413507447459703,
+        "point": 0.891566265060241
+      },
+      "macro_f1": {
+        "ci_hi": 0.8158010548292356,
+        "ci_lo": 0.7763141598835374,
+        "point": 0.7959697475541027
+      }
+    },
+    "model_label": "Tier C — Claude Sonnet 5 (zero-shot)",
+    "slice": "test_postcutoff",
+    "tier": "C",
+    "timestamp_utc": "2026-08-07T04:17:28.855466+00:00",
+    "wall_clock_seconds": 699.4067315410066
+  },
+  "237bffae43f102aa11be8f85f349c5666b22fdbd9f99cfefa267d11fc8bcbe47": {
+    "config_name": "tier_c_haiku_zeroshot_test_iid_perturb_ocr_10",
+    "config_path": "configs/tier_c_haiku_zeroshot_test_iid_perturb_ocr_10.yaml",
+    "config_sha256": "5669e759b20c915b8fdcec9361db7dac67f85f89f217a5aaef8d06ecd90d430e",
+    "cost_usd": 2.025869,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 16081,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 1378.2983750134008,
+      "latency_ms_p95": 2230.2402419925784,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-haiku-4.5",
+      "n_examples": 1500,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 2.025869,
+      "parse_failures": 0,
+      "perturbation": {
+        "family": "ocr",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/237bffae43f102aa11be8f85f349c5666b22fdbd9f99cfefa267d11fc8bcbe47.parquet",
+      "pricing_snapshot": {
+        "completion_usd_per_token": 5e-06,
+        "prompt_usd_per_token": 1e-06,
+        "retrieved_at": "2026-08-09T16:15:19.912515+00:00",
+        "slug": "anthropic/claude-haiku-4.5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 1945464,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_iid_perturb_ocr_10/20260809T161520Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1307.6966666666667
+    },
+    "git_sha": "adc8e826a0b1b31a707919d095d48c75d8a5fc6b",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.8667,
+        "ci_lo": 0.816,
+        "point": 0.852
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8616666666666667,
+        "ci_lo": 0.8208333333333333,
+        "point": 0.8408333333333333
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8607407407407407,
+        "ci_lo": 0.8222222222222222,
+        "point": 0.8437037037037037
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8596491228070176,
+        "ci_lo": 0.823140350877193,
+        "point": 0.840701754385965
+      },
+      "accuracy": {
+        "ci_hi": 0.85935,
+        "ci_lo": 0.8233333333333334,
+        "point": 0.8406666666666667
+      },
+      "aurc": {
+        "ci_hi": 0.1855780631660809,
+        "ci_lo": 0.13251964230058844,
+        "point": 0.14797868907725975
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.794310512080307,
+        "ci_lo": 0.7155567847940086,
+        "point": 0.7534011364442412
+      },
+      "brier": {
+        "ci_hi": 0.35333333333333333,
+        "ci_lo": 0.2813,
+        "point": 0.31866666666666665
+      },
+      "ece": {
+        "ci_hi": 0.17666666666666664,
+        "ci_lo": 0.14065000000000005,
+        "point": 0.15933333333333333
+      },
+      "f1::card": {
+        "ci_hi": 0.8092105263157895,
+        "ci_lo": 0.7030130738826391,
+        "point": 0.756578947368421
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.927595978191103,
+        "ci_lo": 0.899433801043538,
+        "point": 0.9137380191693291
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.757077097398612,
+        "ci_lo": 0.6430678466076696,
+        "point": 0.7027027027027027
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8247436574318503,
+        "ci_lo": 0.7312935022568444,
+        "point": 0.7810026385224275
+      },
+      "f1::money_service": {
+        "ci_hi": 0.8062145788547977,
+        "ci_lo": 0.6333088235294118,
+        "point": 0.7258064516129032
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9397623280005267,
+        "ci_lo": 0.8361446482470397,
+        "point": 0.8930817610062893
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.6842105263157895,
+        "ci_lo": 0.2222222222222222,
+        "point": 0.4666666666666667
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.9473684210526315,
+        "ci_lo": 0.7555555555555555,
+        "point": 0.8666666666666667
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.8718181818181818,
+        "ci_lo": 0.5714285714285714,
+        "point": 0.7391304347826086
+      },
+      "macro_f1": {
+        "ci_hi": 0.7970410167719882,
+        "ci_lo": 0.7201978912533262,
+        "point": 0.7605971431664461
+      }
+    },
+    "model_label": "Tier C — Claude Haiku 4.5 (zero-shot) [ocr @ 0.1]",
+    "slice": "test_iid",
+    "tier": "C",
+    "timestamp_utc": "2026-08-09T16:19:53.835594+00:00",
+    "wall_clock_seconds": 276.84461441700114
+  },
+  "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb": {
+    "config_name": "tier_a_logreg_test_drift_2026h1",
+    "config_path": "configs/tier_a_logreg_test_drift_2026h1.yaml",
+    "config_sha256": "8f71b1290461c9aab4fcb7afc2332cf949edf928eeaf8e46af46587ad6c6e89e",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_drift_2026h1",
+      "split_sha256": "c0cecbdb41aa24b29dba171f42ad593441af9fe355d358e4367596468901a264"
+    },
+    "extra": {
+      "predictions_path": "data/preds/2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb.parquet"
+    },
+    "git_sha": "831ac6e521d83e5e6e367b96f36db6378d67d415",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.8254025,
+        "ci_lo": 0.8104975,
+        "point": 0.8177
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.7575,
+        "ci_lo": 0.74325,
+        "point": 0.7504375
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.7304458333333333,
+        "ci_lo": 0.7167749999999999,
+        "point": 0.7235555555555555
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.7171592105263158,
+        "ci_lo": 0.7035776315789474,
+        "point": 0.7102105263157895
+      },
+      "accuracy": {
+        "ci_hi": 0.6982,
+        "ci_lo": 0.68579875,
+        "point": 0.69185
+      },
+      "aurc": {
+        "ci_hi": 0.1955106429093911,
+        "ci_lo": 0.18211294770588946,
+        "point": 0.1888203806876308
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.6895210982542799,
+        "ci_lo": 0.672708297726884,
+        "point": 0.6810605941864044
+      },
+      "brier": {
+        "ci_hi": 0.4455370031956732,
+        "ci_lo": 0.4330523356006852,
+        "point": 0.43937378131288224
+      },
+      "ece": {
+        "ci_hi": 0.048832732123246195,
+        "ci_lo": 0.03739129629183717,
+        "point": 0.04223996580852264
+      },
+      "f1::card": {
+        "ci_hi": 0.7869742899017421,
+        "ci_lo": 0.7673773125447525,
+        "point": 0.7768719428069736
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.23142611489232964,
+        "ci_lo": 0.19786042940847212,
+        "point": 0.21469465648854963
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7348279505896511,
+        "ci_lo": 0.7142165356031801,
+        "point": 0.7246916453339539
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7895031247249361,
+        "ci_lo": 0.7691738160178526,
+        "point": 0.7795527156549521
+      },
+      "f1::money_service": {
+        "ci_hi": 0.6715098168014628,
+        "ci_lo": 0.6351445821586255,
+        "point": 0.6540917005223448
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8935908202272101,
+        "ci_lo": 0.869820410050871,
+        "point": 0.8819308545335942
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.49510116148370176,
+        "ci_lo": 0.4256000107347525,
+        "point": 0.45917542441390463
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.824214831284176,
+        "ci_lo": 0.7781004359518281,
+        "point": 0.8020378457059679
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.719529254014904,
+        "ci_lo": 0.6725035781923498,
+        "point": 0.696969696969697
+      },
+      "macro_f1": {
+        "ci_hi": 0.6728713604166318,
+        "ci_lo": 0.6584781440858911,
+        "point": 0.6655573869366598
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word+char)",
+    "slice": "test_drift_2026h1",
+    "tier": "A",
+    "timestamp_utc": "2026-08-08T15:19:18.946608+00:00",
+    "wall_clock_seconds": 1721.7241402080035
+  },
+  "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1": {
+    "config_name": "tier_a_logreg_test_drift_2023",
+    "config_path": "configs/tier_a_logreg_test_drift_2023.yaml",
+    "config_sha256": "68ea22911c1792a763c1ecd6afc9054a824863d6e6bdf5352712d03376f93102",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_drift_2023",
+      "split_sha256": "debbd70416a816faa04b51cac994697b07bc70914e1f3e9d49b27b443a5a5475"
+    },
+    "extra": {
+      "predictions_path": "data/preds/389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1.parquet"
+    },
+    "git_sha": "831ac6e521d83e5e6e367b96f36db6378d67d415",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9569,
+        "ci_lo": 0.9486,
+        "point": 0.9528
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.9059390625,
+        "ci_lo": 0.8963125,
+        "point": 0.9010625
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8783902777777778,
+        "ci_lo": 0.8683888888888889,
+        "point": 0.8733333333333333
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8611578947368421,
+        "ci_lo": 0.8513657894736841,
+        "point": 0.8563684210526316
+      },
+      "accuracy": {
+        "ci_hi": 0.839,
+        "ci_lo": 0.8286,
+        "point": 0.83385
+      },
+      "aurc": {
+        "ci_hi": 0.06528794567096424,
+        "ci_lo": 0.05792442912126881,
+        "point": 0.06168224712771623
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7623296773376598,
+        "ci_lo": 0.7441711890241856,
+        "point": 0.7531929623105438
+      },
+      "brier": {
+        "ci_hi": 0.27777411042581107,
+        "ci_lo": 0.2675696054305195,
+        "point": 0.2728039280260514
+      },
+      "ece": {
+        "ci_hi": 0.1091192904709191,
+        "ci_lo": 0.09972514602399331,
+        "point": 0.10391723683852869
+      },
+      "f1::card": {
+        "ci_hi": 0.7950889608580038,
+        "ci_lo": 0.7699333655469454,
+        "point": 0.783157894736842
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9043421599614941,
+        "ci_lo": 0.8952398428306702,
+        "point": 0.9000412201154163
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.74065020833196,
+        "ci_lo": 0.7100883336970824,
+        "point": 0.7259646827992152
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8391523556231003,
+        "ci_lo": 0.8172414357005822,
+        "point": 0.828128319524113
+      },
+      "f1::money_service": {
+        "ci_hi": 0.68711722173532,
+        "ci_lo": 0.6308814036780099,
+        "point": 0.6594360086767896
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8989566922509813,
+        "ci_lo": 0.8703919689457319,
+        "point": 0.8844797178130511
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.5555555555555556,
+        "ci_lo": 0.464020129711209,
+        "point": 0.5119549929676512
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8822514951442105,
+        "ci_lo": 0.8374591037558262,
+        "point": 0.8607843137254902
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.695354429896553,
+        "ci_lo": 0.6358928571428571,
+        "point": 0.6672384219554031
+      },
+      "macro_f1": {
+        "ci_hi": 0.7662506594991606,
+        "ci_lo": 0.7496179885075952,
+        "point": 0.7579095080348858
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word+char)",
+    "slice": "test_drift_2023",
+    "tier": "A",
+    "timestamp_utc": "2026-08-08T13:52:32.009186+00:00",
+    "wall_clock_seconds": 1707.3399592500064
+  },
+  "3ddd0a7f6f31788d970007ae18cebe7ac687f5bfeb9795cda8f35f29fe8a0644": {
+    "config_name": "tier_a_cnb_test_iid_perturb_case_10",
+    "config_path": "configs/tier_a_cnb_test_iid_perturb_case_10.yaml",
+    "config_sha256": "f89455e3bfd84b9e5bdcc04482ad80107900882a9bd0edbb82027f6e73d07cf7",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "perturbation": {
+        "family": "case",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/3ddd0a7f6f31788d970007ae18cebe7ac687f5bfeb9795cda8f35f29fe8a0644.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9560726322239669,
+        "ci_lo": 0.9524333614185592,
+        "point": 0.9543104438742293
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.901095087068398,
+        "ci_lo": 0.8970857518999461,
+        "point": 0.8991323080605589
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8698185618995947,
+        "ci_lo": 0.8655621336397196,
+        "point": 0.8678496579750848
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8522792553995626,
+        "ci_lo": 0.8477938138095766,
+        "point": 0.8501627679624273
+      },
+      "accuracy": {
+        "ci_hi": 0.8300422239882042,
+        "ci_lo": 0.8256355141081738,
+        "point": 0.8279348544181994
+      },
+      "aurc": {
+        "ci_hi": 0.06028389539686675,
+        "ci_lo": 0.05753513791170019,
+        "point": 0.058944970495258354
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7213801720540343,
+        "ci_lo": 0.7129865993468459,
+        "point": 0.7172074170427359
+      },
+      "brier": {
+        "ci_hi": 0.26333956353777943,
+        "ci_lo": 0.2579215943948393,
+        "point": 0.26054997808407143
+      },
+      "ece": {
+        "ci_hi": 0.027016771714955593,
+        "ci_lo": 0.02301512148113266,
+        "point": 0.025005468277761147
+      },
+      "f1::card": {
+        "ci_hi": 0.7431760287758616,
+        "ci_lo": 0.7307788163734904,
+        "point": 0.7371889052134811
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9077319871478303,
+        "ci_lo": 0.9042443836379117,
+        "point": 0.9060460099310037
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7404671490856389,
+        "ci_lo": 0.7279326301437643,
+        "point": 0.7343271715364739
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7699668543026228,
+        "ci_lo": 0.7574124241214604,
+        "point": 0.7638609594943981
+      },
+      "f1::money_service": {
+        "ci_hi": 0.6874858829920605,
+        "ci_lo": 0.6645770979866593,
+        "point": 0.6763070077864294
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8797124424471431,
+        "ci_lo": 0.8670919521286861,
+        "point": 0.8737267582861762
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.38237873808589173,
+        "ci_lo": 0.33431766951363856,
+        "point": 0.35849818328623334
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8526048037966198,
+        "ci_lo": 0.8303984062501597,
+        "point": 0.8413906603579511
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6622549061969566,
+        "ci_lo": 0.6316193997530585,
+        "point": 0.6472337894110648
+      },
+      "macro_f1": {
+        "ci_hi": 0.7307968902726525,
+        "ci_lo": 0.7222006937013123,
+        "point": 0.7265088272559123
+      }
+    },
+    "model_label": "Tier A — TF-IDF ComplementNB (word+char) [case @ 0.1]",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T14:18:43.394185+00:00",
+    "wall_clock_seconds": 510.82735616700666
+  },
+  "3f3109515f37c1f30de9436d39f271d36d5e4497e050b2de9e9788708df686e5": {
+    "config_name": "tier_c_haiku_ablation_zeroshot_cal",
+    "config_path": "configs/tier_c_haiku_ablation_zeroshot_cal.yaml",
+    "config_sha256": "60de9a085d5d7031cf92f4989b8cfc56bbd9b1b8d2e448092d6011d4c577a094",
+    "cost_usd": 1.962928,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "cal",
+      "split_sha256": "d7c24d6db05f337ac3fca1922b16c4324775e2007833af1eae684ddc37533c94"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 16091,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 1365.9688539992203,
+      "latency_ms_p95": 2328.1113312594243,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-haiku-4.5",
+      "n_examples": 1500,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 1.9629280000000002,
+      "parse_failures": 0,
+      "pricing_snapshot": {
+        "completion_usd_per_token": 5e-06,
+        "prompt_usd_per_token": 1e-06,
+        "retrieved_at": "2026-08-06T16:05:10.260005+00:00",
+        "slug": "anthropic/claude-haiku-4.5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 1882473,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_ablation_zeroshot_cal/20260806T160510Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1265.7093333333332
+    },
+    "git_sha": "b99dc0031b8eefa393755e17a2bd6ae0e6b49d3b",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.864,
+        "ci_lo": 0.808,
+        "point": 0.8226666666666667
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8566666666666667,
+        "ci_lo": 0.8141666666666667,
+        "point": 0.8333333333333334
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8548148148148148,
+        "ci_lo": 0.8162777777777778,
+        "point": 0.8340740740740741
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8547368421052631,
+        "ci_lo": 0.8161403508771929,
+        "point": 0.8350877192982457
+      },
+      "accuracy": {
+        "ci_hi": 0.854,
+        "ci_lo": 0.8173166666666667,
+        "point": 0.836
+      },
+      "aurc": {
+        "ci_hi": 0.19145707815817126,
+        "ci_lo": 0.13900219073685977,
+        "point": 0.17344707872234122
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.8099661308214976,
+        "ci_lo": 0.7488218888130446,
+        "point": 0.7786758263666719
+      },
+      "brier": {
+        "ci_hi": 0.3653666666666667,
+        "ci_lo": 0.292,
+        "point": 0.328
+      },
+      "ece": {
+        "ci_hi": 0.1826833333333333,
+        "ci_lo": 0.14600000000000002,
+        "point": 0.16400000000000003
+      },
+      "f1::card": {
+        "ci_hi": 0.832787402389202,
+        "ci_lo": 0.7290851786002909,
+        "point": 0.785234899328859
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9142866077012418,
+        "ci_lo": 0.8809996569144244,
+        "point": 0.8982271831910703
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7731481481481481,
+        "ci_lo": 0.6796976320824918,
+        "point": 0.729064039408867
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8657810600856101,
+        "ci_lo": 0.7665317409945209,
+        "point": 0.8208955223880597
+      },
+      "f1::money_service": {
+        "ci_hi": 0.8030332856120257,
+        "ci_lo": 0.609729586426299,
+        "point": 0.7102803738317757
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9552238805970149,
+        "ci_lo": 0.8794813399941228,
+        "point": 0.9230769230769231
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.62224043715847,
+        "ci_lo": 0.29077922077922075,
+        "point": 0.47058823529411764
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8985869565217391,
+        "ci_lo": 0.6808510638297872,
+        "point": 0.8064516129032258
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.7735849056603774,
+        "ci_lo": 0.5416544117647059,
+        "point": 0.6666666666666666
+      },
+      "macro_f1": {
+        "ci_hi": 0.7890828568329866,
+        "ci_lo": 0.7217384276715065,
+        "point": 0.7567206062321739
+      }
+    },
+    "model_label": "Tier C — Claude Haiku 4.5 (zero-shot) [ablation]",
+    "slice": "cal",
+    "tier": "C",
+    "timestamp_utc": "2026-08-06T16:09:48.340325+00:00",
+    "wall_clock_seconds": 278.55622262498946
+  },
+  "3f5eff598bdda3b714420fa7882d4203bfd9f6833504b702ab52a5d1fcd54432": {
+    "config_name": "tier_a_logreg_word_test_iid_perturb_case_10",
+    "config_path": "configs/tier_a_logreg_word_test_iid_perturb_case_10.yaml",
+    "config_sha256": "1c1a03b2042b5316eab2aec8c86030859c4bdbc47574a28951bd09bf944146fe",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "perturbation": {
+        "family": "case",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/3f5eff598bdda3b714420fa7882d4203bfd9f6833504b702ab52a5d1fcd54432.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9681934816743901,
+        "ci_lo": 0.9651870859024932,
+        "point": 0.9666807092796139
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.9182215307282628,
+        "ci_lo": 0.9144027885823709,
+        "point": 0.9163305607085154
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8903081415759743,
+        "ci_lo": 0.8861900126597092,
+        "point": 0.8882115767189013
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8719935799881074,
+        "ci_lo": 0.8676588121466221,
+        "point": 0.8697957085697584
+      },
+      "accuracy": {
+        "ci_hi": 0.8500617561732237,
+        "ci_lo": 0.845695498980305,
+        "point": 0.8478883218597704
+      },
+      "aurc": {
+        "ci_hi": 0.049469665969592125,
+        "ci_lo": 0.04699520915203375,
+        "point": 0.048258949487566156
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7652716741968498,
+        "ci_lo": 0.7565537991069897,
+        "point": 0.7609995516389111
+      },
+      "brier": {
+        "ci_hi": 0.25000319182313113,
+        "ci_lo": 0.24559094341855775,
+        "point": 0.2478264046951439
+      },
+      "ece": {
+        "ci_hi": 0.09964697918969821,
+        "ci_lo": 0.09561397821056435,
+        "point": 0.09763343898413068
+      },
+      "f1::card": {
+        "ci_hi": 0.7932271996665191,
+        "ci_lo": 0.7814400826806187,
+        "point": 0.7877036258539148
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9160151530083719,
+        "ci_lo": 0.9126764865852037,
+        "point": 0.914341781291075
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7498738671020436,
+        "ci_lo": 0.7377705855894153,
+        "point": 0.7437853591633807
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8127415330873244,
+        "ci_lo": 0.8013331005370949,
+        "point": 0.807147258163894
+      },
+      "f1::money_service": {
+        "ci_hi": 0.7155039180110517,
+        "ci_lo": 0.693946374218393,
+        "point": 0.7056988602279544
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8926810721587576,
+        "ci_lo": 0.8805354022234283,
+        "point": 0.8866531440162272
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.5317919075144508,
+        "ci_lo": 0.49044442515603626,
+        "point": 0.5113389251320286
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8722191212737703,
+        "ci_lo": 0.8504087702810872,
+        "point": 0.8609808102345415
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.705348122673097,
+        "ci_lo": 0.6762848752302663,
+        "point": 0.6909888357256778
+      },
+      "macro_f1": {
+        "ci_hi": 0.7717094630236994,
+        "ci_lo": 0.7636826811440887,
+        "point": 0.7676265110898548
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word-only) [case @ 0.1]",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T14:44:42.969417+00:00",
+    "wall_clock_seconds": 458.40953412500676
+  },
+  "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc": {
+    "config_name": "tier_a_logreg_wordchar_isocal_cal",
+    "config_path": "configs/tier_a_logreg_wordchar_isocal_cal.yaml",
+    "config_sha256": "6485a76503a306066f99f79a0d987fa6c8aafcb8a70f1a6c6951b3e7873edfa3",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "cal",
+      "split_sha256": "d7c24d6db05f337ac3fca1922b16c4324775e2007833af1eae684ddc37533c94"
+    },
+    "extra": {
+      "predictions_path": "data/preds/40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc.parquet"
+    },
+    "git_sha": "cc91d631b71424aa30f1e7e8ef4ff68bdeb4b84f",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9571586257646139,
+        "ci_lo": 0.9531113461803798,
+        "point": 0.9550200064388539
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.904439981028486,
+        "ci_lo": 0.899910532064733,
+        "point": 0.9021817241081951
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8764359629511338,
+        "ci_lo": 0.8717975087831363,
+        "point": 0.8740210795273076
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.858322642331526,
+        "ci_lo": 0.8536133568938807,
+        "point": 0.8558651239349342
+      },
+      "accuracy": {
+        "ci_hi": 0.8366603619555719,
+        "ci_lo": 0.8316581773444327,
+        "point": 0.8340960309064986
+      },
+      "aurc": {
+        "ci_hi": 0.058911198757744414,
+        "ci_lo": 0.05590159000312478,
+        "point": 0.05742166985544829
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7616402563062995,
+        "ci_lo": 0.751864689537228,
+        "point": 0.7567881983881264
+      },
+      "brier": {
+        "ci_hi": 0.27242201843386793,
+        "ci_lo": 0.267496318508842,
+        "point": 0.2700070457057651
+      },
+      "ece": {
+        "ci_hi": 0.10465430343768738,
+        "ci_lo": 0.10034493460985898,
+        "point": 0.10242022289443707
+      },
+      "f1::card": {
+        "ci_hi": 0.795296496721447,
+        "ci_lo": 0.7827032635207174,
+        "point": 0.7889082923215325
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.8975290957217783,
+        "ci_lo": 0.8931559436901619,
+        "point": 0.8953045229021356
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7533422886941066,
+        "ci_lo": 0.7414133755817504,
+        "point": 0.7473645651023648
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8114009537318327,
+        "ci_lo": 0.7982145926495058,
+        "point": 0.8045401842924269
+      },
+      "f1::money_service": {
+        "ci_hi": 0.71759678978706,
+        "ci_lo": 0.6925767108626404,
+        "point": 0.7050725721981146
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9017054411729764,
+        "ci_lo": 0.8912826527088883,
+        "point": 0.8966235311616838
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.529705034129631,
+        "ci_lo": 0.48642410526449326,
+        "point": 0.5095676824946846
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8594963663943559,
+        "ci_lo": 0.8336187086309169,
+        "point": 0.8469852104664392
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6715969432654861,
+        "ci_lo": 0.6391785034504914,
+        "point": 0.6556671449067432
+      },
+      "macro_f1": {
+        "ci_hi": 0.7654083576413425,
+        "ci_lo": 0.7568414916862333,
+        "point": 0.7611148562051251
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word+char) [isotonic CAL rung]",
+    "slice": "cal",
+    "tier": "A",
+    "timestamp_utc": "2026-08-08T03:12:02.409795+00:00",
+    "wall_clock_seconds": 1973.8033729169997
+  },
+  "446fa23682d51469f7c2fe8732aaf0b8f72e3b243026e039de752daaf1f901dc": {
+    "config_name": "tier_c_haiku_zeroshot_test_drift_2025",
+    "config_path": "configs/tier_c_haiku_zeroshot_test_drift_2025.yaml",
+    "config_sha256": "6b04fce58013fb84cdcc78e967d3e78e536a04161b4ae2fcd3382298043d44ac",
+    "cost_usd": 2.022696,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_drift_2025",
+      "split_sha256": "3c4ea70e7d489ba37963cca3512ea09d952b3c85a587752c96a1a13d5760f56f"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 16206,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 1257.6408329987316,
+      "latency_ms_p95": 3470.226969050782,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-haiku-4.5",
+      "n_examples": 1500,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 2.0226960000000003,
+      "parse_failures": 0,
+      "predictions_path": "data/preds/446fa23682d51469f7c2fe8732aaf0b8f72e3b243026e039de752daaf1f901dc.parquet",
+      "pricing_snapshot": {
+        "completion_usd_per_token": 5e-06,
+        "prompt_usd_per_token": 1e-06,
+        "retrieved_at": "2026-08-08T16:22:06.341637+00:00",
+        "slug": "anthropic/claude-haiku-4.5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 1941666,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1493,
+        "Anthropic": 7
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_drift_2025/20260808T162206Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1305.248
+    },
+    "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.832,
+        "ci_lo": 0.776,
+        "point": 0.824
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8275,
+        "ci_lo": 0.7825,
+        "point": 0.805
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8266666666666667,
+        "ci_lo": 0.7836851851851852,
+        "point": 0.8081481481481482
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8259824561403509,
+        "ci_lo": 0.783859649122807,
+        "point": 0.8084210526315789
+      },
+      "accuracy": {
+        "ci_hi": 0.8246833333333333,
+        "ci_lo": 0.7846666666666666,
+        "point": 0.8053333333333333
+      },
+      "aurc": {
+        "ci_hi": 0.2244380138767942,
+        "ci_lo": 0.16729435077539448,
+        "point": 0.17530221089580214
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.8003977480763167,
+        "ci_lo": 0.7357810557434915,
+        "point": 0.7676303286991345
+      },
+      "brier": {
+        "ci_hi": 0.43066666666666664,
+        "ci_lo": 0.35063333333333335,
+        "point": 0.3893333333333333
+      },
+      "ece": {
+        "ci_hi": 0.21533333333333338,
+        "ci_lo": 0.17531666666666668,
+        "point": 0.19466666666666665
+      },
+      "f1::card": {
+        "ci_hi": 0.7510682899298557,
+        "ci_lo": 0.6235718354089377,
+        "point": 0.6940298507462687
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.8961642502189751,
+        "ci_lo": 0.8608099515177828,
+        "point": 0.8796895213454075
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7309490331056797,
+        "ci_lo": 0.6259093427439266,
+        "point": 0.6814814814814815
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7942108397855867,
+        "ci_lo": 0.6805923988305893,
+        "point": 0.7392739273927392
+      },
+      "f1::money_service": {
+        "ci_hi": 0.8021993543179984,
+        "ci_lo": 0.6518346253229975,
+        "point": 0.7325581395348837
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9743589743589743,
+        "ci_lo": 0.8636363636363636,
+        "point": 0.9278350515463918
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.8648648648648649,
+        "ci_lo": 0.5714285714285714,
+        "point": 0.7441860465116279
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8712871287128713,
+        "ci_lo": 0.6575244618395303,
+        "point": 0.7792207792207793
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.8,
+        "ci_lo": 0.5714285714285714,
+        "point": 0.6966292134831461
+      },
+      "macro_f1": {
+        "ci_hi": 0.7903436072566993,
+        "ci_lo": 0.7295503813602296,
+        "point": 0.7638782234736362
+      }
+    },
+    "model_label": "Tier C — Claude Haiku 4.5 (zero-shot)",
+    "slice": "test_drift_2025",
+    "tier": "C",
+    "timestamp_utc": "2026-08-08T16:27:11.869831+00:00",
+    "wall_clock_seconds": 306.1760518750016
+  },
+  "4bbd26c4b29fe63dff4f1cb75ae83e3a658e5db129f75381ef97050f3a9f19a1": {
+    "config_name": "tier_a_logreg_test_iid_perturb_typo_05",
+    "config_path": "configs/tier_a_logreg_test_iid_perturb_typo_05.yaml",
+    "config_sha256": "3f761a88a9954ecfd5816059f498cddbde15188ef1cd5ee82e9166ee46c2e7cc",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "perturbation": {
+        "family": "typo",
+        "rate": 0.05,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/4bbd26c4b29fe63dff4f1cb75ae83e3a658e5db129f75381ef97050f3a9f19a1.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9666232622266477,
+        "ci_lo": 0.9632717054115124,
+        "point": 0.9649189996553177
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.9097498653581474,
+        "ci_lo": 0.9058581174076955,
+        "point": 0.9078571001136976
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8778399238289769,
+        "ci_lo": 0.8736901456398473,
+        "point": 0.8757859126160916
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8592145311980327,
+        "ci_lo": 0.854970217998206,
+        "point": 0.8571572550165791
+      },
+      "accuracy": {
+        "ci_hi": 0.8366668900740116,
+        "ci_lo": 0.8322237967120822,
+        "point": 0.83441685895656
+      },
+      "aurc": {
+        "ci_hi": 0.05315859176092949,
+        "ci_lo": 0.050649428347108866,
+        "point": 0.05194155633811831
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7361477139999552,
+        "ci_lo": 0.7274003018299681,
+        "point": 0.7319671832789706
+      },
+      "brier": {
+        "ci_hi": 0.26299069768201905,
+        "ci_lo": 0.25880080054820925,
+        "point": 0.2609867559513022
+      },
+      "ece": {
+        "ci_hi": 0.09793572570979223,
+        "ci_lo": 0.09390942950836734,
+        "point": 0.09590905900424194
+      },
+      "f1::card": {
+        "ci_hi": 0.7741220722040032,
+        "ci_lo": 0.7625155317930444,
+        "point": 0.7685259318565963
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9086890659005311,
+        "ci_lo": 0.9051947900430966,
+        "point": 0.9069677632909763
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7250196738634344,
+        "ci_lo": 0.7119712562694485,
+        "point": 0.7185981956974323
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7977059661593016,
+        "ci_lo": 0.7865321540498965,
+        "point": 0.7921350957241639
+      },
+      "f1::money_service": {
+        "ci_hi": 0.6854966558698397,
+        "ci_lo": 0.6624713155624866,
+        "point": 0.6746003125375646
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.882036664876924,
+        "ci_lo": 0.8693778019289558,
+        "point": 0.8760183915463419
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.4917611705480062,
+        "ci_lo": 0.4487375349363499,
+        "point": 0.4703166226912929
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8487665407741003,
+        "ci_lo": 0.8264122783959812,
+        "point": 0.8373321593660576
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6633237334430598,
+        "ci_lo": 0.6326405179972859,
+        "point": 0.6488095238095238
+      },
+      "macro_f1": {
+        "ci_hi": 0.7478328490251385,
+        "ci_lo": 0.7392005885618168,
+        "point": 0.7437004440577721
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word+char) [typo @ 0.05]",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T07:10:14.832139+00:00",
+    "wall_clock_seconds": 3870.2584476249904
+  },
+  "55cffcbe955034ee72ef4c65432cacd2d513b31df3c4498970c9f1f53ab7b825": {
+    "config_name": "tier_c_sonnet_zeroshot_test_drift_2026h1",
+    "config_path": "configs/tier_c_sonnet_zeroshot_test_drift_2026h1.yaml",
+    "config_sha256": "65f18c3fa9c7942b84b6f31ddcd49c0e43ef9f722ddcae26fd76746bf7f716e7",
+    "cost_usd": 5.714067999999995,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_drift_2026h1",
+      "split_sha256": "c0cecbdb41aa24b29dba171f42ad593441af9fe355d358e4367596468901a264"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 21484,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 3071.2550210009795,
+      "latency_ms_p95": 4718.718785394958,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-sonnet-5",
+      "n_examples": 1500,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 5.714067999999995,
+      "parse_failures": 26,
+      "predictions_path": "data/preds/55cffcbe955034ee72ef4c65432cacd2d513b31df3c4498970c9f1f53ab7b825.parquet",
+      "pricing_snapshot": {
+        "completion_usd_per_token": 1e-05,
+        "prompt_usd_per_token": 2e-06,
+        "retrieved_at": "2026-08-08T17:02:45.209061+00:00",
+        "slug": "anthropic/claude-sonnet-5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 2749614,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_sonnet_zeroshot_test_drift_2026h1/20260808T170245Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1847.3986666666667
+    },
+    "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.824,
+        "ci_lo": 0.7666666666666667,
+        "point": 0.808
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8183333333333334,
+        "ci_lo": 0.7741458333333333,
+        "point": 0.7958333333333333
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8177777777777778,
+        "ci_lo": 0.775537037037037,
+        "point": 0.7985185185185185
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8182456140350877,
+        "ci_lo": 0.7768245614035088,
+        "point": 0.7957894736842105
+      },
+      "accuracy": {
+        "ci_hi": 0.81735,
+        "ci_lo": 0.7759833333333334,
+        "point": 0.7966666666666666
+      },
+      "aurc": {
+        "ci_hi": 0.23238247544753132,
+        "ci_lo": 0.17804632767673367,
+        "point": 0.18964032044755436
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.8345191210536458,
+        "ci_lo": 0.7851468195709796,
+        "point": 0.8092778738492145
+      },
+      "brier": {
+        "ci_hi": 0.44803333333333334,
+        "ci_lo": 0.3653,
+        "point": 0.4066666666666667
+      },
+      "ece": {
+        "ci_hi": 0.22401666666666664,
+        "ci_lo": 0.18264999999999998,
+        "point": 0.20333333333333337
+      },
+      "f1::card": {
+        "ci_hi": 0.8706674222324358,
+        "ci_lo": 0.8097648835012317,
+        "point": 0.840531561461794
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.47620060790273555,
+        "ci_lo": 0.31880225752508357,
+        "point": 0.4
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.858846495208273,
+        "ci_lo": 0.7993838317449885,
+        "point": 0.8296943231441049
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8513638638638639,
+        "ci_lo": 0.7871181807376887,
+        "point": 0.8187919463087249
+      },
+      "f1::money_service": {
+        "ci_hi": 0.8133416149068323,
+        "ci_lo": 0.7031236668088737,
+        "point": 0.757679180887372
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9651827071538858,
+        "ci_lo": 0.8947302300978577,
+        "point": 0.9333333333333333
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.7663629283489096,
+        "ci_lo": 0.5646907993966818,
+        "point": 0.6724137931034483
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.9729849318344894,
+        "ci_lo": 0.8702124128775307,
+        "point": 0.9256198347107438
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.9166799363057324,
+        "ci_lo": 0.7971842316975061,
+        "point": 0.8606060606060606
+      },
+      "macro_f1": {
+        "ci_hi": 0.8046404807063613,
+        "ci_lo": 0.7586629775741203,
+        "point": 0.7820744481728424
+      }
+    },
+    "model_label": "Tier C — Claude Sonnet 5 (zero-shot)",
+    "slice": "test_drift_2026h1",
+    "tier": "C",
+    "timestamp_utc": "2026-08-08T17:13:03.022703+00:00",
+    "wall_clock_seconds": 618.2471637499984
+  },
+  "5e5e030c2c92f3b040b0f3c10a27a3c12966b80495347b9003d47386d187dabd": {
+    "config_name": "tier_a_logreg_test_iid_perturb_case_05",
+    "config_path": "configs/tier_a_logreg_test_iid_perturb_case_05.yaml",
+    "config_sha256": "08f2a72cbef1fdfc5e3788415d69a2632780aa40199a26240dad0600e838c55a",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "perturbation": {
+        "family": "case",
+        "rate": 0.05,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/5e5e030c2c92f3b040b0f3c10a27a3c12966b80495347b9003d47386d187dabd.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.965416874114358,
+        "ci_lo": 0.9622185094404657,
+        "point": 0.9638466546666156
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.9166899048530908,
+        "ci_lo": 0.9127158757704507,
+        "point": 0.9147387948058165
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.88681821083203,
+        "ci_lo": 0.8826665709209672,
+        "point": 0.8847647315396973
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8688891464508521,
+        "ci_lo": 0.864584362181393,
+        "point": 0.8667620765765311
+      },
+      "accuracy": {
+        "ci_hi": 0.84651053684785,
+        "ci_lo": 0.8422582174008789,
+        "point": 0.8444318910793447
+      },
+      "aurc": {
+        "ci_hi": 0.05117341854817246,
+        "ci_lo": 0.0487403259601423,
+        "point": 0.049970307473295464
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7584343132296566,
+        "ci_lo": 0.7495851284372492,
+        "point": 0.7542244975520479
+      },
+      "brier": {
+        "ci_hi": 0.2569069456446823,
+        "ci_lo": 0.2526777732861429,
+        "point": 0.25486963187344924
+      },
+      "ece": {
+        "ci_hi": 0.10790571634710446,
+        "ci_lo": 0.10395546165389283,
+        "point": 0.10591897214000327
+      },
+      "f1::card": {
+        "ci_hi": 0.7902250394074093,
+        "ci_lo": 0.7789445453219356,
+        "point": 0.7850417949846018
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9136393090127106,
+        "ci_lo": 0.9102668660414234,
+        "point": 0.9120118179300157
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7401717433570966,
+        "ci_lo": 0.7277329565631401,
+        "point": 0.7341113183809813
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8127437126578471,
+        "ci_lo": 0.8012806482627343,
+        "point": 0.8072249278925717
+      },
+      "f1::money_service": {
+        "ci_hi": 0.7097939401468654,
+        "ci_lo": 0.6869489270459121,
+        "point": 0.6992571291636712
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.893480144771375,
+        "ci_lo": 0.8817009189163909,
+        "point": 0.8878603329273244
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.510690714256018,
+        "ci_lo": 0.4685017643649467,
+        "point": 0.49116279069767443
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8747421218704325,
+        "ci_lo": 0.8534185544180642,
+        "point": 0.864034151547492
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6795501328585363,
+        "ci_lo": 0.6485684925284455,
+        "point": 0.6640394088669951
+      },
+      "macro_f1": {
+        "ci_hi": 0.7643278636952343,
+        "ci_lo": 0.7563731957302973,
+        "point": 0.7605270747101476
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word+char) [case @ 0.05]",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T11:59:43.935305+00:00",
+    "wall_clock_seconds": 3286.3872153339908
+  },
+  "61f786be6015b5752c6aa1d78c1a01f34cbb5560e58a15837935b5d82313b184": {
+    "config_name": "tier_a_cnb_test_iid_perturb_typo_10",
+    "config_path": "configs/tier_a_cnb_test_iid_perturb_typo_10.yaml",
+    "config_sha256": "2bdd7dc190f52a256dabfcc14cb0a04e8cdf8d2d73ff237482065f9ce9d433ef",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "perturbation": {
+        "family": "typo",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/61f786be6015b5752c6aa1d78c1a01f34cbb5560e58a15837935b5d82313b184.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.953698154034698,
+        "ci_lo": 0.949943989123358,
+        "point": 0.9518593696143388
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8842445096044521,
+        "ci_lo": 0.8797076775776435,
+        "point": 0.8818981509185566
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8464345365376228,
+        "ci_lo": 0.8417531037564229,
+        "point": 0.8440408940520644
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8253192368551012,
+        "ci_lo": 0.8205314399169531,
+        "point": 0.8228903155581984
+      },
+      "accuracy": {
+        "ci_hi": 0.798302662696399,
+        "ci_lo": 0.7935139262564269,
+        "point": 0.7958886665453884
+      },
+      "aurc": {
+        "ci_hi": 0.06879607139434685,
+        "ci_lo": 0.06576381396760685,
+        "point": 0.06726681789290936
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7033118064110891,
+        "ci_lo": 0.6946106443895284,
+        "point": 0.6989529428196568
+      },
+      "brier": {
+        "ci_hi": 0.30485412313346877,
+        "ci_lo": 0.2999358972998895,
+        "point": 0.30235037041204965
+      },
+      "ece": {
+        "ci_hi": 0.07439812025832124,
+        "ci_lo": 0.07018255896868178,
+        "point": 0.0722211531606418
+      },
+      "f1::card": {
+        "ci_hi": 0.6949260139392207,
+        "ci_lo": 0.6804003898275559,
+        "point": 0.6876258780763373
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.898912579472101,
+        "ci_lo": 0.8952067455846724,
+        "point": 0.8970856877833622
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7119511688486462,
+        "ci_lo": 0.6993912779534925,
+        "point": 0.7056512541553339
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7346024215389125,
+        "ci_lo": 0.7204921644912204,
+        "point": 0.7276343925605451
+      },
+      "f1::money_service": {
+        "ci_hi": 0.6247168137041219,
+        "ci_lo": 0.6022992803334684,
+        "point": 0.6137184115523465
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8690866576658696,
+        "ci_lo": 0.8548214065944506,
+        "point": 0.8619425257951735
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.2946463411366814,
+        "ci_lo": 0.2630797283115672,
+        "point": 0.2787178976707147
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8013291887340983,
+        "ci_lo": 0.7747039106548307,
+        "point": 0.788970907511941
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6015042252471327,
+        "ci_lo": 0.5705758618871581,
+        "point": 0.5866376969038566
+      },
+      "macro_f1": {
+        "ci_hi": 0.6869587423409296,
+        "ci_lo": 0.6793543464065716,
+        "point": 0.6831094057788457
+      }
+    },
+    "model_label": "Tier A — TF-IDF ComplementNB (word+char) [typo @ 0.1]",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T13:39:56.680257+00:00",
+    "wall_clock_seconds": 589.010548124992
+  },
+  "6b6c7825e7bc7177a73c8e61e5da07c2ef3500f1f1a893a24176a670a1db1a28": {
+    "config_name": "tier_a_cnb_test_iid_perturb_typo_05",
+    "config_path": "configs/tier_a_cnb_test_iid_perturb_typo_05.yaml",
+    "config_sha256": "2224a269f0b4894d00e3929615814144c21b7bf543d603119edc3439ee98434d",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "perturbation": {
+        "family": "typo",
+        "rate": 0.05,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/6b6c7825e7bc7177a73c8e61e5da07c2ef3500f1f1a893a24176a670a1db1a28.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9564742828692888,
+        "ci_lo": 0.9527785224617977,
+        "point": 0.9546934242273372
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8952190174136796,
+        "ci_lo": 0.8909574531745557,
+        "point": 0.893136257554904
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8630847136671667,
+        "ci_lo": 0.8584237598272323,
+        "point": 0.8608602219172544
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8440463712318965,
+        "ci_lo": 0.8394286491770895,
+        "point": 0.8418782314227835
+      },
+      "accuracy": {
+        "ci_hi": 0.819739714485413,
+        "ci_lo": 0.8149390097948163,
+        "point": 0.8174315176699252
+      },
+      "aurc": {
+        "ci_hi": 0.06295934751855396,
+        "ci_lo": 0.060175536368686944,
+        "point": 0.06156882185143661
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7202230882729227,
+        "ci_lo": 0.711302861838815,
+        "point": 0.7157506263841292
+      },
+      "brier": {
+        "ci_hi": 0.27736283317123445,
+        "ci_lo": 0.2719516666463827,
+        "point": 0.2745336668886372
+      },
+      "ece": {
+        "ci_hi": 0.04513503472185567,
+        "ci_lo": 0.041007996773695404,
+        "point": 0.04308126685202416
+      },
+      "f1::card": {
+        "ci_hi": 0.7311998016303201,
+        "ci_lo": 0.7181237548908765,
+        "point": 0.7249676105867111
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9042562359301809,
+        "ci_lo": 0.9004538859388042,
+        "point": 0.902416853311342
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.730466876675642,
+        "ci_lo": 0.7178655717392554,
+        "point": 0.724356235677943
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7592291389566063,
+        "ci_lo": 0.7461129379765106,
+        "point": 0.7529934337582078
+      },
+      "f1::money_service": {
+        "ci_hi": 0.6662025459578066,
+        "ci_lo": 0.6443999867913996,
+        "point": 0.65583662102576
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8744354861901306,
+        "ci_lo": 0.8613011891835233,
+        "point": 0.8681237113402062
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.37370065323754864,
+        "ci_lo": 0.3345903856825749,
+        "point": 0.3545756569012383
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8299712321346647,
+        "ci_lo": 0.8063139931740614,
+        "point": 0.8184486373165618
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.637308563992578,
+        "ci_lo": 0.6068412325122117,
+        "point": 0.6217341915940932
+      },
+      "macro_f1": {
+        "ci_hi": 0.7178541572275308,
+        "ci_lo": 0.7093679574716785,
+        "point": 0.7137169946124514
+      }
+    },
+    "model_label": "Tier A — TF-IDF ComplementNB (word+char) [typo @ 0.05]",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T13:29:24.966407+00:00",
+    "wall_clock_seconds": 693.3192112079996
+  },
+  "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e": {
+    "config_name": "tier_c_haiku_zeroshot_test_iid",
+    "config_path": "configs/tier_c_haiku_zeroshot_test_iid.yaml",
+    "config_sha256": "32a286d7169cc5619533cc574f600c5ecc359aed4242d901b7045b75e960b7ee",
+    "cost_usd": 6.575085999999997,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 53557,
+      "eval_rows_cap": 5000,
+      "fallback_label": "card",
+      "latency_ms_p50": 1381.309438002063,
+      "latency_ms_p95": 2518.748542001413,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-haiku-4.5",
+      "n_examples": 5000,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 6.575085999999999,
+      "parse_failures": 0,
+      "pricing_snapshot": {
+        "completion_usd_per_token": 5e-06,
+        "prompt_usd_per_token": 1e-06,
+        "retrieved_at": "2026-08-07T00:41:09.015494+00:00",
+        "slug": "anthropic/claude-haiku-4.5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 6307301,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 4984,
+        "Anthropic": 16
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_iid/20260807T004109Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1272.1716
+    },
+    "git_sha": "9812499cb07c23b5a6f615b32d29a5d65d0c4098",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.8604,
+        "ci_lo": 0.8328,
+        "point": 0.8548
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.85775,
+        "ci_lo": 0.83549375,
+        "point": 0.847
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8573333333333333,
+        "ci_lo": 0.836,
+        "point": 0.8493333333333334
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8568473684210526,
+        "ci_lo": 0.8366315789473684,
+        "point": 0.8488421052631578
+      },
+      "accuracy": {
+        "ci_hi": 0.857,
+        "ci_lo": 0.8368,
+        "point": 0.8474
+      },
+      "aurc": {
+        "ci_hi": 0.1662862507958288,
+        "ci_lo": 0.13926513594606352,
+        "point": 0.14950288217347543
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7887832434741938,
+        "ci_lo": 0.7509302416512051,
+        "point": 0.7702328234223943
+      },
+      "brier": {
+        "ci_hi": 0.3264,
+        "ci_lo": 0.286,
+        "point": 0.3052
+      },
+      "ece": {
+        "ci_hi": 0.1632,
+        "ci_lo": 0.14300000000000002,
+        "point": 0.15259999999999996
+      },
+      "f1::card": {
+        "ci_hi": 0.8239566101014494,
+        "ci_lo": 0.7718960538979788,
+        "point": 0.7984644913627639
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9193260991151431,
+        "ci_lo": 0.9034486742375901,
+        "point": 0.911855273287144
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7434806787130326,
+        "ci_lo": 0.6824411455990403,
+        "point": 0.7129629629629629
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8273397296397756,
+        "ci_lo": 0.7759254748548371,
+        "point": 0.8024800708591674
+      },
+      "f1::money_service": {
+        "ci_hi": 0.776903873857873,
+        "ci_lo": 0.6773250645994832,
+        "point": 0.7304785894206549
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9291702438684827,
+        "ci_lo": 0.8792972831765935,
+        "point": 0.9053356282271945
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.5937613224637681,
+        "ci_lo": 0.3941490890281051,
+        "point": 0.5
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.891898516163222,
+        "ci_lo": 0.7962868480725623,
+        "point": 0.8468468468468469
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.7822231182795699,
+        "ci_lo": 0.6451524766437511,
+        "point": 0.7188940092165899
+      },
+      "macro_f1": {
+        "ci_hi": 0.7886063647867524,
+        "ci_lo": 0.7499398191332423,
+        "point": 0.7697019857981471
+      }
+    },
+    "model_label": "Tier C — Claude Haiku 4.5 (zero-shot)",
+    "slice": "test_iid",
+    "tier": "C",
+    "timestamp_utc": "2026-08-07T00:58:00.104250+00:00",
+    "wall_clock_seconds": 1010.6208564999979
+  },
+  "77cbd36f53b0b49ed392fe80ff622857204b70697669da84192888f957a417a3": {
+    "config_name": "tier_c_haiku_smoke_zeroshot_cal",
+    "config_path": "configs/tier_c_haiku_smoke_zeroshot_cal.yaml",
+    "config_sha256": "705e0296b2ca01b9490c5b628359d6b50e948920c6f07640bee285e72eb87505",
+    "cost_usd": 0.033745,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "cal",
+      "split_sha256": "d7c24d6db05f337ac3fca1922b16c4324775e2007833af1eae684ddc37533c94"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 263,
+      "eval_rows_cap": 25,
+      "fallback_label": "card",
+      "latency_ms_p50": 1634.0178749960614,
+      "latency_ms_p95": 6706.090124603352,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-haiku-4.5",
+      "n_examples": 25,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 0.033745,
+      "parse_failures": 0,
+      "pricing_snapshot": {
+        "completion_usd_per_token": 5e-06,
+        "prompt_usd_per_token": 1e-06,
+        "retrieved_at": "2026-08-06T15:25:44.375372+00:00",
+        "slug": "anthropic/claude-haiku-4.5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 32430,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 25
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_smoke_zeroshot_cal/20260806T152544Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1307.72
+    },
+    "git_sha": "552f21c1ccf300f875bdf79f273d21e10fd52406",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 1.0,
+        "ci_lo": 0.5384615384615384,
+        "point": 0.9230769230769231
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.95,
+        "ci_lo": 0.55,
+        "point": 0.8
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.9130434782608695,
+        "ci_lo": 0.5652173913043478,
+        "point": 0.7391304347826086
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.9166666666666666,
+        "ci_lo": 0.5833333333333334,
+        "point": 0.75
+      },
+      "accuracy": {
+        "ci_hi": 0.92,
+        "ci_lo": 0.6,
+        "point": 0.76
+      },
+      "aurc": {
+        "ci_hi": 0.48912230832948617,
+        "ci_lo": 0.04115046181118802,
+        "point": 0.12215711108860926
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.875,
+        "ci_lo": 0.46660714285714283,
+        "point": 0.5527777777777777
+      },
+      "brier": {
+        "ci_hi": 0.8,
+        "ci_lo": 0.16,
+        "point": 0.48
+      },
+      "ece": {
+        "ci_hi": 0.4,
+        "ci_lo": 0.07999999999999996,
+        "point": 0.24
+      },
+      "f1::card": {
+        "ci_hi": 1.0,
+        "ci_lo": 0.0,
+        "point": 1.0
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 1.0,
+        "ci_lo": 0.7057352941176471,
+        "point": 0.88
+      },
+      "f1::debt_collection": {
+        "ci_hi": 1.0,
+        "ci_lo": 0.0,
+        "point": 0.5714285714285714
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.0,
+        "ci_lo": 0.0,
+        "point": 0.0
+      },
+      "f1::money_service": {
+        "ci_hi": 0.0,
+        "ci_lo": 0.0,
+        "point": 0.0
+      },
+      "f1::mortgage": {
+        "ci_hi": 1.0,
+        "ci_lo": 0.0,
+        "point": 1.0
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.0,
+        "ci_lo": 0.0,
+        "point": 0.0
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.0,
+        "ci_lo": 0.0,
+        "point": 0.0
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.0,
+        "ci_lo": 0.0,
+        "point": 0.0
+      },
+      "macro_f1": {
+        "ci_hi": 0.4352029914529914,
+        "ci_lo": 0.2576664462081129,
+        "point": 0.38349206349206344
+      }
+    },
+    "model_label": "Tier C — Claude Haiku 4.5 (zero-shot) [smoke]",
+    "slice": "cal",
+    "tier": "C",
+    "timestamp_utc": "2026-08-06T15:26:50.906490+00:00",
+    "wall_clock_seconds": 67.63817062499584
+  },
+  "82af4e01cf6ed6cb628f719fe3d7d2d3cebb0abe0f334c8cce71312a2f6666f1": {
+    "config_name": "tier_c_haiku_zeroshot_test_postcutoff",
+    "config_path": "configs/tier_c_haiku_zeroshot_test_postcutoff.yaml",
+    "config_sha256": "5808f981c55c6e1381e42dae28eaf3a02496d965486cd0c03044cd5a752c7918",
+    "cost_usd": 6.852128000000005,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_postcutoff",
+      "split_sha256": "ccbd779deff812e8b41dc6aba8c8d9c5c1cf0dcb294063cda0ef6af50dcdc530"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 52828,
+      "eval_rows_cap": 5000,
+      "fallback_label": "card",
+      "latency_ms_p50": 1432.824708012049,
+      "latency_ms_p95": 2355.1096273891744,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-haiku-4.5",
+      "n_examples": 5000,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 6.852128000000007,
+      "parse_failures": 0,
+      "pricing_snapshot": {
+        "completion_usd_per_token": 5e-06,
+        "prompt_usd_per_token": 1e-06,
+        "retrieved_at": "2026-08-07T00:58:20.317704+00:00",
+        "slug": "anthropic/claude-haiku-4.5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 6587988,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 4998,
+        "Anthropic": 2
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_postcutoff/20260807T005820Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1328.1632
+    },
+    "git_sha": "9812499cb07c23b5a6f615b32d29a5d65d0c4098",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.7536,
+        "ci_lo": 0.71999,
+        "point": 0.7232
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.75100625,
+        "ci_lo": 0.72399375,
+        "point": 0.73475
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.7500055555555556,
+        "ci_lo": 0.7248777777777778,
+        "point": 0.7348888888888889
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.7501052631578947,
+        "ci_lo": 0.7248368421052631,
+        "point": 0.7372631578947368
+      },
+      "accuracy": {
+        "ci_hi": 0.749405,
+        "ci_lo": 0.724595,
+        "point": 0.7374
+      },
+      "aurc": {
+        "ci_hi": 0.2794289309430285,
+        "ci_lo": 0.24612995750805722,
+        "point": 0.27132658540606114
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7620440128282682,
+        "ci_lo": 0.7309519869535144,
+        "point": 0.7459082854696506
+      },
+      "brier": {
+        "ci_hi": 0.5508099999999999,
+        "ci_lo": 0.50119,
+        "point": 0.5252
+      },
+      "ece": {
+        "ci_hi": 0.27540499999999996,
+        "ci_lo": 0.25059500000000007,
+        "point": 0.26259999999999994
+      },
+      "f1::card": {
+        "ci_hi": 0.8114386693685945,
+        "ci_lo": 0.7710295748231413,
+        "point": 0.7917329093799682
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.303618688993043,
+        "ci_lo": 0.22814412958250224,
+        "point": 0.2657952069716776
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7581521739130435,
+        "ci_lo": 0.7160354442426954,
+        "point": 0.7369394359685622
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8167597144000796,
+        "ci_lo": 0.7818347803881511,
+        "point": 0.7994518044769301
+      },
+      "f1::money_service": {
+        "ci_hi": 0.7311585381688805,
+        "ci_lo": 0.6538838715562854,
+        "point": 0.6943396226415094
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9668896043111971,
+        "ci_lo": 0.9361702127659575,
+        "point": 0.951530612244898
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.6338231310942579,
+        "ci_lo": 0.4946217008797654,
+        "point": 0.5676567656765676
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.9217435111159785,
+        "ci_lo": 0.8578626799557032,
+        "point": 0.8911392405063291
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.8630857457281995,
+        "ci_lo": 0.7915914976773121,
+        "point": 0.8303886925795053
+      },
+      "macro_f1": {
+        "ci_hi": 0.7396106124897981,
+        "ci_lo": 0.7121580484585902,
+        "point": 0.7254415878273275
+      }
+    },
+    "model_label": "Tier C — Claude Haiku 4.5 (zero-shot)",
+    "slice": "test_postcutoff",
+    "tier": "C",
+    "timestamp_utc": "2026-08-07T01:14:40.854815+00:00",
+    "wall_clock_seconds": 980.7874132079887
+  },
+  "84c34754383d97d4401c16ca4ffb19809708c946fdfd7aa2df6f4ccc69520a0b": {
+    "config_name": "tier_a_cnb_test_iid_perturb_ocr_10",
+    "config_path": "configs/tier_a_cnb_test_iid_perturb_ocr_10.yaml",
+    "config_sha256": "5bae19ab901fc6ee6cbf60e66e9bd89821204eb50e0da03f44ce2ff999742800",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "perturbation": {
+        "family": "ocr",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/84c34754383d97d4401c16ca4ffb19809708c946fdfd7aa2df6f4ccc69520a0b.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9569338592930182,
+        "ci_lo": 0.9533333652483628,
+        "point": 0.955172149668722
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8971345221710251,
+        "ci_lo": 0.8928726587277841,
+        "point": 0.8950990365627431
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.865254151639911,
+        "ci_lo": 0.860688943499399,
+        "point": 0.8629240736603581
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8464740327148487,
+        "ci_lo": 0.8419991735620483,
+        "point": 0.8442063676036323
+      },
+      "accuracy": {
+        "ci_hi": 0.8227841980793351,
+        "ci_lo": 0.8182439225223328,
+        "point": 0.8205815612343575
+      },
+      "aurc": {
+        "ci_hi": 0.061475652544821006,
+        "ci_lo": 0.05876337933939508,
+        "point": 0.060120165301188196
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7146898210870847,
+        "ci_lo": 0.706025637460666,
+        "point": 0.7104607092480293
+      },
+      "brier": {
+        "ci_hi": 0.2715058707599342,
+        "ci_lo": 0.2661091093614187,
+        "point": 0.26881682069081264
+      },
+      "ece": {
+        "ci_hi": 0.030408993859260137,
+        "ci_lo": 0.026261934412037256,
+        "point": 0.028347485371662127
+      },
+      "f1::card": {
+        "ci_hi": 0.734551445969114,
+        "ci_lo": 0.7217848910748687,
+        "point": 0.7283945016558545
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9063718043506085,
+        "ci_lo": 0.9027233821371446,
+        "point": 0.9045260076559334
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7259125075531888,
+        "ci_lo": 0.7132414261238903,
+        "point": 0.7198401025757062
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7607909545952964,
+        "ci_lo": 0.7476310646740467,
+        "point": 0.7542995169082125
+      },
+      "f1::money_service": {
+        "ci_hi": 0.6738024290706968,
+        "ci_lo": 0.6512620009714665,
+        "point": 0.6633723032421357
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.877983115446183,
+        "ci_lo": 0.865007940163845,
+        "point": 0.8716603835436814
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.36929944071557136,
+        "ci_lo": 0.3232060097068211,
+        "point": 0.3453996983408748
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8408044858569145,
+        "ci_lo": 0.8167188315421551,
+        "point": 0.828761429758936
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6443582241266664,
+        "ci_lo": 0.6144899495873563,
+        "point": 0.6296515062020083
+      },
+      "macro_f1": {
+        "ci_hi": 0.720099455069974,
+        "ci_lo": 0.7117007793370221,
+        "point": 0.7162117166537046
+      }
+    },
+    "model_label": "Tier A — TF-IDF ComplementNB (word+char) [ocr @ 0.1]",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T14:00:35.321784+00:00",
+    "wall_clock_seconds": 600.7072015830054
+  },
+  "8dacc1b9a8966530ff3ec011f8ef6516b47fca07bb7d45a3dfe5704a15162071": {
+    "config_name": "tier_a_logreg_word_test_iid",
+    "config_path": "configs/tier_a_logreg_word_test_iid.yaml",
+    "config_sha256": "452da40e2a03303de2a6029d9fc6eaa06513ebd896cff3687728a22fd1e78447",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "predictions_path": "data/preds/8dacc1b9a8966530ff3ec011f8ef6516b47fca07bb7d45a3dfe5704a15162071.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9681934816743901,
+        "ci_lo": 0.9651870859024932,
+        "point": 0.9666807092796139
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.9182215307282628,
+        "ci_lo": 0.9144027885823709,
+        "point": 0.9163305607085154
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8903081415759743,
+        "ci_lo": 0.8861900126597092,
+        "point": 0.8882115767189013
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8719935799881074,
+        "ci_lo": 0.8676588121466221,
+        "point": 0.8697957085697584
+      },
+      "accuracy": {
+        "ci_hi": 0.8500617561732237,
+        "ci_lo": 0.845695498980305,
+        "point": 0.8478883218597704
+      },
+      "aurc": {
+        "ci_hi": 0.049469665969592125,
+        "ci_lo": 0.04699520915203375,
+        "point": 0.048258949487566156
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7652716741968498,
+        "ci_lo": 0.7565537991069897,
+        "point": 0.7609995516389111
+      },
+      "brier": {
+        "ci_hi": 0.25000319182313113,
+        "ci_lo": 0.24559094341855775,
+        "point": 0.2478264046951439
+      },
+      "ece": {
+        "ci_hi": 0.09964697918969821,
+        "ci_lo": 0.09561397821056435,
+        "point": 0.09763343898413068
+      },
+      "f1::card": {
+        "ci_hi": 0.7932271996665191,
+        "ci_lo": 0.7814400826806187,
+        "point": 0.7877036258539148
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9160151530083719,
+        "ci_lo": 0.9126764865852037,
+        "point": 0.914341781291075
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7498738671020436,
+        "ci_lo": 0.7377705855894153,
+        "point": 0.7437853591633807
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8127415330873244,
+        "ci_lo": 0.8013331005370949,
+        "point": 0.807147258163894
+      },
+      "f1::money_service": {
+        "ci_hi": 0.7155039180110517,
+        "ci_lo": 0.693946374218393,
+        "point": 0.7056988602279544
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8926810721587576,
+        "ci_lo": 0.8805354022234283,
+        "point": 0.8866531440162272
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.5317919075144508,
+        "ci_lo": 0.49044442515603626,
+        "point": 0.5113389251320286
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8722191212737703,
+        "ci_lo": 0.8504087702810872,
+        "point": 0.8609808102345415
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.705348122673097,
+        "ci_lo": 0.6762848752302663,
+        "point": 0.6909888357256778
+      },
+      "macro_f1": {
+        "ci_hi": 0.7717094630236994,
+        "ci_lo": 0.7636826811440887,
+        "point": 0.7676265110898548
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word-only)",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T06:05:06.500378+00:00",
+    "wall_clock_seconds": 476.607821624988
+  },
+  "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7": {
+    "config_name": "tier_a_logreg_test_iid",
+    "config_path": "configs/tier_a_logreg_test_iid.yaml",
+    "config_sha256": "b22be1e963760c2f277562c4afa89eb1014dd6bc0fd1cb86fd588c12d6f3b8c0",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {},
+    "git_sha": "c61b4641963178c09a69c67f7b440e9d5e813c87",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.965416874114358,
+        "ci_lo": 0.9622185094404657,
+        "point": 0.9638466546666156
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.9166899048530908,
+        "ci_lo": 0.9127158757704507,
+        "point": 0.9147387948058165
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.88681821083203,
+        "ci_lo": 0.8826665709209672,
+        "point": 0.8847647315396973
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8688891464508521,
+        "ci_lo": 0.864584362181393,
+        "point": 0.8667620765765311
+      },
+      "accuracy": {
+        "ci_hi": 0.84651053684785,
+        "ci_lo": 0.8422582174008789,
+        "point": 0.8444318910793447
+      },
+      "aurc": {
+        "ci_hi": 0.05117341854817246,
+        "ci_lo": 0.0487403259601423,
+        "point": 0.049970307473295464
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7584343132296566,
+        "ci_lo": 0.7495851284372492,
+        "point": 0.7542244975520479
+      },
+      "brier": {
+        "ci_hi": 0.2569069456446823,
+        "ci_lo": 0.2526777732861429,
+        "point": 0.25486963187344924
+      },
+      "ece": {
+        "ci_hi": 0.10790571634710446,
+        "ci_lo": 0.10395546165389283,
+        "point": 0.10591897214000327
+      },
+      "f1::card": {
+        "ci_hi": 0.7902250394074093,
+        "ci_lo": 0.7789445453219356,
+        "point": 0.7850417949846018
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9136393090127106,
+        "ci_lo": 0.9102668660414234,
+        "point": 0.9120118179300157
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7401717433570966,
+        "ci_lo": 0.7277329565631401,
+        "point": 0.7341113183809813
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8127437126578471,
+        "ci_lo": 0.8012806482627343,
+        "point": 0.8072249278925717
+      },
+      "f1::money_service": {
+        "ci_hi": 0.7097939401468654,
+        "ci_lo": 0.6869489270459121,
+        "point": 0.6992571291636712
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.893480144771375,
+        "ci_lo": 0.8817009189163909,
+        "point": 0.8878603329273244
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.510690714256018,
+        "ci_lo": 0.4685017643649467,
+        "point": 0.49116279069767443
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8747421218704325,
+        "ci_lo": 0.8534185544180642,
+        "point": 0.864034151547492
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6795501328585363,
+        "ci_lo": 0.6485684925284455,
+        "point": 0.6640394088669951
+      },
+      "macro_f1": {
+        "ci_hi": 0.7643278636952343,
+        "ci_lo": 0.7563731957302973,
+        "point": 0.7605270747101476
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word+char)",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-05T15:28:12.656709+00:00",
+    "wall_clock_seconds": 3245.1118904580035
+  },
+  "96a13428a039c9f65c30365196bfaf54a6f18996d42985fa91b68a6b503aa1fc": {
+    "config_name": "tier_a_logreg_test_iid_perturb_case_10",
+    "config_path": "configs/tier_a_logreg_test_iid_perturb_case_10.yaml",
+    "config_sha256": "20436fbae5e400ce112f9e8778b8a8ce1784497cce28aebe87517a4acaefb0a5",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "perturbation": {
+        "family": "case",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/96a13428a039c9f65c30365196bfaf54a6f18996d42985fa91b68a6b503aa1fc.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.965416874114358,
+        "ci_lo": 0.9622185094404657,
+        "point": 0.9638466546666156
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.9166899048530908,
+        "ci_lo": 0.9127158757704507,
+        "point": 0.9147387948058165
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.88681821083203,
+        "ci_lo": 0.8826665709209672,
+        "point": 0.8847647315396973
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8688891464508521,
+        "ci_lo": 0.864584362181393,
+        "point": 0.8667620765765311
+      },
+      "accuracy": {
+        "ci_hi": 0.84651053684785,
+        "ci_lo": 0.8422582174008789,
+        "point": 0.8444318910793447
+      },
+      "aurc": {
+        "ci_hi": 0.05117341854817246,
+        "ci_lo": 0.0487403259601423,
+        "point": 0.049970307473295464
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7584343132296566,
+        "ci_lo": 0.7495851284372492,
+        "point": 0.7542244975520479
+      },
+      "brier": {
+        "ci_hi": 0.2569069456446823,
+        "ci_lo": 0.2526777732861429,
+        "point": 0.25486963187344924
+      },
+      "ece": {
+        "ci_hi": 0.10790571634710446,
+        "ci_lo": 0.10395546165389283,
+        "point": 0.10591897214000327
+      },
+      "f1::card": {
+        "ci_hi": 0.7902250394074093,
+        "ci_lo": 0.7789445453219356,
+        "point": 0.7850417949846018
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9136393090127106,
+        "ci_lo": 0.9102668660414234,
+        "point": 0.9120118179300157
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7401717433570966,
+        "ci_lo": 0.7277329565631401,
+        "point": 0.7341113183809813
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8127437126578471,
+        "ci_lo": 0.8012806482627343,
+        "point": 0.8072249278925717
+      },
+      "f1::money_service": {
+        "ci_hi": 0.7097939401468654,
+        "ci_lo": 0.6869489270459121,
+        "point": 0.6992571291636712
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.893480144771375,
+        "ci_lo": 0.8817009189163909,
+        "point": 0.8878603329273244
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.510690714256018,
+        "ci_lo": 0.4685017643649467,
+        "point": 0.49116279069767443
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8747421218704325,
+        "ci_lo": 0.8534185544180642,
+        "point": 0.864034151547492
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6795501328585363,
+        "ci_lo": 0.6485684925284455,
+        "point": 0.6640394088669951
+      },
+      "macro_f1": {
+        "ci_hi": 0.7643278636952343,
+        "ci_lo": 0.7563731957302973,
+        "point": 0.7605270747101476
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word+char) [case @ 0.1]",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T13:17:13.652321+00:00",
+    "wall_clock_seconds": 4604.078718167002
+  },
+  "9882794f8d6abad909542ae24f54e9da34dac9440149e5153592412115fbaf68": {
+    "config_name": "tier_a_cnb_test_iid_perturb_case_05",
+    "config_path": "configs/tier_a_cnb_test_iid_perturb_case_05.yaml",
+    "config_sha256": "782c134b57be484edfdea1d1006bb1efc5fb0cb42bc6724776c2a0aad6a57cb2",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "perturbation": {
+        "family": "case",
+        "rate": 0.05,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/9882794f8d6abad909542ae24f54e9da34dac9440149e5153592412115fbaf68.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9560726322239669,
+        "ci_lo": 0.9524333614185592,
+        "point": 0.9543104438742293
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.901095087068398,
+        "ci_lo": 0.8970857518999461,
+        "point": 0.8991323080605589
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8698185618995947,
+        "ci_lo": 0.8655621336397196,
+        "point": 0.8678496579750848
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8522792553995626,
+        "ci_lo": 0.8477938138095766,
+        "point": 0.8501627679624273
+      },
+      "accuracy": {
+        "ci_hi": 0.8300422239882042,
+        "ci_lo": 0.8256355141081738,
+        "point": 0.8279348544181994
+      },
+      "aurc": {
+        "ci_hi": 0.06028389539686675,
+        "ci_lo": 0.05753513791170019,
+        "point": 0.058944970495258354
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7213801720540343,
+        "ci_lo": 0.7129865993468459,
+        "point": 0.7172074170427359
+      },
+      "brier": {
+        "ci_hi": 0.26333956353777943,
+        "ci_lo": 0.2579215943948393,
+        "point": 0.26054997808407143
+      },
+      "ece": {
+        "ci_hi": 0.027016771714955593,
+        "ci_lo": 0.02301512148113266,
+        "point": 0.025005468277761147
+      },
+      "f1::card": {
+        "ci_hi": 0.7431760287758616,
+        "ci_lo": 0.7307788163734904,
+        "point": 0.7371889052134811
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9077319871478303,
+        "ci_lo": 0.9042443836379117,
+        "point": 0.9060460099310037
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7404671490856389,
+        "ci_lo": 0.7279326301437643,
+        "point": 0.7343271715364739
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7699668543026228,
+        "ci_lo": 0.7574124241214604,
+        "point": 0.7638609594943981
+      },
+      "f1::money_service": {
+        "ci_hi": 0.6874858829920605,
+        "ci_lo": 0.6645770979866593,
+        "point": 0.6763070077864294
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8797124424471431,
+        "ci_lo": 0.8670919521286861,
+        "point": 0.8737267582861762
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.38237873808589173,
+        "ci_lo": 0.33431766951363856,
+        "point": 0.35849818328623334
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8526048037966198,
+        "ci_lo": 0.8303984062501597,
+        "point": 0.8413906603579511
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6622549061969566,
+        "ci_lo": 0.6316193997530585,
+        "point": 0.6472337894110648
+      },
+      "macro_f1": {
+        "ci_hi": 0.7307968902726525,
+        "ci_lo": 0.7222006937013123,
+        "point": 0.7265088272559123
+      }
+    },
+    "model_label": "Tier A — TF-IDF ComplementNB (word+char) [case @ 0.05]",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T14:09:36.068335+00:00",
+    "wall_clock_seconds": 504.1791590840003
+  },
+  "9d54ec585e65b249a3490a1989611c4c39b938df7e9734017068e5d0b9a6e0a4": {
+    "config_name": "tier_c_sonnet_zeroshot_test_drift_2024",
+    "config_path": "configs/tier_c_sonnet_zeroshot_test_drift_2024.yaml",
+    "config_sha256": "490d7df411419c56e26a690a8c5449f57477b20c50fe42276816748b9e6d18b1",
+    "cost_usd": 5.565741999999987,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_drift_2024",
+      "split_sha256": "b61db6317217e664d69df19aaa7d84737f0e6d8b3169729795bf18616375c6ec"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 21945,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 2947.3002919985447,
+      "latency_ms_p95": 4165.900299698478,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-sonnet-5",
+      "n_examples": 1500,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 5.565741999999987,
+      "parse_failures": 10,
+      "predictions_path": "data/preds/9d54ec585e65b249a3490a1989611c4c39b938df7e9734017068e5d0b9a6e0a4.parquet",
+      "pricing_snapshot": {
+        "completion_usd_per_token": 1e-05,
+        "prompt_usd_per_token": 2e-06,
+        "retrieved_at": "2026-08-08T16:43:02.315542+00:00",
+        "slug": "anthropic/claude-sonnet-5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 2673146,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_sonnet_zeroshot_test_drift_2024/20260808T164302Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1796.7273333333333
+    },
+    "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.86,
+        "ci_lo": 0.808,
+        "point": 0.812
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.855,
+        "ci_lo": 0.8141666666666667,
+        "point": 0.8341666666666666
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8540740740740741,
+        "ci_lo": 0.8155555555555556,
+        "point": 0.84
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8533333333333334,
+        "ci_lo": 0.8168421052631579,
+        "point": 0.8378947368421052
+      },
+      "accuracy": {
+        "ci_hi": 0.8533333333333334,
+        "ci_lo": 0.8173333333333334,
+        "point": 0.8353333333333334
+      },
+      "aurc": {
+        "ci_hi": 0.19119327381551215,
+        "ci_lo": 0.13890232949122128,
+        "point": 0.16595111822993697
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.8369468812839399,
+        "ci_lo": 0.7777549481547815,
+        "point": 0.8094725123174323
+      },
+      "brier": {
+        "ci_hi": 0.36533333333333334,
+        "ci_lo": 0.29333333333333333,
+        "point": 0.3293333333333333
+      },
+      "ece": {
+        "ci_hi": 0.18266666666666664,
+        "ci_lo": 0.1466666666666666,
+        "point": 0.16466666666666663
+      },
+      "f1::card": {
+        "ci_hi": 0.7894936810110382,
+        "ci_lo": 0.6759362050583102,
+        "point": 0.7381703470031545
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9135996747362833,
+        "ci_lo": 0.8818285966635839,
+        "point": 0.8977719528178244
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7908186456400742,
+        "ci_lo": 0.6970369986884793,
+        "point": 0.7438423645320197
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8829498571881942,
+        "ci_lo": 0.787862669245648,
+        "point": 0.8409893992932862
+      },
+      "f1::money_service": {
+        "ci_hi": 0.7664623167281144,
+        "ci_lo": 0.5588064295485636,
+        "point": 0.6732673267326733
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9714285714285714,
+        "ci_lo": 0.8712871287128713,
+        "point": 0.9256198347107438
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.7936507936507936,
+        "ci_lo": 0.5277412280701754,
+        "point": 0.676923076923077
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.9333333333333333,
+        "ci_lo": 0.7777508090614886,
+        "point": 0.8602150537634409
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.7692307692307693,
+        "ci_lo": 0.5262531328320802,
+        "point": 0.6590909090909091
+      },
+      "macro_f1": {
+        "ci_hi": 0.8074904799013385,
+        "ci_lo": 0.7462444257662861,
+        "point": 0.7795433627630143
+      }
+    },
+    "model_label": "Tier C — Claude Sonnet 5 (zero-shot)",
+    "slice": "test_drift_2024",
+    "tier": "C",
+    "timestamp_utc": "2026-08-08T16:52:46.764172+00:00",
+    "wall_clock_seconds": 584.8661755829962
+  },
+  "aa2bc9a0ea889fbb058f1ad3eec943937ad0af025be0dd2462e78f1b4282e072": {
+    "config_name": "tier_c_haiku_zeroshot_test_drift_2026h1",
+    "config_path": "configs/tier_c_haiku_zeroshot_test_drift_2026h1.yaml",
+    "config_sha256": "0f8da3cdb81ee25f89c20a085de5dfbe00bdd64661019e815783978339052e6f",
+    "cost_usd": 2.037794000000003,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_drift_2026h1",
+      "split_sha256": "c0cecbdb41aa24b29dba171f42ad593441af9fe355d358e4367596468901a264"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 15929,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 1324.7023959993385,
+      "latency_ms_p95": 6483.644966054634,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-haiku-4.5",
+      "n_examples": 1500,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 2.0377940000000034,
+      "parse_failures": 0,
+      "predictions_path": "data/preds/aa2bc9a0ea889fbb058f1ad3eec943937ad0af025be0dd2462e78f1b4282e072.parquet",
+      "pricing_snapshot": {
+        "completion_usd_per_token": 5e-06,
+        "prompt_usd_per_token": 1e-06,
+        "retrieved_at": "2026-08-08T16:27:14.521865+00:00",
+        "slug": "anthropic/claude-haiku-4.5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 1958149,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1476,
+        "Anthropic": 24
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_drift_2026h1/20260808T162714Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1316.052
+    },
+    "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.7533333333333333,
+        "ci_lo": 0.6906666666666667,
+        "point": 0.732
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.745,
+        "ci_lo": 0.6983333333333334,
+        "point": 0.7233333333333334
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.7444444444444445,
+        "ci_lo": 0.6992407407407407,
+        "point": 0.7237037037037037
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.744561403508772,
+        "ci_lo": 0.7003508771929825,
+        "point": 0.7235087719298245
+      },
+      "accuracy": {
+        "ci_hi": 0.7446833333333334,
+        "ci_lo": 0.7013333333333334,
+        "point": 0.7226666666666667
+      },
+      "aurc": {
+        "ci_hi": 0.3086239916293332,
+        "ci_lo": 0.24713303191914707,
+        "point": 0.2575031491497638
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7690255101144814,
+        "ci_lo": 0.7161889845908453,
+        "point": 0.7433665822529618
+      },
+      "brier": {
+        "ci_hi": 0.5973333333333334,
+        "ci_lo": 0.5106333333333334,
+        "point": 0.5546666666666666
+      },
+      "ece": {
+        "ci_hi": 0.29866666666666664,
+        "ci_lo": 0.25531666666666664,
+        "point": 0.2773333333333333
+      },
+      "f1::card": {
+        "ci_hi": 0.827598954681624,
+        "ci_lo": 0.7602974634282635,
+        "point": 0.7972027972027972
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.34286176606564955,
+        "ci_lo": 0.21428025338575796,
+        "point": 0.2795031055900621
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.742202856663819,
+        "ci_lo": 0.6644097010372179,
+        "point": 0.7051282051282052
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8390007713518562,
+        "ci_lo": 0.7734974239852288,
+        "point": 0.8062992125984252
+      },
+      "f1::money_service": {
+        "ci_hi": 0.7547266076241818,
+        "ci_lo": 0.6349012775842043,
+        "point": 0.6950354609929078
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9608938547486033,
+        "ci_lo": 0.8888617886178861,
+        "point": 0.9270833333333334
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.7091206457094308,
+        "ci_lo": 0.4778610217216412,
+        "point": 0.6019417475728155
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.9444553805774278,
+        "ci_lo": 0.8256880733944955,
+        "point": 0.8907563025210085
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.9068655723158829,
+        "ci_lo": 0.7808219178082192,
+        "point": 0.847682119205298
+      },
+      "macro_f1": {
+        "ci_hi": 0.7508320741269822,
+        "ci_lo": 0.7047830350713169,
+        "point": 0.7278480315716503
+      }
+    },
+    "model_label": "Tier C — Claude Haiku 4.5 (zero-shot)",
+    "slice": "test_drift_2026h1",
+    "tier": "C",
+    "timestamp_utc": "2026-08-08T16:33:18.727544+00:00",
+    "wall_clock_seconds": 364.7660407919975
+  },
+  "abcadd53508790783bcce40963ca7d54c14977f195f30830466c1e81b221b76a": {
+    "config_name": "tier_a_logreg_wordchar_cal",
+    "config_path": "configs/tier_a_logreg_wordchar_cal.yaml",
+    "config_sha256": "96a64ef9c8e29de4c88ecdbf0b9d34be1ecc9ebb23bf869a19c83fc1d9cee800",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "cal",
+      "split_sha256": "d7c24d6db05f337ac3fca1922b16c4324775e2007833af1eae684ddc37533c94"
+    },
+    "extra": {},
+    "git_sha": "c61b4641963178c09a69c67f7b440e9d5e813c87",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.946741480016557,
+        "ci_lo": 0.9425332290852229,
+        "point": 0.9447408361311687
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8945510793641669,
+        "ci_lo": 0.8899221018137917,
+        "point": 0.8921354451119606
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8627151069945704,
+        "ci_lo": 0.8576937080804855,
+        "point": 0.8600574896199298
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8446214175058094,
+        "ci_lo": 0.8394776336173508,
+        "point": 0.8419829589465531
+      },
+      "accuracy": {
+        "ci_hi": 0.8218860667801131,
+        "ci_lo": 0.8168131697557834,
+        "point": 0.8193096628800074
+      },
+      "aurc": {
+        "ci_hi": 0.0695970832009779,
+        "ci_lo": 0.0660329384901869,
+        "point": 0.06781461472886123
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7918922657003963,
+        "ci_lo": 0.7826105615691721,
+        "point": 0.7872448567410345
+      },
+      "brier": {
+        "ci_hi": 0.271619468139279,
+        "ci_lo": 0.2652959027547407,
+        "point": 0.26855830269063274
+      },
+      "ece": {
+        "ci_hi": 0.024930632537044143,
+        "ci_lo": 0.020766742077852795,
+        "point": 0.02249011378446232
+      },
+      "f1::card": {
+        "ci_hi": 0.7798354818304759,
+        "ci_lo": 0.7667448117022786,
+        "point": 0.7734648581997534
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.8864346265197593,
+        "ci_lo": 0.8814967999046526,
+        "point": 0.8839513818998219
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.771989320719535,
+        "ci_lo": 0.7612897677957625,
+        "point": 0.7665971373084945
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8022742648659567,
+        "ci_lo": 0.7879537916742289,
+        "point": 0.7950610831645653
+      },
+      "f1::money_service": {
+        "ci_hi": 0.7269765245571927,
+        "ci_lo": 0.7020236475941559,
+        "point": 0.7147335423197492
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9002342222856918,
+        "ci_lo": 0.8894350060368863,
+        "point": 0.8949020780385708
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.45186117164480966,
+        "ci_lo": 0.4160883584792274,
+        "point": 0.4341196092446986
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8446565459910502,
+        "ci_lo": 0.8186148859267572,
+        "point": 0.8321246306741875
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6395659909528523,
+        "ci_lo": 0.6100230934710437,
+        "point": 0.6244809175400435
+      },
+      "macro_f1": {
+        "ci_hi": 0.7505209422617376,
+        "ci_lo": 0.7425093052447223,
+        "point": 0.7466039153766538
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word+char)",
+    "slice": "cal",
+    "tier": "A",
+    "timestamp_utc": "2026-08-05T13:03:13.756780+00:00",
+    "wall_clock_seconds": 2052.2916156249994
+  },
+  "acb00456264ca030265c9cb5feda3c8b3282d2c5f3c73a1086f6ccfd07d0f2d0": {
+    "config_name": "tier_a_logreg_test_iid_perturb_ocr_10",
+    "config_path": "configs/tier_a_logreg_test_iid_perturb_ocr_10.yaml",
+    "config_sha256": "64c0ac14bac86c4f6336046f03736ef6f737b6b95c80187dee21b8ef56db8eaa",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "perturbation": {
+        "family": "ocr",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/acb00456264ca030265c9cb5feda3c8b3282d2c5f3c73a1086f6ccfd07d0f2d0.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9653216077515223,
+        "ci_lo": 0.9621993604228103,
+        "point": 0.9638849527019264
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.9128241876608222,
+        "ci_lo": 0.9089578720603195,
+        "point": 0.9109568547663216
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8825306652198428,
+        "ci_lo": 0.8784026957733593,
+        "point": 0.8805200055319737
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8638498906481491,
+        "ci_lo": 0.8595458622670604,
+        "point": 0.8617228207738281
+      },
+      "accuracy": {
+        "ci_hi": 0.8410522964679299,
+        "ci_lo": 0.8368775312850071,
+        "point": 0.8390892640004596
+      },
+      "aurc": {
+        "ci_hi": 0.05250168453835478,
+        "ci_lo": 0.04996214569479467,
+        "point": 0.05124060468079724
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7437935284701152,
+        "ci_lo": 0.7353039636600651,
+        "point": 0.7395641587131812
+      },
+      "brier": {
+        "ci_hi": 0.26092631691932466,
+        "ci_lo": 0.2566393226729183,
+        "point": 0.25879086720961775
+      },
+      "ece": {
+        "ci_hi": 0.10300170435901344,
+        "ci_lo": 0.09912204031382227,
+        "point": 0.10098570670686034
+      },
+      "f1::card": {
+        "ci_hi": 0.7791552773028384,
+        "ci_lo": 0.7680478091697767,
+        "point": 0.7741035677329374
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9118109107156094,
+        "ci_lo": 0.9083107422062505,
+        "point": 0.909987215922155
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7318011492231096,
+        "ci_lo": 0.7188435909394386,
+        "point": 0.7253527222366485
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8024337617831797,
+        "ci_lo": 0.7915445800919848,
+        "point": 0.7971309578898658
+      },
+      "f1::money_service": {
+        "ci_hi": 0.6921955892771033,
+        "ci_lo": 0.6689792998135952,
+        "point": 0.6815519765739385
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8885174822287543,
+        "ci_lo": 0.8766466441612956,
+        "point": 0.8828828828828829
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.5038959794180633,
+        "ci_lo": 0.462640190019714,
+        "point": 0.4842847979474022
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.860710702247762,
+        "ci_lo": 0.8380371353555759,
+        "point": 0.8491838955386289
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6702447516783502,
+        "ci_lo": 0.6393424851822641,
+        "point": 0.6548956661316212
+      },
+      "macro_f1": {
+        "ci_hi": 0.7549468987684345,
+        "ci_lo": 0.7468829432653133,
+        "point": 0.7510415203173424
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word+char) [ocr @ 0.1]",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T11:04:12.189065+00:00",
+    "wall_clock_seconds": 5611.148942999993
+  },
+  "b83b2d0d0854f9fadf4378e72d3896d33684e15c5be0af9fea54ebf328e18e4a": {
+    "config_name": "tier_c_haiku_zeroshot_test_drift_2024",
+    "config_path": "configs/tier_c_haiku_zeroshot_test_drift_2024.yaml",
+    "config_sha256": "c3a85ccf9173b31e33515ceda0c87bfd4115d811fb0bd5c248f7d4071e0cecad",
+    "cost_usd": 1.9898130000000014,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_drift_2024",
+      "split_sha256": "b61db6317217e664d69df19aaa7d84737f0e6d8b3169729795bf18616375c6ec"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 16178,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 1227.916041501885,
+      "latency_ms_p95": 2196.5609267528635,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-haiku-4.5",
+      "n_examples": 1500,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 1.9898130000000014,
+      "parse_failures": 0,
+      "predictions_path": "data/preds/b83b2d0d0854f9fadf4378e72d3896d33684e15c5be0af9fea54ebf328e18e4a.parquet",
+      "pricing_snapshot": {
+        "completion_usd_per_token": 5e-06,
+        "prompt_usd_per_token": 1e-06,
+        "retrieved_at": "2026-08-08T16:17:49.572648+00:00",
+        "slug": "anthropic/claude-haiku-4.5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 1908923,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_drift_2024/20260808T161749Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1283.4006666666667
+    },
+    "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.856,
+        "ci_lo": 0.8026666666666666,
+        "point": 0.8146666666666667
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8500208333333333,
+        "ci_lo": 0.8075,
+        "point": 0.8358333333333333
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8481481481481481,
+        "ci_lo": 0.8096296296296296,
+        "point": 0.8385185185185186
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.847719298245614,
+        "ci_lo": 0.8105263157894737,
+        "point": 0.8343859649122807
+      },
+      "accuracy": {
+        "ci_hi": 0.8466666666666667,
+        "ci_lo": 0.8113333333333334,
+        "point": 0.83
+      },
+      "aurc": {
+        "ci_hi": 0.19823713747852945,
+        "ci_lo": 0.1436790788694951,
+        "point": 0.17513627693747413
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7941194082173471,
+        "ci_lo": 0.7294745635927951,
+        "point": 0.7616404795316039
+      },
+      "brier": {
+        "ci_hi": 0.37733333333333335,
+        "ci_lo": 0.30666666666666664,
+        "point": 0.34
+      },
+      "ece": {
+        "ci_hi": 0.18866666666666665,
+        "ci_lo": 0.15333333333333332,
+        "point": 0.17000000000000004
+      },
+      "f1::card": {
+        "ci_hi": 0.765112620237787,
+        "ci_lo": 0.6447368421052632,
+        "point": 0.7100977198697068
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9222332375821243,
+        "ci_lo": 0.8923797553947187,
+        "point": 0.9067000626174077
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7548254132231405,
+        "ci_lo": 0.650917858640451,
+        "point": 0.7032967032967034
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8268551236749117,
+        "ci_lo": 0.7232165931767621,
+        "point": 0.7793103448275862
+      },
+      "f1::money_service": {
+        "ci_hi": 0.7801785277573979,
+        "ci_lo": 0.5713403880070547,
+        "point": 0.6862745098039216
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9787344858156029,
+        "ci_lo": 0.8888888888888888,
+        "point": 0.9380530973451328
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.7111299435028249,
+        "ci_lo": 0.39213554987212274,
+        "point": 0.576271186440678
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.9484536082474226,
+        "ci_lo": 0.8055465367965369,
+        "point": 0.8888888888888888
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.7777777777777778,
+        "ci_lo": 0.5171891327063741,
+        "point": 0.6666666666666666
+      },
+      "macro_f1": {
+        "ci_hi": 0.7918241393624893,
+        "ci_lo": 0.7274290751699574,
+        "point": 0.7617287977507436
+      }
+    },
+    "model_label": "Tier C — Claude Haiku 4.5 (zero-shot)",
+    "slice": "test_drift_2024",
+    "tier": "C",
+    "timestamp_utc": "2026-08-08T16:22:02.479521+00:00",
+    "wall_clock_seconds": 253.32652616599808
+  },
+  "c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e": {
+    "config_name": "tier_a_logreg_test_drift_2024",
+    "config_path": "configs/tier_a_logreg_test_drift_2024.yaml",
+    "config_sha256": "4a8f8bc78eba1529fd9fae4d1765064f86c0f0641eeef8e6c951ef1b51c0c608",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_drift_2024",
+      "split_sha256": "b61db6317217e664d69df19aaa7d84737f0e6d8b3169729795bf18616375c6ec"
+    },
+    "extra": {
+      "predictions_path": "data/preds/c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e.parquet"
+    },
+    "git_sha": "831ac6e521d83e5e6e367b96f36db6378d67d415",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9461025000000001,
+        "ci_lo": 0.9367,
+        "point": 0.9414
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.9017515625000001,
+        "ci_lo": 0.892059375,
+        "point": 0.897
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8758888888888889,
+        "ci_lo": 0.8658847222222222,
+        "point": 0.8707222222222222
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.858317105263158,
+        "ci_lo": 0.8479973684210526,
+        "point": 0.8533157894736842
+      },
+      "accuracy": {
+        "ci_hi": 0.83555,
+        "ci_lo": 0.8253475,
+        "point": 0.8304
+      },
+      "aurc": {
+        "ci_hi": 0.0714445848316449,
+        "ci_lo": 0.06366365811492294,
+        "point": 0.06753883586139116
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7485256720907635,
+        "ci_lo": 0.7273003218646895,
+        "point": 0.7379291942950323
+      },
+      "brier": {
+        "ci_hi": 0.28237126575209076,
+        "ci_lo": 0.2719701697437442,
+        "point": 0.2770097440980547
+      },
+      "ece": {
+        "ci_hi": 0.10184061284700151,
+        "ci_lo": 0.0920681192563888,
+        "point": 0.09698391056160152
+      },
+      "f1::card": {
+        "ci_hi": 0.7752254357160899,
+        "ci_lo": 0.7486999361882001,
+        "point": 0.7623809523809524
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9018421914835224,
+        "ci_lo": 0.8936137281493522,
+        "point": 0.8976385230371089
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7213599988582816,
+        "ci_lo": 0.6933488339048856,
+        "point": 0.7070914696813977
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8181410859676086,
+        "ci_lo": 0.7914857021476711,
+        "point": 0.8051880674448768
+      },
+      "f1::money_service": {
+        "ci_hi": 0.7069397247271002,
+        "ci_lo": 0.6471486496205991,
+        "point": 0.6774716369529984
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.884527960447078,
+        "ci_lo": 0.8486257442516995,
+        "point": 0.867141162514828
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.5776069833788141,
+        "ci_lo": 0.4793260559399144,
+        "point": 0.5266457680250783
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8793798006367743,
+        "ci_lo": 0.8319747649411002,
+        "point": 0.8554216867469879
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6674145325743773,
+        "ci_lo": 0.5938894784230497,
+        "point": 0.6313416009019166
+      },
+      "macro_f1": {
+        "ci_hi": 0.7568683123744944,
+        "ci_lo": 0.7375927223475301,
+        "point": 0.747813429742905
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word+char)",
+    "slice": "test_drift_2024",
+    "tier": "A",
+    "timestamp_utc": "2026-08-08T14:21:34.319725+00:00",
+    "wall_clock_seconds": 1735.559081583
+  },
+  "c20cd14a7acd63b33b1a164b2fb56615153c5d595597668063ab3c666ec19781": {
+    "config_name": "tier_a_cnb_test_iid",
+    "config_path": "configs/tier_a_cnb_test_iid.yaml",
+    "config_sha256": "c0241ec3ca9fefcdbf8357b3dffe5957c4ad258a6c9e656ea408b25bfaa9aa0a",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {},
+    "git_sha": "c61b4641963178c09a69c67f7b440e9d5e813c87",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9560726322239669,
+        "ci_lo": 0.9524333614185592,
+        "point": 0.9543104438742293
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.901095087068398,
+        "ci_lo": 0.8970857518999461,
+        "point": 0.8991323080605589
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8698185618995947,
+        "ci_lo": 0.8655621336397196,
+        "point": 0.8678496579750848
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8522792553995626,
+        "ci_lo": 0.8477938138095766,
+        "point": 0.8501627679624273
+      },
+      "accuracy": {
+        "ci_hi": 0.8300422239882042,
+        "ci_lo": 0.8256355141081738,
+        "point": 0.8279348544181994
+      },
+      "aurc": {
+        "ci_hi": 0.06028389539686675,
+        "ci_lo": 0.05753513791170019,
+        "point": 0.058944970495258354
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7213801720540343,
+        "ci_lo": 0.7129865993468459,
+        "point": 0.7172074170427359
+      },
+      "brier": {
+        "ci_hi": 0.26333956353777943,
+        "ci_lo": 0.2579215943948393,
+        "point": 0.26054997808407143
+      },
+      "ece": {
+        "ci_hi": 0.027016771714955593,
+        "ci_lo": 0.02301512148113266,
+        "point": 0.025005468277761147
+      },
+      "f1::card": {
+        "ci_hi": 0.7431760287758616,
+        "ci_lo": 0.7307788163734904,
+        "point": 0.7371889052134811
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9077319871478303,
+        "ci_lo": 0.9042443836379117,
+        "point": 0.9060460099310037
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7404671490856389,
+        "ci_lo": 0.7279326301437643,
+        "point": 0.7343271715364739
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7699668543026228,
+        "ci_lo": 0.7574124241214604,
+        "point": 0.7638609594943981
+      },
+      "f1::money_service": {
+        "ci_hi": 0.6874858829920605,
+        "ci_lo": 0.6645770979866593,
+        "point": 0.6763070077864294
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8797124424471431,
+        "ci_lo": 0.8670919521286861,
+        "point": 0.8737267582861762
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.38237873808589173,
+        "ci_lo": 0.33431766951363856,
+        "point": 0.35849818328623334
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8526048037966198,
+        "ci_lo": 0.8303984062501597,
+        "point": 0.8413906603579511
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6622549061969566,
+        "ci_lo": 0.6316193997530585,
+        "point": 0.6472337894110648
+      },
+      "macro_f1": {
+        "ci_hi": 0.7307968902726525,
+        "ci_lo": 0.7222006937013123,
+        "point": 0.7265088272559123
+      }
+    },
+    "model_label": "Tier A — TF-IDF ComplementNB (word+char)",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-05T15:33:53.279032+00:00",
+    "wall_clock_seconds": 309.82363541599625
+  },
+  "c7598f8489a93a0e36f7b2c9fe8fa1313bdb9ce76c630fc4c29e8e4353e21541": {
+    "config_name": "tier_c_haiku_ablation_fewshot_cal",
+    "config_path": "configs/tier_c_haiku_ablation_fewshot_cal.yaml",
+    "config_sha256": "14ca7adf051854319de733ddc81f601b87138dcdecfa8661c767268ea26d158b",
+    "cost_usd": 3.9217780000000064,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "cal",
+      "split_sha256": "d7c24d6db05f337ac3fca1922b16c4324775e2007833af1eae684ddc37533c94"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 14561,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 1390.3481045053923,
+      "latency_ms_p95": 2361.830054150778,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-haiku-4.5",
+      "n_examples": 1500,
+      "num_exemplars": 9,
+      "openrouter_reported_cost_usd": 3.921778000000006,
+      "parse_failures": 0,
+      "pricing_snapshot": {
+        "completion_usd_per_token": 5e-06,
+        "prompt_usd_per_token": 1e-06,
+        "retrieved_at": "2026-08-06T16:00:11.081484+00:00",
+        "slug": "anthropic/claude-haiku-4.5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 3848973,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_ablation_fewshot_cal/20260806T160011Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 2575.6893333333333
+    },
+    "git_sha": "b99dc0031b8eefa393755e17a2bd6ae0e6b49d3b",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.868,
+        "ci_lo": 0.8133,
+        "point": 0.832
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.86,
+        "ci_lo": 0.8199791666666666,
+        "point": 0.835
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8592592592592593,
+        "ci_lo": 0.8214814814814815,
+        "point": 0.8377777777777777
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8589649122807018,
+        "ci_lo": 0.8210526315789474,
+        "point": 0.840701754385965
+      },
+      "accuracy": {
+        "ci_hi": 0.8586666666666667,
+        "ci_lo": 0.822,
+        "point": 0.8413333333333334
+      },
+      "aurc": {
+        "ci_hi": 0.18521995748736544,
+        "ci_lo": 0.13507061564864534,
+        "point": 0.17435990028597212
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.8341436700086118,
+        "ci_lo": 0.7748003600209307,
+        "point": 0.8043815989037877
+      },
+      "brier": {
+        "ci_hi": 0.356,
+        "ci_lo": 0.2826666666666667,
+        "point": 0.31733333333333336
+      },
+      "ece": {
+        "ci_hi": 0.17800000000000005,
+        "ci_lo": 0.1413333333333333,
+        "point": 0.15866666666666662
+      },
+      "f1::card": {
+        "ci_hi": 0.8510775566231984,
+        "ci_lo": 0.7586025408348457,
+        "point": 0.8076923076923077
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9137638371157859,
+        "ci_lo": 0.8801726138099802,
+        "point": 0.8979039891818796
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7909375599551922,
+        "ci_lo": 0.7034078190350895,
+        "point": 0.7511961722488039
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8806037502020583,
+        "ci_lo": 0.7867236874088478,
+        "point": 0.835820895522388
+      },
+      "f1::money_service": {
+        "ci_hi": 0.836384778012685,
+        "ci_lo": 0.66,
+        "point": 0.7521367521367521
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9555555555555556,
+        "ci_lo": 0.8723267866884888,
+        "point": 0.9183673469387755
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.6182202304737515,
+        "ci_lo": 0.29265752032520326,
+        "point": 0.47058823529411764
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.9056751179245283,
+        "ci_lo": 0.697623862487361,
+        "point": 0.819672131147541
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.7580784204671858,
+        "ci_lo": 0.5365428247305729,
+        "point": 0.6530612244897959
+      },
+      "macro_f1": {
+        "ci_hi": 0.7986364835689408,
+        "ci_lo": 0.7350708952946521,
+        "point": 0.7673821171835956
+      }
+    },
+    "model_label": "Tier C — Claude Haiku 4.5 (few-shot) [ablation]",
+    "slice": "cal",
+    "tier": "C",
+    "timestamp_utc": "2026-08-06T16:04:57.235315+00:00",
+    "wall_clock_seconds": 286.67674024999724
+  },
+  "c78c9d076f676bb7ee0352502747a9dd90dfec88d3998ddb38f48b55ac5355a5": {
+    "config_name": "tier_a_cnb_wordchar_cal",
+    "config_path": "configs/tier_a_cnb_wordchar_cal.yaml",
+    "config_sha256": "7e7167f2f9e32e5567a6b39e933891e9d88886f9aa3502f39a237393f1fcfa22",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "cal",
+      "split_sha256": "d7c24d6db05f337ac3fca1922b16c4324775e2007833af1eae684ddc37533c94"
+    },
+    "extra": {},
+    "git_sha": "c61b4641963178c09a69c67f7b440e9d5e813c87",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9398432828956446,
+        "ci_lo": 0.9351745389320701,
+        "point": 0.9374281377914732
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8797062289804248,
+        "ci_lo": 0.8745713443904682,
+        "point": 0.8771450745925436
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8498243372724369,
+        "ci_lo": 0.8445340146917918,
+        "point": 0.8470903864580006
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8320100697134004,
+        "ci_lo": 0.8266726374903176,
+        "point": 0.8292384779240899
+      },
+      "accuracy": {
+        "ci_hi": 0.8089617923009704,
+        "ci_lo": 0.8036707216115532,
+        "point": 0.8062939796716184
+      },
+      "aurc": {
+        "ci_hi": 0.0758972576296629,
+        "ci_lo": 0.07220661839826081,
+        "point": 0.07403067622098047
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.6747147415237581,
+        "ci_lo": 0.6663605719630932,
+        "point": 0.67060578419053
+      },
+      "brier": {
+        "ci_hi": 0.3134981818015718,
+        "ci_lo": 0.30681268525859606,
+        "point": 0.31024322045321134
+      },
+      "ece": {
+        "ci_hi": 0.08978163828122171,
+        "ci_lo": 0.08520927861302818,
+        "point": 0.08734330944830716
+      },
+      "f1::card": {
+        "ci_hi": 0.7402068778358676,
+        "ci_lo": 0.7261479581192384,
+        "point": 0.7331844387887602
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.8881738348581476,
+        "ci_lo": 0.883412538333541,
+        "point": 0.88588497978396
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7493282148979667,
+        "ci_lo": 0.7373663552136636,
+        "point": 0.7433926750843071
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7594708605185675,
+        "ci_lo": 0.74510458929136,
+        "point": 0.752219924583384
+      },
+      "f1::money_service": {
+        "ci_hi": 0.6588317260356332,
+        "ci_lo": 0.6311916365278185,
+        "point": 0.6449214128781477
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8272988369557128,
+        "ci_lo": 0.8138652954408574,
+        "point": 0.8207150016705647
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.09311230762796922,
+        "ci_lo": 0.05616214313148124,
+        "point": 0.07465618860510806
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8206349415747134,
+        "ci_lo": 0.7940071894978727,
+        "point": 0.8081457663451233
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.5989634897251206,
+        "ci_lo": 0.5629972617993496,
+        "point": 0.5811783524393495
+      },
+      "macro_f1": {
+        "ci_hi": 0.6759198894251734,
+        "ci_lo": 0.6673687038125901,
+        "point": 0.671588748908745
+      }
+    },
+    "model_label": "Tier A — TF-IDF ComplementNB (word+char)",
+    "slice": "cal",
+    "tier": "A",
+    "timestamp_utc": "2026-08-05T13:08:20.049345+00:00",
+    "wall_clock_seconds": 279.1843817090012
+  },
+  "c7e53e2a9c31a0b7019697569ec5e9d07b41b1059eaacd01155cc07830cdcd35": {
+    "config_name": "tier_c_haiku_zeroshot_test_iid_perturb_case_10",
+    "config_path": "configs/tier_c_haiku_zeroshot_test_iid_perturb_case_10.yaml",
+    "config_sha256": "ecd2d56a4e7b3dd53b24a0212bf2456f33717cf1646988010b1c8834d347b8ba",
+    "cost_usd": 2.139367999999999,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 16073,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 1399.6697705006227,
+      "latency_ms_p95": 2228.897972620325,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-haiku-4.5",
+      "n_examples": 1500,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 2.139367999999999,
+      "parse_failures": 0,
+      "perturbation": {
+        "family": "case",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/c7e53e2a9c31a0b7019697569ec5e9d07b41b1059eaacd01155cc07830cdcd35.parquet",
+      "pricing_snapshot": {
+        "completion_usd_per_token": 5e-06,
+        "prompt_usd_per_token": 1e-06,
+        "retrieved_at": "2026-08-09T16:20:12.212003+00:00",
+        "slug": "anthropic/claude-haiku-4.5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 2059003,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_iid_perturb_case_10/20260809T162012Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1383.384
+    },
+    "git_sha": "adc8e826a0b1b31a707919d095d48c75d8a5fc6b",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.8693333333333333,
+        "ci_lo": 0.8186666666666667,
+        "point": 0.856
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8633333333333333,
+        "ci_lo": 0.8241666666666667,
+        "point": 0.845
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8637037037037038,
+        "ci_lo": 0.8244444444444444,
+        "point": 0.8466666666666667
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8624561403508771,
+        "ci_lo": 0.8252456140350877,
+        "point": 0.8428070175438597
+      },
+      "accuracy": {
+        "ci_hi": 0.8633333333333333,
+        "ci_lo": 0.8253166666666667,
+        "point": 0.8433333333333334
+      },
+      "aurc": {
+        "ci_hi": 0.18228758094965303,
+        "ci_lo": 0.13110317939064367,
+        "point": 0.14391670971922232
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7879034044694254,
+        "ci_lo": 0.7165595601337771,
+        "point": 0.7516722959738897
+      },
+      "brier": {
+        "ci_hi": 0.34936666666666666,
+        "ci_lo": 0.2733333333333333,
+        "point": 0.31333333333333335
+      },
+      "ece": {
+        "ci_hi": 0.1746833333333333,
+        "ci_lo": 0.13666666666666671,
+        "point": 0.15666666666666662
+      },
+      "f1::card": {
+        "ci_hi": 0.8224387791316692,
+        "ci_lo": 0.7142857142857143,
+        "point": 0.7687296416938111
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9301165755068079,
+        "ci_lo": 0.9006730949260437,
+        "point": 0.9152759948652118
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7624845997674782,
+        "ci_lo": 0.6503447790599493,
+        "point": 0.7100591715976331
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.834147605206622,
+        "ci_lo": 0.7458373957317733,
+        "point": 0.7914438502673797
+      },
+      "f1::money_service": {
+        "ci_hi": 0.8057607645227102,
+        "ci_lo": 0.6348809523809523,
+        "point": 0.7301587301587301
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9359104046242774,
+        "ci_lo": 0.8321959128270869,
+        "point": 0.8875
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.5518845228548515,
+        "ci_lo": 0.09523809523809523,
+        "point": 0.3333333333333333
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.9474021592442644,
+        "ci_lo": 0.7586206896551724,
+        "point": 0.8666666666666667
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.8928571428571429,
+        "ci_lo": 0.6086568322981367,
+        "point": 0.7659574468085106
+      },
+      "macro_f1": {
+        "ci_hi": 0.786608953200428,
+        "ci_lo": 0.7160835864451225,
+        "point": 0.7521249817101417
+      }
+    },
+    "model_label": "Tier C — Claude Haiku 4.5 (zero-shot) [case @ 0.1]",
+    "slice": "test_iid",
+    "tier": "C",
+    "timestamp_utc": "2026-08-09T16:24:53.993606+00:00",
+    "wall_clock_seconds": 283.8667379170074
+  },
+  "c82988bd748b509131bfc91a50baf97eb0d64df0f4cab36a8d2db37832af4ace": {
+    "config_name": "tier_c_sonnet_zeroshot_test_drift_2023",
+    "config_path": "configs/tier_c_sonnet_zeroshot_test_drift_2023.yaml",
+    "config_sha256": "ed3647f7f38c9a4e3bfbe75242a5bc4eb0e14b1c6d7195ec1ad7378445af45c9",
+    "cost_usd": 5.504483999999994,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_drift_2023",
+      "split_sha256": "debbd70416a816faa04b51cac994697b07bc70914e1f3e9d49b27b443a5a5475"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 22064,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 2914.2718334951496,
+      "latency_ms_p95": 4196.263304501917,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-sonnet-5",
+      "n_examples": 1500,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 5.504483999999994,
+      "parse_failures": 19,
+      "predictions_path": "data/preds/c82988bd748b509131bfc91a50baf97eb0d64df0f4cab36a8d2db37832af4ace.parquet",
+      "pricing_snapshot": {
+        "completion_usd_per_token": 1e-05,
+        "prompt_usd_per_token": 2e-06,
+        "retrieved_at": "2026-08-08T16:33:21.190785+00:00",
+        "slug": "anthropic/claude-sonnet-5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 2641922,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_sonnet_zeroshot_test_drift_2023/20260808T163321Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1775.9906666666666
+    },
+    "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.8493333333333334,
+        "ci_lo": 0.7959666666666667,
+        "point": 0.828
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8450208333333333,
+        "ci_lo": 0.8008333333333333,
+        "point": 0.8266666666666667
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8422222222222222,
+        "ci_lo": 0.8014629629629629,
+        "point": 0.8251851851851851
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8421228070175438,
+        "ci_lo": 0.8028070175438596,
+        "point": 0.8252631578947368
+      },
+      "accuracy": {
+        "ci_hi": 0.842,
+        "ci_lo": 0.8033333333333333,
+        "point": 0.822
+      },
+      "aurc": {
+        "ci_hi": 0.20498680194610494,
+        "ci_lo": 0.1507958645153994,
+        "point": 0.16845830574308757
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.8172833099981788,
+        "ci_lo": 0.7484549703364493,
+        "point": 0.7827171333989624
+      },
+      "brier": {
+        "ci_hi": 0.3933333333333333,
+        "ci_lo": 0.316,
+        "point": 0.356
+      },
+      "ece": {
+        "ci_hi": 0.19666666666666666,
+        "ci_lo": 0.15800000000000003,
+        "point": 0.17800000000000005
+      },
+      "f1::card": {
+        "ci_hi": 0.8103459471562919,
+        "ci_lo": 0.7118619142572283,
+        "point": 0.7645429362880887
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.8909397715737596,
+        "ci_lo": 0.8534062701772007,
+        "point": 0.8727272727272727
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7737388935201188,
+        "ci_lo": 0.6723117532647958,
+        "point": 0.7244094488188977
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.9014101852494276,
+        "ci_lo": 0.8281637134635772,
+        "point": 0.8661417322834646
+      },
+      "f1::money_service": {
+        "ci_hi": 0.703327922077922,
+        "ci_lo": 0.4507042253521127,
+        "point": 0.5882352941176471
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9512321278385197,
+        "ci_lo": 0.8627389705882353,
+        "point": 0.9122807017543859
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.7143772893772893,
+        "ci_lo": 0.3157072368421053,
+        "point": 0.5365853658536586
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8633367881965613,
+        "ci_lo": 0.6817830365510777,
+        "point": 0.7835051546391752
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.8269396551724137,
+        "ci_lo": 0.6326262083780881,
+        "point": 0.7407407407407407
+      },
+      "macro_f1": {
+        "ci_hi": 0.7863023888346631,
+        "ci_lo": 0.7188202818879238,
+        "point": 0.7543520719137035
+      }
+    },
+    "model_label": "Tier C — Claude Sonnet 5 (zero-shot)",
+    "slice": "test_drift_2023",
+    "tier": "C",
+    "timestamp_utc": "2026-08-08T16:42:59.741539+00:00",
+    "wall_clock_seconds": 579.0919744580024
+  },
+  "cd8be5b713acfde37e89fac192dbf3fd493adeb5ce1a44530df861e98c8ab45d": {
+    "config_name": "tier_a_logreg_test_iid_perturb_ocr_05",
+    "config_path": "configs/tier_a_logreg_test_iid_perturb_ocr_05.yaml",
+    "config_sha256": "1135bf5b51b0034b5f66694918b78f4e9d32d60455c584ac7b3be4fef142629f",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "perturbation": {
+        "family": "ocr",
+        "rate": 0.05,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/cd8be5b713acfde37e89fac192dbf3fd493adeb5ce1a44530df861e98c8ab45d.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9653407567691777,
+        "ci_lo": 0.9621040940599748,
+        "point": 0.9636360154724063
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.9150263299623003,
+        "ci_lo": 0.9112078870205255,
+        "point": 0.91309915624439
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.885254364408132,
+        "ci_lo": 0.88114713986319,
+        "point": 0.8832966308152215
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.86634961348908,
+        "ci_lo": 0.8620755686800173,
+        "point": 0.8643230767680229
+      },
+      "accuracy": {
+        "ci_hi": 0.843465095793878,
+        "ci_lo": 0.8390892640004596,
+        "point": 0.8414158919219096
+      },
+      "aurc": {
+        "ci_hi": 0.05176066131990041,
+        "ci_lo": 0.049181755898869715,
+        "point": 0.050564108957180436
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7494093299193871,
+        "ci_lo": 0.7401804758026905,
+        "point": 0.745127486684469
+      },
+      "brier": {
+        "ci_hi": 0.2583782070166355,
+        "ci_lo": 0.25410813000186605,
+        "point": 0.2562927706569341
+      },
+      "ece": {
+        "ci_hi": 0.10459728098776529,
+        "ci_lo": 0.10070375183283238,
+        "point": 0.10261019309601789
+      },
+      "f1::card": {
+        "ci_hi": 0.786226295377202,
+        "ci_lo": 0.7746545583142517,
+        "point": 0.7808066883088006
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9122313653094238,
+        "ci_lo": 0.9087058460788009,
+        "point": 0.9104716963742604
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7357227148144464,
+        "ci_lo": 0.723288692559768,
+        "point": 0.7297612365614611
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.807395091386257,
+        "ci_lo": 0.796226857762748,
+        "point": 0.8021325351915073
+      },
+      "f1::money_service": {
+        "ci_hi": 0.7013808953230837,
+        "ci_lo": 0.6782184563591535,
+        "point": 0.6903725205611998
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8903374517539745,
+        "ci_lo": 0.8786852852491077,
+        "point": 0.8846122614697524
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.5053177496335826,
+        "ci_lo": 0.46337938494819897,
+        "point": 0.48525214081826834
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8654314752498671,
+        "ci_lo": 0.8432049085532444,
+        "point": 0.8541171385346877
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6718028803795283,
+        "ci_lo": 0.6408197103781175,
+        "point": 0.6565130260521042
+      },
+      "macro_f1": {
+        "ci_hi": 0.7586132753648676,
+        "ci_lo": 0.750363322600668,
+        "point": 0.7548932493191157
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word+char) [ocr @ 0.05]",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T09:29:55.613212+00:00",
+    "wall_clock_seconds": 4459.311114291995
+  },
+  "cef3a58caf5261da12e083e33712480a10dee3d09667985646bb484e5fadcf47": {
+    "config_name": "tier_a_logreg_test_drift_2025",
+    "config_path": "configs/tier_a_logreg_test_drift_2025.yaml",
+    "config_sha256": "d911ceaf446d5f26467deba3ebc128e1ec15e6451ca0102d4fd93722f3f7c469",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_drift_2025",
+      "split_sha256": "3c4ea70e7d489ba37963cca3512ea09d952b3c85a587752c96a1a13d5760f56f"
+    },
+    "extra": {
+      "predictions_path": "data/preds/cef3a58caf5261da12e083e33712480a10dee3d09667985646bb484e5fadcf47.parquet"
+    },
+    "git_sha": "831ac6e521d83e5e6e367b96f36db6378d67d415",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9411025000000001,
+        "ci_lo": 0.9316,
+        "point": 0.9365
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8811890625000001,
+        "ci_lo": 0.8709984375,
+        "point": 0.875875
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8529458333333333,
+        "ci_lo": 0.8426652777777778,
+        "point": 0.8477222222222223
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8368421052631579,
+        "ci_lo": 0.8263657894736841,
+        "point": 0.8313684210526315
+      },
+      "accuracy": {
+        "ci_hi": 0.8159525,
+        "ci_lo": 0.80574875,
+        "point": 0.81085
+      },
+      "aurc": {
+        "ci_hi": 0.0794517064177909,
+        "ci_lo": 0.07201055253386651,
+        "point": 0.07572412614393839
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7166966641880698,
+        "ci_lo": 0.6978440808940606,
+        "point": 0.706790092453888
+      },
+      "brier": {
+        "ci_hi": 0.3021513365214839,
+        "ci_lo": 0.29170427202170346,
+        "point": 0.29702157525875444
+      },
+      "ece": {
+        "ci_hi": 0.09029762999947963,
+        "ci_lo": 0.08097197018483152,
+        "point": 0.08545464997845825
+      },
+      "f1::card": {
+        "ci_hi": 0.7561730891779436,
+        "ci_lo": 0.7233339755854366,
+        "point": 0.7400109469074986
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.890781327425041,
+        "ci_lo": 0.8821094907401567,
+        "point": 0.8865134676963646
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.687488565068715,
+        "ci_lo": 0.6587897101906718,
+        "point": 0.6730462519936204
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7849989008605964,
+        "ci_lo": 0.7555203916601715,
+        "point": 0.7708854427213607
+      },
+      "f1::money_service": {
+        "ci_hi": 0.7688575586224132,
+        "ci_lo": 0.7287743152574347,
+        "point": 0.74989898989899
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8728387968158239,
+        "ci_lo": 0.83358037962151,
+        "point": 0.8536209553158706
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.583206106870229,
+        "ci_lo": 0.49286775574892183,
+        "point": 0.5393258426966292
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.7566281183126667,
+        "ci_lo": 0.6875696300664198,
+        "point": 0.7230392156862745
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6681339078554855,
+        "ci_lo": 0.5924018403331783,
+        "point": 0.6289592760180995
+      },
+      "macro_f1": {
+        "ci_hi": 0.738566747455213,
+        "ci_lo": 0.7205498948432459,
+        "point": 0.7294778209927453
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word+char)",
+    "slice": "test_drift_2025",
+    "tier": "A",
+    "timestamp_utc": "2026-08-08T14:50:30.437553+00:00",
+    "wall_clock_seconds": 1729.454043040998
+  },
+  "cf190ce25eceb5a6d149e932dfe3e82fb5fe0d882730efaeec8718a604eb6911": {
+    "config_name": "tier_c_haiku_zeroshot_test_drift_2023",
+    "config_path": "configs/tier_c_haiku_zeroshot_test_drift_2023.yaml",
+    "config_sha256": "d53d928f4613e540da195e77c308df38b1aba3581a8186d843045bcbd6c33006",
+    "cost_usd": 1.9749710000000003,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_drift_2023",
+      "split_sha256": "debbd70416a816faa04b51cac994697b07bc70914e1f3e9d49b27b443a5a5475"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 16043,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 1250.7806460016582,
+      "latency_ms_p95": 2283.969035402697,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-haiku-4.5",
+      "n_examples": 1500,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 1.9749710000000007,
+      "parse_failures": 0,
+      "predictions_path": "data/preds/cf190ce25eceb5a6d149e932dfe3e82fb5fe0d882730efaeec8718a604eb6911.parquet",
+      "pricing_snapshot": {
+        "completion_usd_per_token": 5e-06,
+        "prompt_usd_per_token": 1e-06,
+        "retrieved_at": "2026-08-08T16:13:26.284455+00:00",
+        "slug": "anthropic/claude-haiku-4.5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 1894756,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_zeroshot_test_drift_2023/20260808T161326Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1273.866
+    },
+    "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.8426666666666667,
+        "ci_lo": 0.7866333333333333,
+        "point": 0.832
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8358333333333333,
+        "ci_lo": 0.7908333333333334,
+        "point": 0.8183333333333334
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8355555555555556,
+        "ci_lo": 0.7933148148148148,
+        "point": 0.8148148148148148
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8343859649122807,
+        "ci_lo": 0.7943684210526316,
+        "point": 0.8154385964912281
+      },
+      "accuracy": {
+        "ci_hi": 0.8333333333333334,
+        "ci_lo": 0.79465,
+        "point": 0.8133333333333334
+      },
+      "aurc": {
+        "ci_hi": 0.2129674580115037,
+        "ci_lo": 0.15919285143237577,
+        "point": 0.1808714409047534
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7724269366362029,
+        "ci_lo": 0.6995629888358741,
+        "point": 0.7350072417153408
+      },
+      "brier": {
+        "ci_hi": 0.4107,
+        "ci_lo": 0.3333333333333333,
+        "point": 0.37333333333333335
+      },
+      "ece": {
+        "ci_hi": 0.20535,
+        "ci_lo": 0.16666666666666663,
+        "point": 0.18666666666666665
+      },
+      "f1::card": {
+        "ci_hi": 0.8157119573859118,
+        "ci_lo": 0.7117415889788878,
+        "point": 0.7678571428571429
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.8946007946995891,
+        "ci_lo": 0.8597454072731358,
+        "point": 0.8770718232044199
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7039247894605186,
+        "ci_lo": 0.5901419789227166,
+        "point": 0.6510263929618768
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8619854721549637,
+        "ci_lo": 0.7821229050279329,
+        "point": 0.8241206030150754
+      },
+      "f1::money_service": {
+        "ci_hi": 0.6956715838509316,
+        "ci_lo": 0.43332474226804124,
+        "point": 0.5783132530120482
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9479166666666666,
+        "ci_lo": 0.8550114416475972,
+        "point": 0.9047619047619048
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.6923469387755101,
+        "ci_lo": 0.2608695652173913,
+        "point": 0.5
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8636454545454545,
+        "ci_lo": 0.6666666666666666,
+        "point": 0.7777777777777778
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.8380987394957984,
+        "ci_lo": 0.632597604259095,
+        "point": 0.74
+      },
+      "macro_f1": {
+        "ci_hi": 0.7692000039995196,
+        "ci_lo": 0.699357429471809,
+        "point": 0.7356587663989163
+      }
+    },
+    "model_label": "Tier C — Claude Haiku 4.5 (zero-shot)",
+    "slice": "test_drift_2023",
+    "tier": "C",
+    "timestamp_utc": "2026-08-08T16:17:46.898898+00:00",
+    "wall_clock_seconds": 261.031840292002
+  },
+  "d1c42d7d977d80bcd4e1958f9cbe3fc2e37858814fa27eaf08f742420dedf0a1": {
+    "config_name": "tier_c_sonnet_zeroshot_test_postcutoff",
+    "config_path": "configs/tier_c_sonnet_zeroshot_test_postcutoff.yaml",
+    "config_sha256": "3f757bee8988e0f46590df718b3589a79122789c0e56dfcdbf8ee930339b5255",
+    "cost_usd": 5.7794659999999975,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_postcutoff",
+      "split_sha256": "ccbd779deff812e8b41dc6aba8c8d9c5c1cf0dcb294063cda0ef6af50dcdc530"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 21979,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 3123.6286045168526,
+      "latency_ms_p95": 5274.630616696959,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-sonnet-5",
+      "n_examples": 1500,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 5.779465999999996,
+      "parse_failures": 37,
+      "pricing_snapshot": {
+        "completion_usd_per_token": 1e-05,
+        "prompt_usd_per_token": 2e-06,
+        "retrieved_at": "2026-08-07T02:09:06.583870+00:00",
+        "slug": "anthropic/claude-sonnet-5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 2779838,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1493,
+        "Azure": 7
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_sonnet_zeroshot_test_postcutoff/20260807T020907Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1867.878
+    },
+    "git_sha": "f67cf6ad3cfb7ee2a2c05556b41ac5ef648cf20d",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.8306666666666667,
+        "ci_lo": 0.7733,
+        "point": 0.7933333333333333
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8250208333333333,
+        "ci_lo": 0.7799791666666667,
+        "point": 0.8083333333333333
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8237037037037037,
+        "ci_lo": 0.7807222222222222,
+        "point": 0.7985185185185185
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8224561403508772,
+        "ci_lo": 0.7817368421052632,
+        "point": 0.7985964912280702
+      },
+      "accuracy": {
+        "ci_hi": 0.8220166666666666,
+        "ci_lo": 0.7813333333333333,
+        "point": 0.8013333333333333
+      },
+      "aurc": {
+        "ci_hi": 0.22651753307893543,
+        "ci_lo": 0.17105964589509823,
+        "point": 0.19242022453337218
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.8411229763110833,
+        "ci_lo": 0.7912079447413005,
+        "point": 0.8161214082291055
+      },
+      "brier": {
+        "ci_hi": 0.43733333333333335,
+        "ci_lo": 0.35596666666666665,
+        "point": 0.3973333333333333
+      },
+      "ece": {
+        "ci_hi": 0.21866666666666668,
+        "ci_lo": 0.17798333333333338,
+        "point": 0.19866666666666666
+      },
+      "f1::card": {
+        "ci_hi": 0.8390495244516999,
+        "ci_lo": 0.7647031128835715,
+        "point": 0.8036036036036036
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.4,
+        "ci_lo": 0.2320401953719273,
+        "point": 0.31746031746031744
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.866861884462044,
+        "ci_lo": 0.8066920619620491,
+        "point": 0.8387978142076503
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8535894602765373,
+        "ci_lo": 0.7871067634633526,
+        "point": 0.8204283360790774
+      },
+      "f1::money_service": {
+        "ci_hi": 0.8027986297118026,
+        "ci_lo": 0.6925312047182043,
+        "point": 0.75
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9953927571912548,
+        "ci_lo": 0.9557522123893806,
+        "point": 0.9779735682819384
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.8431525735294118,
+        "ci_lo": 0.6666666666666666,
+        "point": 0.7636363636363637
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.9830508474576272,
+        "ci_lo": 0.9032165898617511,
+        "point": 0.9457364341085271
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.9222435897435898,
+        "ci_lo": 0.8143453093812375,
+        "point": 0.8711656441717791
+      },
+      "macro_f1": {
+        "ci_hi": 0.8085411303501047,
+        "ci_lo": 0.7672077293588495,
+        "point": 0.7876446757276953
+      }
+    },
+    "model_label": "Tier C — Claude Sonnet 5 (zero-shot)",
+    "slice": "test_postcutoff",
+    "tier": "C",
+    "timestamp_utc": "2026-08-07T02:19:57.600182+00:00",
+    "wall_clock_seconds": 651.8691857499944
+  },
+  "d35c23d22b05988e86722c5ea5893a65e2dcb880f8c2f4a17ceae9db9aec889f": {
+    "config_name": "tier_a_logreg_word_cal",
+    "config_path": "configs/tier_a_logreg_word_cal.yaml",
+    "config_sha256": "d0322775a29a6374463beec8ce29f76816162f86af299fd5f1c44d94a3d97e69",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "cal",
+      "split_sha256": "d7c24d6db05f337ac3fca1922b16c4324775e2007833af1eae684ddc37533c94"
+    },
+    "extra": {},
+    "git_sha": "c61b4641963178c09a69c67f7b440e9d5e813c87",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9478228625304697,
+        "ci_lo": 0.9435680448880099,
+        "point": 0.9457986478406843
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8984880278248871,
+        "ci_lo": 0.893874500560522,
+        "point": 0.8961884503722441
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8686173746406899,
+        "ci_lo": 0.8638642606196104,
+        "point": 0.8661513893324816
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.851024218144849,
+        "ci_lo": 0.8463270357281177,
+        "point": 0.8486033113865221
+      },
+      "accuracy": {
+        "ci_hi": 0.8288532516212114,
+        "ci_lo": 0.8239200547302581,
+        "point": 0.8263694062456882
+      },
+      "aurc": {
+        "ci_hi": 0.06813560759161093,
+        "ci_lo": 0.06451957004846756,
+        "point": 0.06636974519845604
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7883344362279427,
+        "ci_lo": 0.7795618565104314,
+        "point": 0.7839769437004742
+      },
+      "brier": {
+        "ci_hi": 0.2656050325431507,
+        "ci_lo": 0.2597211586186017,
+        "point": 0.2627026453147813
+      },
+      "ece": {
+        "ci_hi": 0.03940584175494209,
+        "ci_lo": 0.03484285779488085,
+        "point": 0.0369947688823825
+      },
+      "f1::card": {
+        "ci_hi": 0.7947810656153317,
+        "ci_lo": 0.7821789704213008,
+        "point": 0.7885232956041064
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.8902943554476414,
+        "ci_lo": 0.8856409124026945,
+        "point": 0.887962467171524
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.775193950632861,
+        "ci_lo": 0.7644550155795713,
+        "point": 0.7698483816624252
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8152999918690806,
+        "ci_lo": 0.8018461100259717,
+        "point": 0.8087050314066366
+      },
+      "f1::money_service": {
+        "ci_hi": 0.7467835126105051,
+        "ci_lo": 0.7240273353885569,
+        "point": 0.7358357936173204
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9050541142703276,
+        "ci_lo": 0.8942166307959073,
+        "point": 0.8998080614203455
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.5122333267107244,
+        "ci_lo": 0.4659273112786342,
+        "point": 0.48910232729959363
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8507264112649157,
+        "ci_lo": 0.8241775737296966,
+        "point": 0.8384918401800788
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.5765148886407987,
+        "ci_lo": 0.548579725168102,
+        "point": 0.5629262244265344
+      },
+      "macro_f1": {
+        "ci_hi": 0.7576429631924125,
+        "ci_lo": 0.7490788942134842,
+        "point": 0.7534670469765072
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word-only)",
+    "slice": "cal",
+    "tier": "A",
+    "timestamp_utc": "2026-08-05T12:28:35.060078+00:00",
+    "wall_clock_seconds": 800.0313288329999
+  },
+  "daa587253ea2b2fac263eedbfcc6b132b2b123caa25933740553d23e2d604068": {
+    "config_name": "tier_c_sonnet_zeroshot_test_drift_2025",
+    "config_path": "configs/tier_c_sonnet_zeroshot_test_drift_2025.yaml",
+    "config_sha256": "4513c3696f1dce71cb4950df41f84c6e232fd34bfac86775427ca6515415b836",
+    "cost_usd": 5.672699999999995,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_drift_2025",
+      "split_sha256": "3c4ea70e7d489ba37963cca3512ea09d952b3c85a587752c96a1a13d5760f56f"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 22005,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 2996.612291499332,
+      "latency_ms_p95": 4157.161718746283,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-sonnet-5",
+      "n_examples": 1500,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 5.672699999999995,
+      "parse_failures": 16,
+      "predictions_path": "data/preds/daa587253ea2b2fac263eedbfcc6b132b2b123caa25933740553d23e2d604068.parquet",
+      "pricing_snapshot": {
+        "completion_usd_per_token": 1e-05,
+        "prompt_usd_per_token": 2e-06,
+        "retrieved_at": "2026-08-08T16:52:49.318700+00:00",
+        "slug": "anthropic/claude-sonnet-5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 2726325,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1500
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_sonnet_zeroshot_test_drift_2025/20260808T165249Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1832.22
+    },
+    "git_sha": "2cc4f8ea8c6be56cf9ffd8153f607b173b772674",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.8386666666666667,
+        "ci_lo": 0.784,
+        "point": 0.8146666666666667
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8325,
+        "ci_lo": 0.7883333333333333,
+        "point": 0.8041666666666667
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8318518518518518,
+        "ci_lo": 0.7903703703703704,
+        "point": 0.8103703703703704
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8308947368421052,
+        "ci_lo": 0.790859649122807,
+        "point": 0.8112280701754386
+      },
+      "accuracy": {
+        "ci_hi": 0.8300166666666666,
+        "ci_lo": 0.7913333333333333,
+        "point": 0.8113333333333334
+      },
+      "aurc": {
+        "ci_hi": 0.2181255676737489,
+        "ci_lo": 0.16275560381843057,
+        "point": 0.17859208126787432
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.8349149571340488,
+        "ci_lo": 0.7741247710136382,
+        "point": 0.8060029628552106
+      },
+      "brier": {
+        "ci_hi": 0.41733333333333333,
+        "ci_lo": 0.3399666666666667,
+        "point": 0.37733333333333335
+      },
+      "ece": {
+        "ci_hi": 0.20866666666666667,
+        "ci_lo": 0.16998333333333338,
+        "point": 0.18866666666666665
+      },
+      "f1::card": {
+        "ci_hi": 0.7702044042913608,
+        "ci_lo": 0.6538385826771653,
+        "point": 0.7148014440433214
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.8958742632612967,
+        "ci_lo": 0.860477844094773,
+        "point": 0.8792987188132164
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.7510859462562532,
+        "ci_lo": 0.6543645870258774,
+        "point": 0.7050691244239631
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8603773584905661,
+        "ci_lo": 0.7629524340393905,
+        "point": 0.8140350877192982
+      },
+      "f1::money_service": {
+        "ci_hi": 0.8148235913638757,
+        "ci_lo": 0.675,
+        "point": 0.7513227513227513
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9684373304395009,
+        "ci_lo": 0.851474615546661,
+        "point": 0.9183673469387755
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.8406178489702516,
+        "ci_lo": 0.5499754901960785,
+        "point": 0.7142857142857143
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8333791208791209,
+        "ci_lo": 0.6172364672364672,
+        "point": 0.735632183908046
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.75,
+        "ci_lo": 0.4943820224719101,
+        "point": 0.6373626373626373
+      },
+      "macro_f1": {
+        "ci_hi": 0.7905904803999657,
+        "ci_lo": 0.7273250178934807,
+        "point": 0.7633527787575248
+      }
+    },
+    "model_label": "Tier C — Claude Sonnet 5 (zero-shot)",
+    "slice": "test_drift_2025",
+    "tier": "C",
+    "timestamp_utc": "2026-08-08T17:02:42.680469+00:00",
+    "wall_clock_seconds": 593.865023624996
+  },
+  "dcfb1beefd13d98934ceaca6c103c92a968d54ce8aa2e6ef8c33d2170bf69d5f": {
+    "config_name": "tier_a_logreg_word_test_iid_perturb_typo_10",
+    "config_path": "configs/tier_a_logreg_word_test_iid_perturb_typo_10.yaml",
+    "config_sha256": "2985a382190c03015a180eaf54cc2f6487185a0870baf7f618ae0cda81a40efd",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "perturbation": {
+        "family": "typo",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/dcfb1beefd13d98934ceaca6c103c92a968d54ce8aa2e6ef8c33d2170bf69d5f.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9529901191068898,
+        "ci_lo": 0.9491402091072728,
+        "point": 0.951093408908123
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8864825563999761,
+        "ci_lo": 0.8819454251690504,
+        "point": 0.8843037520196277
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8526165171969914,
+        "ci_lo": 0.8478808285194523,
+        "point": 0.8503813870360323
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8329791576380001,
+        "ci_lo": 0.8282115177230626,
+        "point": 0.8306608480059665
+      },
+      "accuracy": {
+        "ci_hi": 0.8093701827791235,
+        "ci_lo": 0.8046388939421503,
+        "point": 0.8071005237306473
+      },
+      "aurc": {
+        "ci_hi": 0.06752379049781417,
+        "ci_lo": 0.06448333796504177,
+        "point": 0.06603888224076437
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.6998989978471022,
+        "ci_lo": 0.6914477213090857,
+        "point": 0.6958108853336743
+      },
+      "brier": {
+        "ci_hi": 0.295717444996094,
+        "ci_lo": 0.29054925389184516,
+        "point": 0.29301739313185615
+      },
+      "ece": {
+        "ci_hi": 0.07767715081255175,
+        "ci_lo": 0.07353815549467951,
+        "point": 0.07571358990520287
+      },
+      "f1::card": {
+        "ci_hi": 0.7353925432121489,
+        "ci_lo": 0.7224702833599634,
+        "point": 0.7292161520190024
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.8959146046609893,
+        "ci_lo": 0.8920830942702611,
+        "point": 0.8940140943149216
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.6985833402368486,
+        "ci_lo": 0.6861295777844555,
+        "point": 0.6924803591470258
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7541859068541541,
+        "ci_lo": 0.7420430322095187,
+        "point": 0.7483722004156084
+      },
+      "f1::money_service": {
+        "ci_hi": 0.6514890116257228,
+        "ci_lo": 0.6277572694048631,
+        "point": 0.6400294153695306
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8287773633845781,
+        "ci_lo": 0.8137215549431271,
+        "point": 0.8214512040557668
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.42256931183635676,
+        "ci_lo": 0.3831104145279356,
+        "point": 0.4019282916541127
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.7854038602526506,
+        "ci_lo": 0.7577661858220236,
+        "point": 0.7712359550561798
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.630354679693486,
+        "ci_lo": 0.5989605981034204,
+        "point": 0.6146572104018913
+      },
+      "macro_f1": {
+        "ci_hi": 0.7055204997299586,
+        "ci_lo": 0.6973109983603741,
+        "point": 0.7014872091593376
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word-only) [typo @ 0.1]",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T14:27:30.920462+00:00",
+    "wall_clock_seconds": 488.66854699999385
+  },
+  "e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a": {
+    "config_name": "tier_c_sonnet_zeroshot_test_iid",
+    "config_path": "configs/tier_c_sonnet_zeroshot_test_iid.yaml",
+    "config_sha256": "ee874a9a114611887b8062879cf3b49f584748e8ae86babbb0b9d2b05c23295f",
+    "cost_usd": 5.4880739999999975,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 21677,
+      "eval_rows_cap": 1500,
+      "fallback_label": "card",
+      "latency_ms_p50": 3169.5133544999408,
+      "latency_ms_p95": 5918.28850176098,
+      "max_concurrency": 8,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-sonnet-5",
+      "n_examples": 1500,
+      "num_exemplars": 0,
+      "openrouter_reported_cost_usd": 5.4880739999999975,
+      "parse_failures": 12,
+      "pricing_snapshot": {
+        "completion_usd_per_token": 1e-05,
+        "prompt_usd_per_token": 2e-06,
+        "retrieved_at": "2026-08-07T01:57:24.954228+00:00",
+        "slug": "anthropic/claude-sonnet-5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 2635652,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 1495,
+        "Azure": 5
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_sonnet_zeroshot_test_iid/20260807T015725Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 1771.5526666666667
+    },
+    "git_sha": "f67cf6ad3cfb7ee2a2c05556b41ac5ef648cf20d",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.868,
+        "ci_lo": 0.816,
+        "point": 0.8373333333333334
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.8616666666666667,
+        "ci_lo": 0.8208333333333333,
+        "point": 0.8408333333333333
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8607407407407407,
+        "ci_lo": 0.8207407407407408,
+        "point": 0.8451851851851852
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8596666666666667,
+        "ci_lo": 0.8224385964912281,
+        "point": 0.8421052631578947
+      },
+      "accuracy": {
+        "ci_hi": 0.8593333333333333,
+        "ci_lo": 0.822,
+        "point": 0.8413333333333334
+      },
+      "aurc": {
+        "ci_hi": 0.18600653256928162,
+        "ci_lo": 0.13333222470715994,
+        "point": 0.16191915560694845
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.822784679452287,
+        "ci_lo": 0.7481936705947196,
+        "point": 0.7844342478200067
+      },
+      "brier": {
+        "ci_hi": 0.356,
+        "ci_lo": 0.2813333333333333,
+        "point": 0.31733333333333336
+      },
+      "ece": {
+        "ci_hi": 0.17800000000000005,
+        "ci_lo": 0.14066666666666672,
+        "point": 0.15866666666666662
+      },
+      "f1::card": {
+        "ci_hi": 0.8099243789946854,
+        "ci_lo": 0.7076848874598071,
+        "point": 0.7604790419161677
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9239086968245079,
+        "ci_lo": 0.8944346471063003,
+        "point": 0.9088471849865952
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.8176853302548034,
+        "ci_lo": 0.7235081175954367,
+        "point": 0.7717391304347826
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.8618807874873551,
+        "ci_lo": 0.7739963643811767,
+        "point": 0.8208092485549133
+      },
+      "f1::money_service": {
+        "ci_hi": 0.794127719580983,
+        "ci_lo": 0.6153846153846154,
+        "point": 0.7121212121212122
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.9361945288753799,
+        "ci_lo": 0.8333333333333334,
+        "point": 0.891566265060241
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.5581395348837209,
+        "ci_lo": 0.16666666666666666,
+        "point": 0.3783783783783784
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8572420634920633,
+        "ci_lo": 0.625,
+        "point": 0.7536231884057971
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.8064516129032258,
+        "ci_lo": 0.5116279069767442,
+        "point": 0.6785714285714286
+      },
+      "macro_f1": {
+        "ci_hi": 0.773000127499801,
+        "ci_lo": 0.7014555324131826,
+        "point": 0.7417927864921684
+      }
+    },
+    "model_label": "Tier C — Claude Sonnet 5 (zero-shot)",
+    "slice": "test_iid",
+    "tier": "C",
+    "timestamp_utc": "2026-08-07T02:08:45.374677+00:00",
+    "wall_clock_seconds": 680.8605908330064
+  },
+  "e22fba2a2dc1b6fdf34f3aea83c92183e81301c933240457aba13720d74b6893": {
+    "config_name": "tier_c_haiku_smoke_fewshot_cal",
+    "config_path": "configs/tier_c_haiku_smoke_fewshot_cal.yaml",
+    "config_sha256": "d22b871820dcc8d90d0b18fa093df6e86d5d41aa5821065e8bc843078bfb3aec",
+    "cost_usd": 0.066395,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "cal",
+      "split_sha256": "d7c24d6db05f337ac3fca1922b16c4324775e2007833af1eae684ddc37533c94"
+    },
+    "extra": {
+      "cap_seed": 20260806,
+      "completion_tokens_total": 238,
+      "eval_rows_cap": 25,
+      "fallback_label": "card",
+      "latency_ms_p50": 1998.6106249998556,
+      "latency_ms_p95": 8417.117858608246,
+      "max_tokens": 64,
+      "model_slug": "anthropic/claude-haiku-4.5",
+      "n_examples": 25,
+      "num_exemplars": 9,
+      "openrouter_reported_cost_usd": 0.066395,
+      "parse_failures": 0,
+      "pricing_snapshot": {
+        "completion_usd_per_token": 5e-06,
+        "prompt_usd_per_token": 1e-06,
+        "retrieved_at": "2026-08-06T15:24:08.100741+00:00",
+        "slug": "anthropic/claude-haiku-4.5",
+        "source": "https://openrouter.ai/api/v1/models"
+      },
+      "prompt_bundle_sha256": "f6777a96bc58f546b48d5f85ba47d683558c88504baab3333dbcd80e6b260fbe",
+      "prompt_tokens_total": 65205,
+      "prompt_version": "v1",
+      "provider_histogram": {
+        "Amazon Bedrock": 25
+      },
+      "raw_log_path": "results/tier_c_raw/tier_c_haiku_smoke_fewshot_cal/20260806T152409Z/calls.jsonl",
+      "run_type": "standard",
+      "temperature": 0.0,
+      "tier": "C",
+      "tokens_per_call_mean": 2617.72
+    },
+    "git_sha": "552f21c1ccf300f875bdf79f273d21e10fd52406",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 1.0,
+        "ci_lo": 0.5384615384615384,
+        "point": 0.9230769230769231
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.95,
+        "ci_lo": 0.6,
+        "point": 0.8
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.9565217391304348,
+        "ci_lo": 0.6086956521739131,
+        "point": 0.782608695652174
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.9583333333333334,
+        "ci_lo": 0.625,
+        "point": 0.7916666666666666
+      },
+      "accuracy": {
+        "ci_hi": 0.92,
+        "ci_lo": 0.64,
+        "point": 0.8
+      },
+      "aurc": {
+        "ci_hi": 0.4388887133197787,
+        "ci_lo": 0.029382308732382765,
+        "point": 0.11533313216897818
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.9333333333333332,
+        "ci_lo": 0.585703781512605,
+        "point": 0.7194444444444444
+      },
+      "brier": {
+        "ci_hi": 0.72,
+        "ci_lo": 0.16,
+        "point": 0.4
+      },
+      "ece": {
+        "ci_hi": 0.36,
+        "ci_lo": 0.07999999999999996,
+        "point": 0.19999999999999996
+      },
+      "f1::card": {
+        "ci_hi": 1.0,
+        "ci_lo": 0.0,
+        "point": 1.0
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 1.0,
+        "ci_lo": 0.7057352941176471,
+        "point": 0.88
+      },
+      "f1::debt_collection": {
+        "ci_hi": 1.0,
+        "ci_lo": 0.0,
+        "point": 0.5714285714285714
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.0,
+        "ci_lo": 0.0,
+        "point": 0.0
+      },
+      "f1::money_service": {
+        "ci_hi": 1.0,
+        "ci_lo": 0.0,
+        "point": 0.6666666666666666
+      },
+      "f1::mortgage": {
+        "ci_hi": 1.0,
+        "ci_lo": 0.0,
+        "point": 1.0
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.0,
+        "ci_lo": 0.0,
+        "point": 0.0
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.0,
+        "ci_lo": 0.0,
+        "point": 0.0
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.0,
+        "ci_lo": 0.0,
+        "point": 0.0
+      },
+      "macro_f1": {
+        "ci_hi": 0.5284903381642512,
+        "ci_lo": 0.30671296296296297,
+        "point": 0.45756613756613757
+      }
+    },
+    "model_label": "Tier C — Claude Haiku 4.5 (few-shot) [smoke]",
+    "slice": "cal",
+    "tier": "C",
+    "timestamp_utc": "2026-08-06T15:25:38.510668+00:00",
+    "wall_clock_seconds": 91.39741574999061
+  },
+  "e94b4e5104e0f83dcd1bdeb022bc0fa53cf703d025bc70056ee669dc249db98f": {
+    "config_name": "tier_a_logreg_word_test_iid_perturb_ocr_10",
+    "config_path": "configs/tier_a_logreg_word_test_iid_perturb_ocr_10.yaml",
+    "config_sha256": "39b06b69149be54c1b21302a4655df557ccb4ee6a7932193e46d29d458c066df",
+    "cost_usd": null,
+    "dataset": {
+      "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+      "split": "test_iid",
+      "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2"
+    },
+    "extra": {
+      "perturbation": {
+        "family": "ocr",
+        "rate": 0.1,
+        "seed": 20260805
+      },
+      "predictions_path": "data/preds/e94b4e5104e0f83dcd1bdeb022bc0fa53cf703d025bc70056ee669dc249db98f.parquet"
+    },
+    "git_sha": "d8b0d505e96630d9260010dcd08c3ba81f7f2558",
+    "metrics": {
+      "acc_at_cov::0.50": {
+        "ci_hi": 0.9648811803454483,
+        "ci_lo": 0.9616248898931484,
+        "point": 0.9632530351192984
+      },
+      "acc_at_cov::0.80": {
+        "ci_hi": 0.9114014720842559,
+        "ci_lo": 0.9072467237149183,
+        "point": 0.9093650888636228
+      },
+      "acc_at_cov::0.90": {
+        "ci_hi": 0.8810950116490601,
+        "ci_lo": 0.8766454962286833,
+        "point": 0.878902967052841
+      },
+      "acc_at_cov::0.95": {
+        "ci_hi": 0.8627614113947653,
+        "ci_lo": 0.8583160318884107,
+        "point": 0.8606645770552604
+      },
+      "accuracy": {
+        "ci_hi": 0.8398552320404431,
+        "ci_lo": 0.835421952644026,
+        "point": 0.83767222312649
+      },
+      "aurc": {
+        "ci_hi": 0.05367290208337933,
+        "ci_lo": 0.050863072406065524,
+        "point": 0.052294444578423284
+      },
+      "balanced_accuracy": {
+        "ci_hi": 0.7486076437363591,
+        "ci_lo": 0.7394232857657851,
+        "point": 0.7439826969113812
+      },
+      "brier": {
+        "ci_hi": 0.25971640132629736,
+        "ci_lo": 0.2549912912004603,
+        "point": 0.2573790605189068
+      },
+      "ece": {
+        "ci_hi": 0.0898797877989225,
+        "ci_lo": 0.08583462391460334,
+        "point": 0.08780771123774729
+      },
+      "f1::card": {
+        "ci_hi": 0.7787961316276305,
+        "ci_lo": 0.7671226009288107,
+        "point": 0.7734278122232063
+      },
+      "f1::credit_reporting": {
+        "ci_hi": 0.9115639870796532,
+        "ci_lo": 0.9080059564901085,
+        "point": 0.9098538294831005
+      },
+      "f1::debt_collection": {
+        "ci_hi": 0.728149915838621,
+        "ci_lo": 0.7157527495246946,
+        "point": 0.7221300742034046
+      },
+      "f1::deposit_account": {
+        "ci_hi": 0.7985234844546507,
+        "ci_lo": 0.7868530080398682,
+        "point": 0.7927194460041176
+      },
+      "f1::money_service": {
+        "ci_hi": 0.6972141565485833,
+        "ci_lo": 0.6747984215889905,
+        "point": 0.6873027433843166
+      },
+      "f1::mortgage": {
+        "ci_hi": 0.8789457886401771,
+        "ci_lo": 0.8667796229209267,
+        "point": 0.8730350665054414
+      },
+      "f1::payday_personal_loan": {
+        "ci_hi": 0.5088099225918149,
+        "ci_lo": 0.46760251610400605,
+        "point": 0.4883227176220807
+      },
+      "f1::student_loan": {
+        "ci_hi": 0.8454436357038949,
+        "ci_lo": 0.8206101329586539,
+        "point": 0.833225737034646
+      },
+      "f1::vehicle_loan": {
+        "ci_hi": 0.6936489537008507,
+        "ci_lo": 0.6640910556761421,
+        "point": 0.6785285885645742
+      },
+      "macro_f1": {
+        "ci_hi": 0.7549634100820675,
+        "ci_lo": 0.746731877786999,
+        "point": 0.7509495572249876
+      }
+    },
+    "model_label": "Tier A — TF-IDF LogReg (word-only) [ocr @ 0.1]",
+    "slice": "test_iid",
+    "tier": "A",
+    "timestamp_utc": "2026-08-09T14:36:25.966819+00:00",
+    "wall_clock_seconds": 496.3320817089989
+  }
+}

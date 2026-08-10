@@ -1,0 +1,412 @@
+{
+  "exhibits": [
+    {
+      "bins": [
+        {
+          "acc": null,
+          "conf_mean": null,
+          "hi": 0.0666666667,
+          "lo": 0.0,
+          "n": 0
+        },
+        {
+          "acc": null,
+          "conf_mean": null,
+          "hi": 0.1333333333,
+          "lo": 0.0666666667,
+          "n": 0
+        },
+        {
+          "acc": 0.1875,
+          "conf_mean": 0.1887943549,
+          "hi": 0.2,
+          "lo": 0.1333333333,
+          "n": 16
+        },
+        {
+          "acc": 0.236196319,
+          "conf_mean": 0.2442608176,
+          "hi": 0.2666666667,
+          "lo": 0.2,
+          "n": 326
+        },
+        {
+          "acc": 0.3193612774,
+          "conf_mean": 0.3039875776,
+          "hi": 0.3333333333,
+          "lo": 0.2666666667,
+          "n": 1002
+        },
+        {
+          "acc": 0.4307608101,
+          "conf_mean": 0.3688725639,
+          "hi": 0.4,
+          "lo": 0.3333333333,
+          "n": 1827
+        },
+        {
+          "acc": 0.4603409933,
+          "conf_mean": 0.4353900835,
+          "hi": 0.4666666667,
+          "lo": 0.4,
+          "n": 2698
+        },
+        {
+          "acc": 0.5354529397,
+          "conf_mean": 0.5011527566,
+          "hi": 0.5333333333,
+          "lo": 0.4666666667,
+          "n": 3963
+        },
+        {
+          "acc": 0.5769975787,
+          "conf_mean": 0.5667331087,
+          "hi": 0.6,
+          "lo": 0.5333333333,
+          "n": 4130
+        },
+        {
+          "acc": 0.6578157469,
+          "conf_mean": 0.6338705776,
+          "hi": 0.6666666667,
+          "lo": 0.6,
+          "n": 4331
+        },
+        {
+          "acc": 0.7158827252,
+          "conf_mean": 0.7004405417,
+          "hi": 0.7333333333,
+          "lo": 0.6666666667,
+          "n": 4741
+        },
+        {
+          "acc": 0.7756262214,
+          "conf_mean": 0.7674895641,
+          "hi": 0.8,
+          "lo": 0.7333333333,
+          "n": 5629
+        },
+        {
+          "acc": 0.8326915416,
+          "conf_mean": 0.8355841875,
+          "hi": 0.8666666667,
+          "lo": 0.8,
+          "n": 7531
+        },
+        {
+          "acc": 0.8818512999,
+          "conf_mean": 0.9027086709,
+          "hi": 0.9333333333,
+          "lo": 0.8666666667,
+          "n": 12078
+        },
+        {
+          "acc": 0.9506976744,
+          "conf_mean": 0.9786776671,
+          "hi": 1.0,
+          "lo": 0.9333333333,
+          "n": 38700
+        }
+      ],
+      "brier": {
+        "ci_hi": 0.271619468139279,
+        "ci_lo": 0.2652959027547407,
+        "point": 0.26855830269063274
+      },
+      "calibration": "raw",
+      "config_name": "tier_a_logreg_wordchar_cal",
+      "ece": {
+        "ci_hi": 0.024930632537044143,
+        "ci_lo": 0.020766742077852795,
+        "point": 0.02249011378446232
+      },
+      "evidence_class": "measured (bins derived from frozen per-example artifact)",
+      "key": "tier_a_logreg_raw",
+      "label": "Tier A LogReg — raw probabilities (CAL)",
+      "n": 86972,
+      "n_bins": 15,
+      "run_id": "abcadd53508790783bcce40963ca7d54c14977f195f30830466c1e81b221b76a",
+      "slice": "cal",
+      "source": "data/preds/abcadd53508790783bcce40963ca7d54c14977f195f30830466c1e81b221b76a.parquet"
+    },
+    {
+      "bins": [
+        {
+          "acc": null,
+          "conf_mean": null,
+          "hi": 0.0666666667,
+          "lo": 0.0,
+          "n": 0
+        },
+        {
+          "acc": null,
+          "conf_mean": null,
+          "hi": 0.1333333333,
+          "lo": 0.0666666667,
+          "n": 0
+        },
+        {
+          "acc": 0.0,
+          "conf_mean": 0.1925797432,
+          "hi": 0.2,
+          "lo": 0.1333333333,
+          "n": 2
+        },
+        {
+          "acc": 0.2125,
+          "conf_mean": 0.2464908458,
+          "hi": 0.2666666667,
+          "lo": 0.2,
+          "n": 80
+        },
+        {
+          "acc": 0.2917547569,
+          "conf_mean": 0.306980959,
+          "hi": 0.3333333333,
+          "lo": 0.2666666667,
+          "n": 473
+        },
+        {
+          "acc": 0.4009402283,
+          "conf_mean": 0.3717291096,
+          "hi": 0.4,
+          "lo": 0.3333333333,
+          "n": 1489
+        },
+        {
+          "acc": 0.4804469274,
+          "conf_mean": 0.4375105069,
+          "hi": 0.4666666667,
+          "lo": 0.4,
+          "n": 3222
+        },
+        {
+          "acc": 0.5812351246,
+          "conf_mean": 0.5037135099,
+          "hi": 0.5333333333,
+          "lo": 0.4666666667,
+          "n": 7983
+        },
+        {
+          "acc": 0.7075745273,
+          "conf_mean": 0.5662522683,
+          "hi": 0.6,
+          "lo": 0.5333333333,
+          "n": 8621
+        },
+        {
+          "acc": 0.7861160981,
+          "conf_mean": 0.6332762568,
+          "hi": 0.6666666667,
+          "lo": 0.6,
+          "n": 8355
+        },
+        {
+          "acc": 0.8456022409,
+          "conf_mean": 0.7006323102,
+          "hi": 0.7333333333,
+          "lo": 0.6666666667,
+          "n": 8925
+        },
+        {
+          "acc": 0.8995608173,
+          "conf_mean": 0.7673828663,
+          "hi": 0.8,
+          "lo": 0.7333333333,
+          "n": 10474
+        },
+        {
+          "acc": 0.9393595276,
+          "conf_mean": 0.8349567497,
+          "hi": 0.8666666667,
+          "lo": 0.8,
+          "n": 13209
+        },
+        {
+          "acc": 0.9717026125,
+          "conf_mean": 0.9021631714,
+          "hi": 0.9333333333,
+          "lo": 0.8666666667,
+          "n": 18871
+        },
+        {
+          "acc": 0.991078208,
+          "conf_mean": 0.94708542,
+          "hi": 1.0,
+          "lo": 0.9333333333,
+          "n": 5268
+        }
+      ],
+      "brier": {
+        "ci_hi": 0.27242201843386793,
+        "ci_lo": 0.267496318508842,
+        "point": 0.2700070457057651
+      },
+      "calibration": "isotonic",
+      "config_name": "tier_a_logreg_wordchar_isocal_cal",
+      "ece": {
+        "ci_hi": 0.10465430343768738,
+        "ci_lo": 0.10034493460985898,
+        "point": 0.10242022289443707
+      },
+      "evidence_class": "measured (bins derived from frozen per-example artifact)",
+      "key": "tier_a_logreg_isotonic",
+      "label": "Tier A LogReg — isotonic (CAL, in-sample)",
+      "n": 86972,
+      "n_bins": 15,
+      "run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc",
+      "slice": "cal",
+      "source": "data/preds/40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc.parquet"
+    },
+    {
+      "bins": [
+        {
+          "acc": null,
+          "conf_mean": null,
+          "hi": 0.0666666667,
+          "lo": 0.0,
+          "n": 0
+        },
+        {
+          "acc": null,
+          "conf_mean": null,
+          "hi": 0.1333333333,
+          "lo": 0.0666666667,
+          "n": 0
+        },
+        {
+          "acc": 0.0,
+          "conf_mean": 0.1919433082,
+          "hi": 0.2,
+          "lo": 0.1333333333,
+          "n": 3
+        },
+        {
+          "acc": 0.2021276596,
+          "conf_mean": 0.2436893811,
+          "hi": 0.2666666667,
+          "lo": 0.2,
+          "n": 94
+        },
+        {
+          "acc": 0.2990990991,
+          "conf_mean": 0.3062461486,
+          "hi": 0.3333333333,
+          "lo": 0.2666666667,
+          "n": 555
+        },
+        {
+          "acc": 0.3865598027,
+          "conf_mean": 0.3719444783,
+          "hi": 0.4,
+          "lo": 0.3333333333,
+          "n": 1622
+        },
+        {
+          "acc": 0.4768530907,
+          "conf_mean": 0.4380341753,
+          "hi": 0.4666666667,
+          "lo": 0.4,
+          "n": 3737
+        },
+        {
+          "acc": 0.581749472,
+          "conf_mean": 0.5033985435,
+          "hi": 0.5333333333,
+          "lo": 0.4666666667,
+          "n": 8997
+        },
+        {
+          "acc": 0.6983029541,
+          "conf_mean": 0.5665989375,
+          "hi": 0.6,
+          "lo": 0.5333333333,
+          "n": 9546
+        },
+        {
+          "acc": 0.7892748452,
+          "conf_mean": 0.6336795254,
+          "hi": 0.6666666667,
+          "lo": 0.6,
+          "n": 9529
+        },
+        {
+          "acc": 0.854924703,
+          "conf_mean": 0.7008217818,
+          "hi": 0.7333333333,
+          "lo": 0.6666666667,
+          "n": 10691
+        },
+        {
+          "acc": 0.9102031213,
+          "conf_mean": 0.7677404969,
+          "hi": 0.8,
+          "lo": 0.7333333333,
+          "n": 12751
+        },
+        {
+          "acc": 0.9465850438,
+          "conf_mean": 0.8346710769,
+          "hi": 0.8666666667,
+          "lo": 0.8,
+          "n": 16662
+        },
+        {
+          "acc": 0.9777657267,
+          "conf_mean": 0.9011720178,
+          "hi": 0.9333333333,
+          "lo": 0.8666666667,
+          "n": 23972
+        },
+        {
+          "acc": 0.9902928071,
+          "conf_mean": 0.9464408321,
+          "hi": 1.0,
+          "lo": 0.9333333333,
+          "n": 6284
+        }
+      ],
+      "brier": {
+        "ci_hi": 0.2569069456446823,
+        "ci_lo": 0.2526777732861429,
+        "point": 0.25486963187344924
+      },
+      "calibration": "isotonic",
+      "config_name": "tier_a_logreg_test_iid",
+      "ece": {
+        "ci_hi": 0.10790571634710446,
+        "ci_lo": 0.10395546165389283,
+        "point": 0.10591897214000327
+      },
+      "evidence_class": "measured (bins derived from frozen per-example artifact)",
+      "key": "tier_a_logreg_test_iid",
+      "label": "Tier A LogReg — isotonic, deployment point (TEST-IID)",
+      "n": 104443,
+      "n_bins": 15,
+      "run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+      "slice": "test_iid",
+      "source": "data/preds/8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7.parquet"
+    }
+  ],
+  "isotonic_in_sample_note": "v2 derivation caveat, by design: tier_a_logreg_wordchar_isocal_cal fits its isotonic calibrator ON CAL and predicts CAL (same CalibratedClassifierCV/FrozenEstimator path as the TEST-IID final, base model never refit). CAL is the split thresholds have always been fit on, but these CAL probabilities are in-sample and are better calibrated here than they would be on held-out data. The thresholds derived from them are evaluated only on TEST.",
+  "no_raw_test_iid_note": "No raw-probability TEST-IID exhibit exists: every reported TEST-IID final is calibration: isotonic (fit on CAL, disjoint from TEST-IID). The raw-vs-isotonic contrast is shown on CAL, where the two rungs differ by exactly that one config switch.",
+  "pending": [
+    {
+      "label": "Tier B1 — temperature scaling",
+      "pending": true,
+      "slot": "tier_b1_temp_scaling"
+    },
+    {
+      "label": "Tier B2 — temperature scaling",
+      "pending": true,
+      "slot": "tier_b2_temp_scaling"
+    }
+  ],
+  "tier_c_note": {
+    "run_ids": [
+      "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e",
+      "e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a"
+    ],
+    "text": "Tier C structured output emits a degenerate one-hot p_max — no calibration signal to plot; parse-failure is its only self-signal (UPGRADE_PLAN §4.2 amendment)."
+  }
+}

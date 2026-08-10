@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Triage Router Lab — demo</title>
+<link rel="stylesheet" href="./assets/styles.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <nav class="sidenav" id="sidenav" aria-label="Primary">
+    <h1>Triage Router Lab</h1>
+    <p class="subtitle">CFPB complaint triage — Tier A/B/C + router</p>
+    <ul class="nav-list">
+      <li><a class="nav-link" data-panel="playground" href="#playground">1. Triage playground</a></li>
+      <li><a class="nav-link" data-panel="frontier" href="#frontier">2. Cost-quality frontier</a></li>
+      <li><a class="nav-link" data-panel="policy" href="#policy">3. Router policy builder</a></li>
+      <li><a class="nav-link" data-panel="drift" href="#drift">4. Drift timeline</a></li>
+      <li><a class="nav-link" data-panel="calibration" href="#calibration">5. Calibration</a></li>
+      <li><a class="nav-link" data-panel="receipts" href="#receipts">6. Receipts / all runs</a></li>
+    </ul>
+  </nav>
+
+  <div class="main-col">
+
+    <div class="top-tabs" id="top-tabs" aria-label="Primary (mobile)"></div>
+
+    <!-- ================= 1. PLAYGROUND ================= -->
+    <section class="panel" id="panel-playground" data-panel="playground">
+      <div class="panel-header">
+        <h2>Triage playground</h2>
+        <span class="evidence-badge measured" id="playground-evidence-badge">measured</span>
+      </div>
+      <p class="panel-desc">
+        ~200 real CFPB complaint narratives (class-stratified sample), each scored by every
+        available tier plus the router's cascade decision.
+      </p>
+      <div class="notice-banner">
+        All LLM responses are precomputed from committed receipts (no live API). Live
+        in-browser Tier A/B inference lands with a later Phase 6 task.
+      </div>
+      <div id="playground-banner-slot"></div>
+
+      <div class="playground-layout" id="playground-layout" style="display:none;">
+        <div>
+          <div class="controls-row">
+            <input type="text" id="sample-search" placeholder="search narrative text…" aria-label="Search narratives">
+            <select id="sample-class-filter" aria-label="Filter by true class">
+              <option value="">all classes</option>
+            </select>
+          </div>
+          <div class="sample-list" id="sample-list"></div>
+        </div>
+        <div id="sample-detail">
+          <p class="panel-desc">Select a complaint from the list to see per-tier responses and the router path.</p>
+        </div>
+      </div>
+
+      <div class="panel-footer">
+        Every number traces to results/runs.jsonl — append-only, committed. Numbers labeled
+        pending Tier B will be backfilled after GPU training.
+      </div>
+    </section>
+
+    <!-- ================= 2. FRONTIER ================= -->
+    <section class="panel" id="panel-frontier" data-panel="frontier">
+      <div class="panel-header">
+        <h2>Cost-quality frontier</h2>
+        <span class="evidence-badge measured" id="frontier-evidence-badge">measured</span>
+      </div>
+      <p class="panel-desc">
+        Cost per 1,000 complaints (log scale) vs macro-F1. Single tiers and router policies
+        both plotted; CI whiskers on both axes.
+      </p>
+      <div id="frontier-banner-slot"></div>
+
+      <div id="frontier-claims" class="card-grid"></div>
+
+      <div class="chart-wrap" id="frontier-chart-wrap" style="display:none;">
+        <svg id="frontier-svg" width="760" height="420" role="img" aria-label="Cost-quality frontier scatter plot"></svg>
+        <div class="chart-legend" id="frontier-legend"></div>
+      </div>
+
+      <div class="panel-footer">
+        Every number traces to results/runs.jsonl — append-only, committed. Numbers labeled
+        pending Tier B will be backfilled after GPU training.
+      </div>
+    </section>
+
+    <!-- ================= 3. POLICY BUILDER ================= -->
+    <section class="panel" id="panel-policy" data-panel="policy">
+      <div class="panel-header">
+        <h2>Router policy builder</h2>
+        <span class="evidence-badge derived" id="policy-evidence-badge">derived / measured</span>
+      </div>
+      <p class="panel-desc">
+        Client-side re-solve of expected cost/1k under the linear cost model, given each
+        policy's measured rates. At default sliders the measured record (with CI) is shown
+        instead of a re-solve.
+      </p>
+      <div id="policy-banner-slot"></div>
+
+      <div id="policy-body" style="display:none;">
+        <div class="card" style="margin-bottom:14px;">
+          <div class="slider-row">
+            <label for="slider-misroute">c_misroute ($/misroute)</label>
+            <input type="range" id="slider-misroute" min="0" max="30" step="0.5">
+            <output id="slider-misroute-out"></output>
+          </div>
+          <div class="slider-row">
+            <label for="slider-human">c_human ($/human review)</label>
+            <input type="range" id="slider-human" min="0" max="15" step="0.25">
+            <output id="slider-human-out"></output>
+          </div>
+          <div class="slider-row">
+            <label for="slider-api">API price multiplier (×)</label>
+            <input type="range" id="slider-api" min="0.25" max="4" step="0.25">
+            <output id="slider-api-out"></output>
+          </div>
+          <div class="slider-row">
+            <label for="slider-tau">tau — a_to_human arm</label>
+            <input type="range" id="slider-tau" min="0" max="1" step="0.01">
+            <output id="slider-tau-out"></output>
+          </div>
+          <button type="button" id="policy-reset-btn">reset to defaults</button>
+        </div>
+
+        <div id="policy-tau-readout" class="card" style="margin-bottom:14px;"></div>
+
+        <div id="policy-list"></div>
+
+        <div class="info-card" id="policy-frozen-tau-note"></div>
+      </div>
+
+      <div class="panel-footer">
+        Every number traces to results/runs.jsonl — append-only, committed. Numbers labeled
+        pending Tier B will be backfilled after GPU training.
+      </div>
+    </section>
+
+    <!-- ================= 4. DRIFT ================= -->
+    <section class="panel" id="panel-drift" data-panel="drift">
+      <div class="panel-header">
+        <h2>Drift timeline</h2>
+        <span class="evidence-badge measured" id="drift-evidence-badge">measured</span>
+      </div>
+      <p class="panel-desc">
+        Macro-F1 and escalation rate over yearly test slices, 2022 → 2026, with annotated
+        events.
+      </p>
+      <div id="drift-banner-slot"></div>
+
+      <div id="drift-body" style="display:none;">
+        <h3>Macro-F1 over time</h3>
+        <div class="chart-wrap">
+          <svg id="drift-f1-svg" width="760" height="320" role="img" aria-label="Macro-F1 over time by arm"></svg>
+        </div>
+        <div class="chart-legend" id="drift-f1-legend"></div>
+
+        <h3>Escalation rate over time</h3>
+        <div class="chart-wrap">
+          <svg id="drift-esc-svg" width="760" height="220" role="img" aria-label="Escalation rate over time"></svg>
+        </div>
+        <div class="chart-legend" id="drift-esc-legend"></div>
+      </div>
+
+      <div class="panel-footer">
+        Every number traces to results/runs.jsonl — append-only, committed. Numbers labeled
+        pending Tier B will be backfilled after GPU training.
+      </div>
+    </section>
+
+    <!-- ================= 5. CALIBRATION ================= -->
+    <section class="panel" id="panel-calibration" data-panel="calibration">
+      <div class="panel-header">
+        <h2>Calibration</h2>
+        <span class="evidence-badge measured" id="calibration-evidence-badge">measured</span>
+      </div>
+      <p class="panel-desc">
+        Reliability diagrams (15 equal-width confidence bins) per exhibit, with ECE / Brier
+        and CIs.
+      </p>
+      <div id="calibration-banner-slot"></div>
+
+      <div id="calibration-tier-c-note"></div>
+
+      <div class="reliability-diagram-grid" id="calibration-grid"></div>
+
+      <div class="panel-footer">
+        Every number traces to results/runs.jsonl — append-only, committed. Numbers labeled
+        pending Tier B will be backfilled after GPU training.
+      </div>
+    </section>
+
+    <!-- ================= 6. RECEIPTS ================= -->
+    <section class="panel" id="panel-receipts" data-panel="receipts">
+      <div class="panel-header">
+        <h2>Receipts / all runs</h2>
+        <span class="evidence-badge measured" id="receipts-evidence-badge">measured</span>
+      </div>
+      <p class="panel-desc">
+        Every run logged to results/runs.jsonl. Click a row to open the receipts drawer.
+      </p>
+      <div id="receipts-banner-slot"></div>
+
+      <div class="table-wrap" id="receipts-table-wrap" style="display:none; max-height: 70vh; overflow-y:auto;">
+        <table id="receipts-table">
+          <thead>
+            <tr>
+              <th data-sort="timestamp_utc">timestamp</th>
+              <th data-sort="tier">tier</th>
+              <th data-sort="model_label">model / config</th>
+              <th data-sort="slice">slice</th>
+              <th data-sort="cost_usd">cost (USD)</th>
+              <th data-sort="wall_clock_seconds">wall clock (s)</th>
+              <th>run id</th>
+            </tr>
+          </thead>
+          <tbody id="receipts-table-body"></tbody>
+        </table>
+      </div>
+
+      <div class="panel-footer">
+        Every number traces to results/runs.jsonl — append-only, committed. Numbers labeled
+        pending Tier B will be backfilled after GPU training.
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ================= RECEIPTS DRAWER (global, opens from any run-id chip) ================= -->
+<div class="drawer-overlay" id="drawer-overlay"></div>
+<aside class="drawer" id="drawer" aria-label="Receipts drawer">
+  <button type="button" class="drawer-close" id="drawer-close-btn">close ✕</button>
+  <h3 id="drawer-title">run</h3>
+  <div id="drawer-body"></div>
+</aside>
+
+<script type="module" src="./assets/app.js"></script>
+</body>
+</html>

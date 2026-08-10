@@ -1,4 +1,9 @@
 data/
+# ...but the Phase 6 demo payload IS committed (demo/DATA_CONTRACT.md): the bare `data/`
+# pattern above matches a directory of that name at ANY depth, which silently swallowed
+# demo/data/. Re-included explicitly rather than anchoring the rule to /data/, so the
+# top-level dataset dir keeps exactly the coverage it had.
+!demo/data/
 *.duckdb
 *.duckdb.wal
 models/
