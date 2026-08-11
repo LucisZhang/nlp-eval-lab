@@ -20,9 +20,9 @@ how the answer moves when the two ESTIMATED dollar parameters move.
 Everything here is offline: CAL artifacts and committed receipts only, no API calls, no
 TEST-* artifact is opened anywhere in this module, and `results/runs.jsonl` is read-only.
 
-**Two policy families**, both expressed as one structure — "Tier A answers above the gate,
-a per-row *escalation arm* handles the rest" — so a single swept implementation serves both
-and the families differ only in how their arm is built:
+**Four policy families**, all expressed as one structure — "Tier A answers above the gate,
+a per-row *escalation arm* handles the rest" — so a single swept implementation serves them
+all and the families differ only in how their arm is built:
 
 - ``a_to_human`` (full CAL, and the paired subset for like-for-like comparison): the arm is
   the human queue. Escalated rows pay `c_human`, no API, and are assumed resolved
@@ -38,10 +38,23 @@ and the families differ only in how their arm is built:
   right or wrong by luck. This module ignores it: `parse_failed` overrides, the row routes
   to a human, and it can contribute neither a misroute charge nor a correct answer.
 
+- ``a_to_b`` (full CAL and the paired subset; needs a cost config that prices Tier B): the
+  arm is Tier B, TERMINAL — the frontier slot's own definition, so this family has one gate,
+  not two. Escalated rows pay Tier B's declared amortized compute and a wrong Tier B label
+  costs `c_misroute`. There is no human hand-off: a local classifier always emits a label,
+  so Tier C's parse-failure signal has no analogue here.
+
+- ``a_to_b_to_c`` (paired subset only, same reason as ``a_to_c``): the arm is Tier B gated
+  at `tau_B`, falling through to Tier C terminally below it. This is the ONLY two-gate
+  family, and its `(tau_A, tau_B)` pair is fit by an exhaustive JOINT argmin: the arm is
+  rebuilt at every candidate `tau_B` and the ordinary `tau_A` sweep is run against each one
+  (see `joint_sweep`). Escalated rows pay Tier B unconditionally — the forward pass happened
+  before its confidence could be read — and additionally pay Tier C when they fall through.
+
 The fixed reference points fall out of the same sweep as its endpoints, so they are priced
 by identical code on identical data: ``a_only`` is the k = n endpoint (Tier A answers
-everything), ``all_human`` is the k = 0 endpoint of `a_to_human`, and ``c_only`` is the
-k = 0 endpoint of `a_to_c_parsefail_human`.
+everything) of every family, and the k = 0 endpoint is ``all_human`` / ``c_only`` /
+``b_only`` / ``b_to_c`` respectively (see `NO_GATE_LABEL`).
 
 **Statistics.** Point estimates are computed for the whole tau grid by prefix sums (O(n)
 for all n thresholds, which is what makes an 86,972-point grid free). Bootstrap CIs — the
@@ -63,7 +76,7 @@ from __future__ import annotations
 
 import argparse
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import numpy as np
@@ -141,8 +154,28 @@ TIER_C_CAL_CONFIG = "tier_c_haiku_ablation_zeroshot_cal"
 
 FAMILY_A_TO_HUMAN = "a_to_human"
 FAMILY_A_TO_C = "a_to_c_parsefail_human"
+FAMILY_A_TO_B = "a_to_b"
+FAMILY_A_TO_B_TO_C = "a_to_b_to_c"
 DATASET_FULL_CAL = "full_cal"
 DATASET_PAIRED = "paired_subset"
+
+# The k = 0 endpoint of each family's tau_A sweep — "Tier A answers nothing" — is a real
+# policy, and which one it is depends on what the escalation arm does. Naming it per family
+# keeps `b_only` from being reported as `c_only` in the A->B cascade.
+NO_GATE_LABEL = {
+    FAMILY_A_TO_HUMAN: "all_human",
+    FAMILY_A_TO_C: "c_only",
+    FAMILY_A_TO_B: "b_only",
+    FAMILY_A_TO_B_TO_C: "b_to_c",
+}
+
+# The Tier B CAL rung every Tier B threshold is fit against: DistilBERT (B2), the
+# frozen-protocol Tier B winner on TEST-IID (macro-F1 0.7950 [0.7909, 0.7988] vs B1's
+# 0.7878 / 0.7878 / 0.7863, paired CIs excluding zero, McNemar p <= 6e-8, and better ECE
+# and AURC) — which is also the cheaper model, so using it as the cascade rung costs
+# nothing on either axis. The three B1 seeds keep their own single-tier frontier points;
+# they are not cascade rungs.
+TIER_B_CAL_CONFIG = "tier_b2_distilbert_s0_cal"
 
 # Sensitivity grid: log-spaced (x2 per step) around the v1 defaults, which are an EXACT
 # cell (6.00, 2.50) so the headline number is a member of its own sensitivity grid rather
@@ -195,6 +228,42 @@ TIE_BREAK_NOTE = (
     "latency and operational load, neither of which this cost model prices."
 )
 
+JOINT_TIE_BREAK_NOTE = (
+    "Two-gate families (a_to_b_to_c) break ties in the joint argmin lexicographically: "
+    "lowest cost, then LARGEST Tier A coverage, then LARGEST Tier B coverage. Same "
+    "reasoning as the single-gate rule, applied to each rung in cascade order — at equal "
+    "modeled cost, answer as early and as cheaply in the cascade as possible."
+)
+
+TIER_B_ARM_NOTE = (
+    "The Tier B arm has no human hand-off: a local classifier always emits a label, so "
+    "the parse-failure signal that gives Tier C its only C->human route has no analogue "
+    "here. Every escalated row is answered by Tier B and a wrong answer costs c_misroute. "
+    "Tier B compute is charged per escalated row at the ESTIMATED amortized figure "
+    "declared in the cost config (measured throughput x an estimated GPU rental rate); it "
+    "is ~5 orders of magnitude below the misroute term, so no operating point moves with "
+    "it."
+)
+
+TIER_B_IN_SAMPLE_NOTE = (
+    "Tier B CAL caveat, by design and symmetric with ISOCAL_IN_SAMPLE_NOTE: the B2 CAL "
+    "rung fits its temperature scaling ON CAL and predicts CAL (same trained checkpoint as "
+    "the TEST-IID final, never refit), so tau_B is fit on in-sample-calibrated "
+    "probabilities that are better calibrated here than they would be on held-out data. "
+    "CAL is the split thresholds have always been fit on, and the thresholds derived from "
+    "them are evaluated only on TEST."
+)
+
+JOINT_SWEEP_NOTE = (
+    "a_to_b_to_c's (tau_A, tau_B) pair is fit JOINTLY and exhaustively, not sequentially: "
+    "for every distinct Tier B p_max the escalation arm is rebuilt (B answers above "
+    "tau_B, otherwise C answers terminally and the row pays BOTH B's compute and C's "
+    "measured call — incurred spend is never refunded) and the full tau_A sweep is run "
+    "against it, then the global argmin is taken over the product. Affordable because "
+    "the family lives only on the 1,500-row paired subset. A sequential fit would choose "
+    "tau_A against a different arm than the one it ends up facing."
+)
+
 PAIRED_COMPARISON_NOTE = (
     "The per-operating-point CIs under `operating_points` are MARGINAL: two operating "
     "points of the same policy share every example, so their marginal bands overlap even "
@@ -227,6 +296,10 @@ class EscalationArm:
     api_cost_usd: np.ndarray
     to_human: np.ndarray
     correct: np.ndarray
+    # Two-gate families only: which escalated rows the MIDDLE tier answered (the rest fall
+    # through to the terminal tier). `None` for one-arm families, where there is no middle
+    # tier whose coverage could be reported.
+    b_answered: np.ndarray | None = None
 
     def __len__(self) -> int:
         return len(self.api_cost_usd)
@@ -273,6 +346,47 @@ def tier_c_arm(y_true, y_pred, api_cost_usd, parse_failed) -> EscalationArm:
         api_cost_usd=np.asarray(api_cost_usd, dtype=np.float64),
         to_human=parse_failed,
         correct=np.where(parse_failed, True, c_correct),
+    )
+
+
+def tier_b_arm(y_true, y_pred, per_example_usd: float) -> EscalationArm:
+    """Escalate to Tier B, terminal, no human hand-off. See TIER_B_ARM_NOTE."""
+    y_true = np.asarray(y_true, dtype=object)
+    n = len(y_true)
+    return EscalationArm(
+        name="tier_b_terminal",
+        api_cost_usd=np.full(n, float(per_example_usd), dtype=np.float64),
+        to_human=np.zeros(n, dtype=bool),
+        correct=np.asarray(y_pred, dtype=object) == y_true,
+    )
+
+
+def tier_b_then_c_arm(b_y_true, b_y_pred, b_p_max, tau_b: float, b_per_example_usd: float,
+                      c_y_pred, c_api_cost_usd, parse_failed) -> EscalationArm:
+    """Escalate to Tier B gated at `tau_b`, then to Tier C terminally below it.
+
+    Every row reaching this arm has already run Tier B, so it pays Tier B's compute
+    unconditionally; a row that then falls through to Tier C pays that call as well. That
+    is `cost_model`'s incurred-spend semantics, not a modeling choice made here: the B
+    forward pass happened before its confidence could be read.
+
+    Tier C's terminal/parse-fail handling is identical to `tier_c_arm` — a parse-failed row
+    goes to a human and its fallback label is discarded rather than scored.
+    """
+    b_y_true = np.asarray(b_y_true, dtype=object)
+    answered_b = np.asarray(b_p_max, dtype=np.float64) >= tau_b
+    parse_failed = np.asarray(parse_failed, dtype=bool)
+    b_correct = np.asarray(b_y_pred, dtype=object) == b_y_true
+    c_correct = np.asarray(c_y_pred, dtype=object) == b_y_true
+    api = np.full(len(b_y_true), float(b_per_example_usd), dtype=np.float64)
+    api = api + np.where(answered_b, 0.0, np.asarray(c_api_cost_usd, dtype=np.float64))
+    return EscalationArm(
+        name="tier_b_gate_then_tier_c_terminal_parsefail_human",
+        api_cost_usd=api,
+        to_human=(~answered_b) & parse_failed,
+        correct=np.where(answered_b, b_correct,
+                         np.where(parse_failed, True, c_correct)),
+        b_answered=answered_b,
     )
 
 
@@ -454,6 +568,72 @@ def argmin_index(cost: np.ndarray) -> int:
 
 
 # ---------------------------------------------------------------------------
+# The joint (tau_A, tau_B) sweep — two-gate families only
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class JointFit:
+    """The joint argmin plus everything needed to report the second dimension."""
+
+    tau_b: float
+    coverage_b_marginal: float   # fraction of ALL rows clearing the B gate
+    policy: PolicyData           # the arm frozen at tau_b*
+    rows: dict[str, np.ndarray]  # the tau_A sweep at tau_b*
+    j_star: int                  # index of the joint argmin within `rows`
+    grid: list[dict]             # one entry per tau_B candidate (best tau_A at that tau_B)
+    j_grid_star: int             # index of the winning entry within `grid`
+
+
+def tau_b_candidates(p_max_b) -> np.ndarray:
+    """Descending distinct Tier B gates, led by +inf ("no row clears the Tier B gate").
+
+    +inf is a real operating point — it is the pure `a_to_c` cascade with a Tier B forward
+    pass paid for and thrown away — so it leads the grid rather than being excluded, for
+    the same reason `build_grid` keeps k = 0.
+    """
+    values = np.unique(np.asarray(p_max_b, dtype=np.float64))
+    if not np.all(np.isfinite(values)):
+        raise ValueError(
+            "Tier B p_max contains non-finite values; a confidence gate cannot be swept "
+            "over an unorderable signal"
+        )
+    return np.concatenate(([np.inf], values[::-1]))
+
+
+def joint_sweep(make_policy, tau_b_values, *, c_misroute: float, c_human: float) -> JointFit:
+    """Exhaustive joint argmin over (tau_A, tau_B). See JOINT_SWEEP_NOTE.
+
+    `make_policy(tau_b)` rebuilds the escalation arm at that Tier B gate; the inner tau_A
+    sweep is the SAME prefix-sum machinery every one-gate family uses, so the two-gate
+    family is priced by identical code on identical data. Ties are broken lexicographically
+    (cost, then Tier A coverage, then Tier B coverage) per JOINT_TIE_BREAK_NOTE.
+    """
+    best = None
+    grid: list[dict] = []
+    for i, tau_b in enumerate(np.asarray(tau_b_values, dtype=np.float64)):
+        policy = make_policy(float(tau_b))
+        rows = sweep(build_grid(policy), c_misroute=c_misroute, c_human=c_human)
+        j = argmin_index(rows["cost_per_1k"])
+        coverage_b = float(np.count_nonzero(policy.arm.b_answered)) / len(policy)
+        key = (float(rows["cost_per_1k"][j]), -float(rows["coverage_a"][j]), -coverage_b)
+        grid.append({
+            "tau_b": _tau_json(tau_b),
+            "coverage_b_marginal": _round(coverage_b),
+            "best_tau_a": _tau_json(rows["tau"][j]),
+            "coverage_a": _round(float(rows["coverage_a"][j])),
+            "human_rate": _round(float(rows["human_rate"][j])),
+            "cost_per_1k": _round(float(rows["cost_per_1k"][j])),
+        })
+        if best is None or key < best[0]:
+            best = (key, i, float(tau_b), coverage_b, policy, rows, j)
+    _, i_star, tau_b_star, coverage_b_star, policy_star, rows_star, j_star = best
+    return JointFit(
+        tau_b=tau_b_star, coverage_b_marginal=coverage_b_star, policy=policy_star,
+        rows=rows_star, j_star=j_star, grid=grid, j_grid_star=i_star,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Loading CAL inputs (offline; TEST-* is never opened here)
 # ---------------------------------------------------------------------------
 
@@ -557,6 +737,152 @@ def build_a_to_c(art_a, record_a, config_name_a, art_c, record_c, config_name_c,
                 "n_parse_failed": int(np.count_nonzero(parse_failed)),
             },
         },
+    )
+
+
+def _aligned_tier_b(art_a, ids, art_b):
+    """Tier B rows for `ids`, in that order, with the ground truth cross-checked.
+
+    Same contract as the Tier A/Tier C join: an exact id match (no subsets, no reordering)
+    and identical `y_true`, because a cascade mixes one complaint's gate decision with
+    another's label if either fails while every aggregate metric stays plausible.
+    """
+    index_b = restrict_to_ids(art_b, ids)
+    y_true_b = art_b.y_true[index_b]
+    y_true_a = art_a.y_true[restrict_to_ids(art_a, ids)]
+    if not np.array_equal(y_true_a, y_true_b):
+        raise ValueError(
+            "Tier A and Tier B CAL artifacts disagree on y_true for the joined ids; the "
+            "two artifacts are not describing the same rows"
+        )
+    return index_b
+
+
+def build_a_to_b(art_a, record_a, config_name_a, art_b, record_b, config_name_b, *,
+                 b_per_example_usd: float, dataset: str = DATASET_FULL_CAL,
+                 index=None) -> PolicyData:
+    """`a_to_b`: Tier A answers above tau, otherwise Tier B answers TERMINALLY.
+
+    One gate, by construction — the family is the A gate plus a fixed arm, exactly like
+    `a_to_human` and `a_to_c_parsefail_human`. The two-gate cascade is `a_to_b_to_c`.
+    """
+    idx = slice(None) if index is None else index
+    ids = np.asarray(art_a.complaint_id[idx], dtype=np.int64)
+    index_b = _aligned_tier_b(art_a, ids, art_b)
+    return PolicyData(
+        family=FAMILY_A_TO_B,
+        dataset=dataset,
+        ids=ids,
+        p_max=np.asarray(art_a.p_max[idx], dtype=np.float64),
+        correct_a=np.asarray(art_a.y_true[idx] == art_a.y_pred[idx], dtype=bool),
+        arm=tier_b_arm(art_b.y_true[index_b], art_b.y_pred[index_b], b_per_example_usd),
+        inputs={
+            "tier_a": _artifact_block(record_a, art_a, config_name_a),
+            "tier_b": {
+                **_artifact_block(record_b, art_b, config_name_b),
+                "per_example_usd": float(b_per_example_usd),
+                "evidence_class": "estimated (amortized compute; see the cost config note)",
+            },
+        },
+    )
+
+
+@dataclass(frozen=True)
+class ABCFactory:
+    """An `a_to_b_to_c` policy at ANY tau_B, with every id join done exactly once.
+
+    The joint fit re-materializes the arm ~1,500 times per price cell and ~55,000 times
+    across the sensitivity grid. Re-running the builder each time would redo the id joins
+    (a dict over the whole CAL artifact) on every one of them, turning a 0.2 s fit into
+    minutes; the template holds everything tau_B cannot change, and `at()` rebuilds only
+    the arm.
+    """
+
+    template: PolicyData
+    b_y_true: np.ndarray
+    b_y_pred: np.ndarray
+    b_p_max: np.ndarray
+    c_y_pred: np.ndarray
+    c_api_cost_usd: np.ndarray
+    parse_failed: np.ndarray
+    b_per_example_usd: float
+
+    def at(self, tau_b: float) -> PolicyData:
+        return replace(self.template, arm=tier_b_then_c_arm(
+            self.b_y_true, self.b_y_pred, self.b_p_max, tau_b, self.b_per_example_usd,
+            self.c_y_pred, self.c_api_cost_usd, self.parse_failed))
+
+    def tau_b_candidates(self) -> np.ndarray:
+        return tau_b_candidates(self.b_p_max)
+
+
+def build_a_to_b_to_c(art_a, record_a, config_name_a, art_b, record_b, config_name_b,
+                      art_c, record_c, config_name_c, *, tau_b: float,
+                      b_per_example_usd: float, api_cost_usd, parse_failed,
+                      cost_sum_check: dict, receipts_sha256: str = "") -> PolicyData:
+    """`a_to_b_to_c` at a FIXED tau_B, over the paired subset (Tier C's ids, its order)."""
+    return build_a_to_b_to_c_factory(
+        art_a, record_a, config_name_a, art_b, record_b, config_name_b,
+        art_c, record_c, config_name_c, b_per_example_usd=b_per_example_usd,
+        api_cost_usd=api_cost_usd, parse_failed=parse_failed,
+        cost_sum_check=cost_sum_check, receipts_sha256=receipts_sha256).at(tau_b)
+
+
+def build_a_to_b_to_c_factory(art_a, record_a, config_name_a, art_b, record_b,
+                              config_name_b, art_c, record_c, config_name_c, *,
+                              b_per_example_usd: float, api_cost_usd, parse_failed,
+                              cost_sum_check: dict,
+                              receipts_sha256: str = "") -> ABCFactory:
+    """Align the three tiers on the paired ids once; return a tau_B-parameterized family.
+
+    `tau_b` is not an argument here because it is not an input to the family — it is what
+    the joint fit chooses (see `joint_sweep` and JOINT_SWEEP_NOTE).
+    """
+    ids = np.asarray(art_c.complaint_id, dtype=np.int64)
+    index_a = restrict_to_ids(art_a, ids)
+    y_true_a = art_a.y_true[index_a]
+    if not np.array_equal(y_true_a, art_c.y_true):
+        raise ValueError(
+            "Tier A and Tier C artifacts disagree on y_true for the paired ids; the two "
+            "artifacts are not describing the same rows"
+        )
+    index_b = _aligned_tier_b(art_a, ids, art_b)
+    template = PolicyData(
+        family=FAMILY_A_TO_B_TO_C,
+        dataset=DATASET_PAIRED,
+        ids=ids,
+        p_max=np.asarray(art_a.p_max[index_a], dtype=np.float64),
+        correct_a=np.asarray(y_true_a == art_a.y_pred[index_a], dtype=bool),
+        # Placeholder arm, replaced by `ABCFactory.at`; never swept as-is.
+        arm=human_arm(len(ids)),
+        inputs={
+            "tier_a": _artifact_block(record_a, art_a, config_name_a),
+            "tier_b": {
+                **_artifact_block(record_b, art_b, config_name_b),
+                "per_example_usd": float(b_per_example_usd),
+                "evidence_class": "estimated (amortized compute; see the cost config note)",
+            },
+            "tier_c": {
+                **_artifact_block(record_c, art_c, config_name_c),
+                "raw_log_path": (record_c.get("extra") or {}).get("raw_log_path", ""),
+                "receipts_sha256": receipts_sha256,
+                "prompt_bundle_sha256": art_c.provenance.get("prompt_bundle_sha256", ""),
+                "model_slug": (record_c.get("extra") or {}).get("model_slug", ""),
+                "logged_cost_usd": record_c.get("cost_usd"),
+                "cost_sum_check": cost_sum_check,
+                "n_parse_failed": int(np.count_nonzero(parse_failed)),
+            },
+        },
+    )
+    return ABCFactory(
+        template=template,
+        b_y_true=np.asarray(art_b.y_true[index_b], dtype=object),
+        b_y_pred=np.asarray(art_b.y_pred[index_b], dtype=object),
+        b_p_max=np.asarray(art_b.p_max[index_b], dtype=np.float64),
+        c_y_pred=np.asarray(art_c.y_pred, dtype=object),
+        c_api_cost_usd=np.asarray(api_cost_usd, dtype=np.float64),
+        parse_failed=np.asarray(parse_failed, dtype=bool),
+        b_per_example_usd=float(b_per_example_usd),
     )
 
 
@@ -738,20 +1064,68 @@ def sensitivity_grid(policy: PolicyData, grid: Grid, *, cfg: cost_model.CostConf
     return cells
 
 
+def joint_sensitivity_grid(factory: ABCFactory, tau_b_values, *,
+                           cfg: cost_model.CostConfig,
+                           c_misroute_values=SENSITIVITY_C_MISROUTE,
+                           c_human_values=SENSITIVITY_C_HUMAN) -> list[dict]:
+    """The 36-cell grid for a two-gate family: the JOINT fit is re-run in every cell.
+
+    Holding tau_B at the value chosen under the default prices and varying only tau_A would
+    answer a question nobody asked ("what if the operator re-tuned one gate but not the
+    other"); the point of the grid is where the whole operating point moves when the two
+    estimated dollar parameters move.
+    """
+    cells = []
+    for c_misroute in c_misroute_values:
+        for c_human in c_human_values:
+            fit = joint_sweep(factory.at, tau_b_values, c_misroute=c_misroute,
+                              c_human=c_human)
+            rows, j = fit.rows, fit.j_star
+            cells.append({
+                "c_misroute_usd": float(c_misroute),
+                "c_human_usd": float(c_human),
+                "is_cost_config_default": bool(
+                    c_misroute == cfg.c_misroute_usd and c_human == cfg.c_human_usd),
+                "tau_star": _tau_json(rows["tau"][j]),
+                "tau_b_star": _tau_json(fit.tau_b),
+                "coverage_a": _round(float(rows["coverage_a"][j])),
+                "coverage_b_marginal": _round(fit.coverage_b_marginal),
+                "escalation_rate": _round(float(rows["escalation_rate"][j])),
+                "human_rate": _round(float(rows["human_rate"][j])),
+                "cost_per_1k": _round(float(rows["cost_per_1k"][j])),
+                "cost_per_1k_a_only": _round(float(rows["cost_per_1k"][-1])),
+                "cost_per_1k_no_gate": _round(float(rows["cost_per_1k"][0])),
+            })
+    return cells
+
+
 def build_policy_result(policy: PolicyData, cfg: cost_model.CostConfig, *,
                         is_primary: bool, max_points: int | None = DEFAULT_MAX_GRID_POINTS,
                         n_resamples: int = harness.N_RESAMPLES,
                         seed: int = harness.BOOTSTRAP_SEED,
-                        derivation: str = DERIVATION_V1) -> dict:
-    """Full deterministic result object for one (family, dataset, Tier A rung)."""
+                        derivation: str = DERIVATION_V1,
+                        rows: dict[str, np.ndarray] | None = None,
+                        j_star: int | None = None,
+                        tier_b_gate: dict | None = None,
+                        sensitivity_cells: list[dict] | None = None) -> dict:
+    """Full deterministic result object for one (family, dataset, Tier A rung).
+
+    `rows`/`j_star` are threaded only for the two-gate family, whose tau_A sweep and argmin
+    were already computed against the winning tau_B by `joint_sweep`; recomputing them here
+    would re-derive the same numbers from a re-materialized arm, i.e. give the joint fit a
+    second chance to disagree with itself. Every other family leaves them None and this
+    function does the sweep, exactly as before.
+    """
     grid = build_grid(policy)
-    rows = sweep(grid, c_misroute=cfg.c_misroute_usd, c_human=cfg.c_human_usd)
-    j_star = argmin_index(rows["cost_per_1k"])
+    if rows is None:
+        rows = sweep(grid, c_misroute=cfg.c_misroute_usd, c_human=cfg.c_human_usd)
+    if j_star is None:
+        j_star = argmin_index(rows["cost_per_1k"])
     n_rows = len(rows["tau"])
     j_a_only = n_rows - 1     # every row answered by Tier A
     j_no_gate = 0             # no row answered by Tier A
 
-    no_gate_label = "all_human" if policy.family == FAMILY_A_TO_HUMAN else "c_only"
+    no_gate_label = NO_GATE_LABEL[policy.family]
     points = {
         "tau_star": operating_point(policy, rows, j_star, cfg=cfg, label="tau_star",
                                     n_resamples=n_resamples, seed=seed),
@@ -777,9 +1151,27 @@ def build_policy_result(policy: PolicyData, cfg: cost_model.CostConfig, *,
         "is_primary_v2": bool(is_primary),
         "derivation_note": ISOCAL_IN_SAMPLE_NOTE,
     }
+    # Notes are attached only where they apply, so the families that predate Tier B keep
+    # emitting exactly the note set they were published with.
+    notes = {
+        "amendment": AMENDMENT_NOTE,
+        "selection_optimism": SELECTION_OPTIMISM_NOTE,
+        "p_max_space": PMAX_SPACE_NOTE,
+        "tie_break": TIE_BREAK_NOTE,
+        "human_correct": HUMAN_CORRECT_NOTE,
+        "human_assumption": cost_model.HUMAN_ASSUMPTION,
+        "comparisons": PAIRED_COMPARISON_NOTE,
+    }
+    if policy.family in (FAMILY_A_TO_B, FAMILY_A_TO_B_TO_C):
+        notes["tier_b_arm"] = TIER_B_ARM_NOTE
+        notes["tier_b_cal_in_sample"] = TIER_B_IN_SAMPLE_NOTE
+    if policy.family == FAMILY_A_TO_B_TO_C:
+        notes["joint_sweep"] = JOINT_SWEEP_NOTE
+        notes["joint_tie_break"] = JOINT_TIE_BREAK_NOTE
     return {
         "schema_version": SCHEMA_VERSION,
         **version_block,
+        **({} if tier_b_gate is None else {"tier_b_gate": tier_b_gate}),
         "policy_family": policy.family,
         "dataset": policy.dataset,
         "is_primary": bool(is_primary),
@@ -802,7 +1194,8 @@ def build_policy_result(policy: PolicyData, cfg: cost_model.CostConfig, *,
             "c_misroute_usd_values": [float(v) for v in SENSITIVITY_C_MISROUTE],
             "c_human_usd_values": [float(v) for v in SENSITIVITY_C_HUMAN],
             "evidence_class_note": SENSITIVITY_EVIDENCE_NOTE,
-            "cells": sensitivity_grid(policy, grid, cfg=cfg),
+            "cells": (sensitivity_grid(policy, grid, cfg=cfg)
+                      if sensitivity_cells is None else sensitivity_cells),
         },
         "bootstrap": {
             "n_resamples": int(n_resamples),
@@ -813,16 +1206,66 @@ def build_policy_result(policy: PolicyData, cfg: cost_model.CostConfig, *,
                 "shared across cost components); computed at operating points only"
             ),
         },
-        "notes": {
-            "amendment": AMENDMENT_NOTE,
-            "selection_optimism": SELECTION_OPTIMISM_NOTE,
-            "p_max_space": PMAX_SPACE_NOTE,
-            "tie_break": TIE_BREAK_NOTE,
-            "human_correct": HUMAN_CORRECT_NOTE,
-            "human_assumption": cost_model.HUMAN_ASSUMPTION,
-            "comparisons": PAIRED_COMPARISON_NOTE,
+        "notes": notes,
+    }
+
+
+def build_joint_policy_result(factory: ABCFactory, cfg: cost_model.CostConfig, *,
+                              is_primary: bool,
+                              max_points: int | None = DEFAULT_MAX_GRID_POINTS,
+                              n_resamples: int = harness.N_RESAMPLES,
+                              seed: int = harness.BOOTSTRAP_SEED,
+                              derivation: str = DERIVATION_V1) -> dict:
+    """Fit (tau_A, tau_B) jointly, then emit the standard result object at tau_B*.
+
+    Freezing tau_B* and reporting the ordinary tau_A sweep against it keeps the file
+    readable by everything that already reads a threshold file (including the router's
+    replay gate); the second dimension is not hidden by that choice — `tier_b_gate` carries
+    tau_B*, its coverage, the realized four-way routing mix at the joint operating point,
+    and the tau_B grid the argmin was taken over.
+    """
+    tau_b_values = factory.tau_b_candidates()
+    fit = joint_sweep(factory.at, tau_b_values,
+                      c_misroute=cfg.c_misroute_usd, c_human=cfg.c_human_usd)
+    rows, j = fit.rows, fit.j_star
+    policy = fit.policy
+
+    # The realized four-way mix at (tau_A*, tau_B*): who actually answered each complaint.
+    answered_a = policy.p_max >= rows["tau"][j]
+    answered_b = (~answered_a) & policy.arm.b_answered
+    to_c = (~answered_a) & (~policy.arm.b_answered)
+    n = len(policy)
+    kept = _downsample(len(fit.grid), max_points, {0, len(fit.grid) - 1, fit.j_grid_star})
+
+    tier_b_gate = {
+        "tau_b_star": _tau_json(fit.tau_b),
+        "n_answered_b_at_tau_star": int(answered_b.sum()),
+        "coverage_b_marginal": _round(fit.coverage_b_marginal),
+        "fit": "joint_2d_argmin",
+        "note": JOINT_SWEEP_NOTE,
+        "tie_break": JOINT_TIE_BREAK_NOTE,
+        "routing_mix_at_joint_operating_point": {
+            "answered_tier_a": int(answered_a.sum()),
+            "answered_tier_b": int(answered_b.sum()),
+            "sent_to_tier_c": int(to_c.sum()),
+            "to_human_parse_failed": int((to_c & policy.arm.to_human).sum()),
+            "rate_tier_a": _round(float(answered_a.sum()) / n),
+            "rate_tier_b": _round(float(answered_b.sum()) / n),
+            "rate_tier_c": _round(float(to_c.sum()) / n),
+        },
+        "grid": {
+            "n_tau_b_full": len(fit.grid),
+            "n_tau_b_written": len(kept),
+            "argmin_index": fit.j_grid_star,
+            "rows": [fit.grid[i] for i in kept],
         },
     }
+    return build_policy_result(
+        policy, cfg, is_primary=is_primary, max_points=max_points,
+        n_resamples=n_resamples, seed=seed, derivation=derivation,
+        rows=rows, j_star=j, tier_b_gate=tier_b_gate,
+        sensitivity_cells=joint_sensitivity_grid(factory, tau_b_values, cfg=cfg),
+    )
 
 
 def result_filename(obj: dict, cfg: cost_model.CostConfig) -> str:
@@ -839,17 +1282,26 @@ def build_all(cfg: cost_model.CostConfig, *, preds_dir=DEFAULT_PREDS_DIR,
               results_path=DEFAULT_RESULTS_PATH,
               tier_a_configs=None,
               tier_c_config=TIER_C_CAL_CONFIG,
+              tier_b_config=TIER_B_CAL_CONFIG,
               max_points: int | None = DEFAULT_MAX_GRID_POINTS,
               n_resamples: int = harness.N_RESAMPLES,
               seed: int = harness.BOOTSTRAP_SEED,
               derivation: str = DERIVATION_V1,
               primary_config: str | None = None) -> list[dict]:
-    """Every (family, dataset, rung) result for one derivation. The caller writes."""
+    """Every (family, dataset, rung) result for one derivation. The caller writes.
+
+    The Tier B families exist iff the cost config prices Tier B (`cost_model.prices_tier_b`)
+    — not behind a flag, because an unpriced tier is a hard failure at scoring time, so
+    under `cost_model_v1.yaml` an `a_to_b` policy is unscorable rather than merely
+    unreported.
+    """
     profile = DERIVATIONS[derivation]
     tier_a_configs = tier_a_configs or profile["tier_a_configs"]
     primary_config = primary_config or profile["primary"]
     records = _records_by_config(results_path)
-    missing = [name for name in (*tier_a_configs, tier_c_config) if name not in records]
+    with_tier_b = cost_model.prices_tier_b(cfg)
+    needed = (*tier_a_configs, tier_c_config, *((tier_b_config,) if with_tier_b else ()))
+    missing = [name for name in needed if name not in records]
     if missing:
         raise ValueError(f"no run record for config(s) {missing} in {results_path}")
 
@@ -857,6 +1309,14 @@ def build_all(cfg: cost_model.CostConfig, *, preds_dir=DEFAULT_PREDS_DIR,
     art_c = load_artifact_checked(record_c, preds_dir)
     api_cost, parse_failed, cost_sum_check, receipts_hash = load_tier_c_arm_inputs(
         art_c, record_c)
+
+    record_b = art_b = None
+    b_per_example_usd = 0.0
+    if with_tier_b:
+        record_b = records[tier_b_config]
+        art_b = load_artifact_checked(record_b, preds_dir)
+        b_per_example_usd = cost_model.amortized_per_example_usd(
+            cfg, cost_model.tier_of_config_name(tier_b_config, cfg))
 
     results = []
     for config_name in tier_a_configs:
@@ -895,6 +1355,66 @@ def build_all(cfg: cost_model.CostConfig, *, preds_dir=DEFAULT_PREDS_DIR,
             ),
         }
         results.extend(built)
+
+        if not with_tier_b:
+            continue
+
+        # Tier B families. `a_to_b` is one-gate (Tier B is terminal, per the frontier
+        # slot's own definition) and so goes through the ordinary sweep on both datasets;
+        # `a_to_b_to_c` is the only two-gate family and is paired-subset-only, because
+        # Tier C is observed on 1,500 CAL rows.
+        b_policies = [
+            build_a_to_b(art_a, record_a, config_name, art_b, record_b, tier_b_config,
+                         b_per_example_usd=b_per_example_usd, dataset=DATASET_FULL_CAL),
+            build_a_to_b(art_a, record_a, config_name, art_b, record_b, tier_b_config,
+                         b_per_example_usd=b_per_example_usd, dataset=DATASET_PAIRED,
+                         index=index),
+        ]
+        b_built = [
+            build_policy_result(policy, cfg, is_primary=is_primary,
+                                max_points=max_points, n_resamples=n_resamples, seed=seed,
+                                derivation=derivation)
+            for policy in b_policies
+        ]
+        # "Escalate to a fine-tune rather than to a human", on the rows where both are
+        # defined — the CAL-side preview of the phase question, and the reason `a_to_b`
+        # is also fit on the paired subset.
+        b_paired = b_policies[1]
+        b_built[1]["cross_family_paired_delta"] = {
+            "vs": f"{human_paired.family}@tau_star ({human_paired.dataset})",
+            "note": PAIRED_COMPARISON_NOTE,
+            **paired_delta_across_policies(
+                b_paired, tau_star(b_paired, cfg),
+                human_paired, tau_star(human_paired, cfg),
+                cfg=cfg, n_resamples=n_resamples, seed=seed,
+            ),
+        }
+        results.extend(b_built)
+
+        factory = build_a_to_b_to_c_factory(
+            art_a, record_a, config_name, art_b, record_b, tier_b_config,
+            art_c, record_c, tier_c_config, b_per_example_usd=b_per_example_usd,
+            api_cost_usd=api_cost, parse_failed=parse_failed,
+            cost_sum_check=cost_sum_check, receipts_sha256=receipts_hash)
+        abc_built = build_joint_policy_result(
+            factory, cfg, is_primary=is_primary, max_points=max_points,
+            n_resamples=n_resamples, seed=seed, derivation=derivation)
+        # "Does inserting the Tier B rung into the LLM cascade pay", paired on the same
+        # 1,500 rows, each family at its own tau*.
+        abc_policy = factory.at(float(abc_built["tier_b_gate"]["tau_b_star"])
+                                if abc_built["tier_b_gate"]["tau_b_star"] is not None
+                                else math.inf)
+        abc_built["cross_family_paired_delta"] = {
+            "vs": f"{c_paired.family}@tau_star ({c_paired.dataset})",
+            "note": PAIRED_COMPARISON_NOTE,
+            **paired_delta_across_policies(
+                abc_policy, float(abc_built["tau_star"]) if abc_built["tau_star"] is not None
+                else math.inf,
+                c_paired, tau_star(c_paired, cfg),
+                cfg=cfg, n_resamples=n_resamples, seed=seed,
+            ),
+        }
+        results.append(abc_built)
     return results
 
 
@@ -915,8 +1435,17 @@ def build_summary(results: list[dict], cfg: cost_model.CostConfig, *,
     a_to_human_paired = by_key[(FAMILY_A_TO_HUMAN, DATASET_PAIRED)]
     a_to_c_paired = by_key[(FAMILY_A_TO_C, DATASET_PAIRED)]
 
+    # Tier B columns appear only when the Tier B families were built (i.e. when the cost
+    # config prices Tier B), so a v1-cost summary keeps exactly the columns it shipped with.
+    a_to_b_paired = by_key.get((FAMILY_A_TO_B, DATASET_PAIRED))
+    a_to_b_to_c_paired = by_key.get((FAMILY_A_TO_B_TO_C, DATASET_PAIRED))
+
     cells_h = {_cell_key(c): c for c in a_to_human_paired["sensitivity"]["cells"]}
     cells_c = {_cell_key(c): c for c in a_to_c_paired["sensitivity"]["cells"]}
+    cells_b = ({_cell_key(c): c for c in a_to_b_paired["sensitivity"]["cells"]}
+               if a_to_b_paired else {})
+    cells_abc = ({_cell_key(c): c for c in a_to_b_to_c_paired["sensitivity"]["cells"]}
+                 if a_to_b_to_c_paired else {})
     comparison = []
     for key, cell_h in cells_h.items():
         cell_c = cells_c[key]
@@ -924,6 +1453,25 @@ def build_summary(results: list[dict], cfg: cost_model.CostConfig, *,
             FAMILY_A_TO_HUMAN: cell_h["cost_per_1k"],
             FAMILY_A_TO_C: cell_c["cost_per_1k"],
         }
+        tier_b_columns: dict = {}
+        if cells_b:
+            cell_b = cells_b[key]
+            costs[FAMILY_A_TO_B] = cell_b["cost_per_1k"]
+            tier_b_columns.update({
+                "cost_per_1k_a_to_b": cell_b["cost_per_1k"],
+                "cost_per_1k_b_only": cell_b["cost_per_1k_no_gate"],
+                "coverage_a_a_to_b": cell_b["coverage_a"],
+            })
+        if cells_abc:
+            cell_abc = cells_abc[key]
+            costs[FAMILY_A_TO_B_TO_C] = cell_abc["cost_per_1k"]
+            tier_b_columns.update({
+                "cost_per_1k_a_to_b_to_c": cell_abc["cost_per_1k"],
+                "cost_per_1k_b_to_c": cell_abc["cost_per_1k_no_gate"],
+                "coverage_a_a_to_b_to_c": cell_abc["coverage_a"],
+                "tau_b_star_a_to_b_to_c": cell_abc["tau_b_star"],
+                "coverage_b_marginal_a_to_b_to_c": cell_abc["coverage_b_marginal"],
+            })
         winner = min(costs, key=lambda k: (costs[k], k))
         a_only = cell_h["cost_per_1k_a_only"]
         comparison.append({
@@ -932,6 +1480,7 @@ def build_summary(results: list[dict], cfg: cost_model.CostConfig, *,
             "is_cost_config_default": cell_h["is_cost_config_default"],
             "cost_per_1k_a_to_human": cell_h["cost_per_1k"],
             "cost_per_1k_a_to_c": cell_c["cost_per_1k"],
+            **tier_b_columns,
             "cost_per_1k_a_only": a_only,
             "cost_per_1k_all_human": cell_h["cost_per_1k_no_gate"],
             "cost_per_1k_c_only": cell_c["cost_per_1k_no_gate"],
@@ -953,6 +1502,7 @@ def build_summary(results: list[dict], cfg: cost_model.CostConfig, *,
         "primary_tier_a_config": profile["primary"],
         "tier_a_configs_swept": list(profile["tier_a_configs"]),
         "tier_c_config": TIER_C_CAL_CONFIG,
+        **({} if a_to_b_paired is None else {"tier_b_config": TIER_B_CAL_CONFIG}),
         "cost_config": cost_model.config_block(cfg),
         "results": [
             {
@@ -964,6 +1514,12 @@ def build_summary(results: list[dict], cfg: cost_model.CostConfig, *,
                 "n_examples": r["n_examples"],
                 "tau_star": r["tau_star"],
                 "target_coverage_a": r["target_coverage_a"],
+                **({} if "tier_b_gate" not in r else {
+                    "tau_b_star": r["tier_b_gate"]["tau_b_star"],
+                    "coverage_b_marginal": r["tier_b_gate"]["coverage_b_marginal"],
+                    "routing_mix_at_joint_operating_point":
+                        r["tier_b_gate"]["routing_mix_at_joint_operating_point"],
+                }),
                 "operating_points": {
                     label: {
                         "tau": point["tau"],
@@ -1016,6 +1572,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--tier-c-config", default=TIER_C_CAL_CONFIG)
     parser.add_argument(
+        "--tier-b-config", default=TIER_B_CAL_CONFIG,
+        help="the Tier B CAL rung the a_to_b / a_to_b_to_c families escalate to; used "
+             "only when the cost config prices Tier B",
+    )
+    parser.add_argument(
         "--derivation", choices=sorted(DERIVATIONS), default=DERIVATION_V1,
         help="threshold derivation: v1-raw (raw CAL p_max) or v2-isocal (calibrated CAL); "
              "v1 is the default so its committed files regenerate byte-identically",
@@ -1030,8 +1591,8 @@ def main(argv: list[str] | None = None) -> int:
     results = build_all(
         cfg, preds_dir=args.preds_dir, results_path=args.results,
         tier_a_configs=tuple(args.tier_a_configs) if args.tier_a_configs else None,
-        tier_c_config=args.tier_c_config, max_points=args.max_points,
-        derivation=args.derivation,
+        tier_c_config=args.tier_c_config, tier_b_config=args.tier_b_config,
+        max_points=args.max_points, derivation=args.derivation,
     )
     summary = build_summary(results, cfg, derivation=args.derivation)
 

@@ -1,0 +1,69 @@
+{
+  "accuracy": 0.8562373735,
+  "api_cost": {
+    "charged": "unconditionally (incurred spend, including examples sent to a human)",
+    "evidence_class": "estimated",
+    "mean_per_example_usd": 2.0153e-05,
+    "mode": "amortized_estimate",
+    "note": "ModernBERT-base (149M) inference, amortized GPU rental. HALF MEASURED, HALF ESTIMATED, and the split matters: the THROUGHPUT is measured \u2014 the slowest of the three seed runs, tier_b1_modernbert_sc, logged wall_clock_seconds 15154.9 for eval_sample_size 104443 (0.1451 s/complaint, 6.89 complaints/s, inference_hardware mps) \u2014 while the PRICE is an estimate, $0.50 per GPU-hour, taken as the order-of-magnitude community-cloud rate for the NVIDIA RTX A6000 these checkpoints were trained on. 0.1451 s x $0.50/3600 s = $2.0153e-05 per complaint ($0.0202 per 1,000). Two conservatism notes, both stated rather than corrected for: the logged wall clock is the WHOLE harness run (CAL inference for temperature scaling, TEST inference, and the 1,000-replicate bootstrap), so it overstates pure inference; and pricing MPS-measured throughput at a rented-A6000 rate mixes two machines. Both push the figure UP, which is the safe direction for a tier whose cost advantage is the claim. It is ~5 orders of magnitude below the c_misroute term at any realistic error rate, so no frontier claim turns on the rental rate.",
+    "raw_log_path": "",
+    "receipts_sha256": "",
+    "total_usd": 2.104839779
+  },
+  "bootstrap": {
+    "method": "percentile [2.5, 97.5] over resampled example indices (one integers(0, n, size=n) draw per replicate)",
+    "n_resamples": 1000,
+    "seed": 20260805
+  },
+  "config_name": "tier_b1_modernbert_sa",
+  "config_sha256": "5eba3ca79b4ce044de00eed5d62b1df5bf816d155d1e88ce1741d74a238e69e1",
+  "cost_config": {
+    "evidence_class": {
+      "api_cost.tier_a": "estimated",
+      "api_cost.tier_b1": "estimated",
+      "api_cost.tier_b2": "estimated",
+      "api_cost.tier_c": "measured",
+      "params.c_human_usd": "estimated",
+      "params.c_misroute_usd": "estimated"
+    },
+    "params": {
+      "c_human_usd": 2.5,
+      "c_misroute_usd": 6.0
+    },
+    "path": "configs/cost_model_v2.yaml",
+    "sha256": "2c969255c03b315d9755078f77693e308a9864e40e3ebb4a1d31f9ffe5bcb417",
+    "version": "v2"
+  },
+  "cost_sum_check": null,
+  "expected_cost_per_1k": {
+    "api": {
+      "ci_hi": 0.020153,
+      "ci_lo": 0.020153,
+      "point": 0.020153
+    },
+    "human": {
+      "ci_hi": 0.0,
+      "ci_lo": 0.0,
+      "point": 0.0
+    },
+    "misroute": {
+      "ci_hi": 875.3995002059,
+      "ci_lo": 850.2819719847,
+      "point": 862.5757590265
+    },
+    "total": {
+      "ci_hi": 875.4196532059,
+      "ci_lo": 850.3021249847,
+      "point": 862.5959120265
+    }
+  },
+  "human_assumption": "Examples routed to the human queue pay c_human and are not charged the misroute cost: human resolution is assumed correct (P(error|human)=0). That is optimistic toward the human queue \u2014 a real analyst error rate would raise the all-human arm's true cost \u2014 so router-vs-all-human comparisons are conservative in the human arm's favor. API cost is INCURRED spend and is charged unconditionally: a policy that defers to a human after paying for a model call still pays for that call, and a policy that defers before any paid call passes api_cost_usd = 0.0 for that example.",
+  "n_examples": 104443,
+  "n_to_human": 0,
+  "policy": "single_tier_all_answered",
+  "run_id": "8071d31db244e4dc67ca134ac60517718ac512ff1fe8d0740acd559feb92c270",
+  "schema_version": "cost-v1",
+  "split": "test_iid",
+  "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2",
+  "tier": "tier_b1"
+}

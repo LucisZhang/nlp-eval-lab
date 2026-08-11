@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier prior-shift oov perturb perturb-tier-c perturb-report drift-charts demo-data
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier tier-b-frontier prior-shift oov perturb perturb-tier-c perturb-report drift-charts demo-data
 
 setup:
 	uv sync --frozen
@@ -124,6 +124,30 @@ router-sim: thresholds
 # placeholders for every Tier B frontier slot.
 frontier: router-sim
 	uv run python -m triage_lab.frontier --op-version v2-isocal
+
+# Phase 4 Tier B backfill: the same derivation chain re-run under configs/cost_model_v2.yaml
+# (= v1 plus tier_b1/tier_b2 pricing; c_misroute and c_human are byte-identical to v1, so
+# every Tier A and Tier C number reproduces exactly and the only thing that changes is which
+# policies exist). Fills the four declared frontier slots — b1_only (3 seeds), b2_only,
+# a_to_b, a_to_b_to_c. Offline; appends nothing to results/runs.jsonl.
+#
+# Needs the Tier B TEST-IID runs, the B2 CAL run (configs/tier_b2_distilbert_s0_cal.yaml —
+# thresholds are fit on CAL only) and `make preds` for their artifacts.
+#
+# Two deliberate scopings:
+#   - only the Tier B runs are re-scored by `cost-model`. Re-scoring Tier A/C under v2 would
+#     rewrite committed results/cost_model/<run_id>.json files (the name carries no cost
+#     hash) with numerically IDENTICAL contents under a different cost identity.
+#   - only the v2-isocal derivation is re-run. v1-raw is the retained calibration-mismatch
+#     lesson, and it is already recorded under the v1 cost config; re-deriving it under v2
+#     would produce a second copy of a lesson, not a new measurement.
+COST_MODEL_V2 = configs/cost_model_v2.yaml
+
+tier-b-frontier:
+	uv run python -m triage_lab.cost_model --config-prefix tier_b --cost-config $(COST_MODEL_V2)
+	uv run python -m triage_lab.threshold_opt --derivation v2-isocal --cost-config $(COST_MODEL_V2)
+	uv run python -m triage_lab.router_sim --op-version v2-isocal --cost-config $(COST_MODEL_V2)
+	uv run python -m triage_lab.frontier --op-version v2-isocal --cost-config $(COST_MODEL_V2)
 
 # Prior-shift decomposition (Phase 5 task 2): how much of each tier's yearly macro-F1 drop
 # vs 2023 is the class-mix change alone (Path P reweighted-F1 counterfactual, primary) vs

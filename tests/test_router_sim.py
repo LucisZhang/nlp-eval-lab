@@ -39,6 +39,20 @@ A_CORRECT = [True] * 6 + [False] * 6
 C_CORRECT_PAIRED = [True, False, True, True, False, True]
 PARSE_FAILED_PAIRED = [False, False, False, False, True, False]
 
+# --- Tier B fixture -------------------------------------------------------
+# B2 is wrong exactly where Tier A is most confident and right everywhere else, so the two
+# tiers disagree in the region a gate has to find. On the PAIRED rows (even positions) that
+# is [F, F, T, T, T, T].
+B2_CORRECT = [False] * 3 + [True] * 9
+# B2's own confidence, unrelated to Tier A's ordering (odd positions are filler): the paired
+# rows see 0.95, 0.85, 0.75, 0.65, 0.60, 0.55.
+B2_P_MAX = [0.95, 0.9, 0.85, 0.9, 0.75, 0.9, 0.65, 0.9, 0.60, 0.9, 0.55, 0.9]
+# The three B1 seeds are identical to each other here: they are single-tier frontier points
+# in this fixture, never cascade rungs, so only their existence matters.
+B1_CORRECT = [True] * 8 + [False] * 4
+B1_P_MAX = [0.9] * 12
+B_PER_EXAMPLE = 0.05   # huge next to the real ~$5.6e-6, so it is visible in the arithmetic
+
 _REAL_ROUTER_FILES = sorted(
     p for p in router_sim.DEFAULT_ROUTER_DIR.glob("*__cost-*.json")
     if not p.name.startswith("summary__")
@@ -127,12 +141,23 @@ def _receipt(cid, *, parse_failed=False):
     }
 
 
-def _cost_config(tmp_path, *, c_misroute=C_MISROUTE, c_human=C_HUMAN):
-    path = tmp_path / "cost.yaml"
+def _cost_config(tmp_path, *, c_misroute=C_MISROUTE, c_human=C_HUMAN, tier_b=False,
+                 name="cost.yaml"):
+    """Synthetic cost config; `tier_b=True` gives it the v2 shape (tier_b1 + tier_b2)."""
+    path = tmp_path / name
+    tier_b_block = "" if not tier_b else (
+        "  tier_b1:\n    mode: amortized_estimate\n"
+        f"    per_example_usd: {B_PER_EXAMPLE}\n    evidence_class: estimated\n"
+        "    note: amortized gpu\n"
+        "  tier_b2:\n    mode: amortized_estimate\n"
+        f"    per_example_usd: {B_PER_EXAMPLE}\n    evidence_class: estimated\n"
+        "    note: amortized gpu\n"
+    )
     path.write_text(
         f"version: v1\nparams:\n  c_misroute_usd: {c_misroute}\n"
         f"  c_human_usd: {c_human}\napi_cost:\n  tier_a:\n    mode: amortized_zero\n"
         "    per_example_usd: 0.0\n    evidence_class: estimated\n    note: amortized\n"
+        + tier_b_block +
         "  tier_c:\n    mode: measured_receipts\n    evidence_class: measured\n"
         "    note: receipts\nevidence_class:\n  params.c_misroute_usd: estimated\n"
     )
@@ -147,7 +172,8 @@ THRESHOLD_N_EXAMPLES = 100
 def _write_threshold_file(dirpath, *, family, dataset, tau_star, target_coverage,
                           cost_sha256, tier_a_run_id=CAL_RUN_ID,
                           tier_a_config_sha=CAL_CONFIG_SHA, tier_a_split="cal",
-                          n_examples=THRESHOLD_N_EXAMPLES, n_answered=None, suffix=""):
+                          n_examples=THRESHOLD_N_EXAMPLES, n_answered=None, suffix="",
+                          tier_b_gate=None):
     """A results/thresholds/ file carrying every field the router now validates."""
     dirpath.mkdir(parents=True, exist_ok=True)
     if n_answered is None:
@@ -168,15 +194,44 @@ def _write_threshold_file(dirpath, *, family, dataset, tau_star, target_coverage
                               "run_id": tier_a_run_id,
                               "config_sha256": tier_a_config_sha,
                               "split": tier_a_split}},
+        **({} if tier_b_gate is None else {"tier_b_gate": tier_b_gate}),
     }
     path = dirpath / f"{family}__{dataset}__abcadd53{suffix}__cost-{cost_sha256[:8]}.json"
     path.write_text(json.dumps(obj, sort_keys=True, indent=2) + "\n")
     return path
 
 
+def _tier_b_runs(tmp_path, splits_dir, ids, y_true, records):
+    """Four Tier B TEST-IID runs (3 x B1 seeds + B2), appended to `records`.
+
+    The b1 seeds are only frontier POINTS here; B2 is the cascade rung, so it is the one
+    whose per-row correctness and confidence are shaped to make the gate arithmetic
+    interesting.
+    """
+    run_ids = {}
+    for config_name, _, _ in router_sim.TIER_B_TEST_RUNGS:
+        is_b2 = config_name == router_sim.TIER_B_CASCADE_CONFIG
+        run_id = f"{'b2' if is_b2 else config_name[-2:]}" * 32
+        cfg_path = _write_config(tmp_path, config_name, "tier_b", splits_dir)
+        sha = harness.config_sha256(cfg_path)
+        y_pred = _preds_from_correct(y_true, B2_CORRECT if is_b2 else B1_CORRECT)
+        probs = _write_artifact(tmp_path, run_id, ids, y_true, y_pred, LABELS,
+                                B2_P_MAX if is_b2 else B1_P_MAX, config_sha256=sha)
+        records.append({
+            "run_id": run_id, "config_path": str(cfg_path), "config_sha256": sha,
+            "git_sha": "gitsha",
+            "dataset": {"split": "test_iid", "split_sha256": "splithash",
+                        "input_sha256": "inputsha"},
+            "metrics": _metrics_block(y_true, y_pred, probs, LABELS),
+        })
+        run_ids[config_name] = run_id
+    return run_ids
+
+
 def _mini_repo(tmp_path, *, cost_sha256, tau_full=0.83, tau_paired_human=0.83,
                tau_paired_c=0.75, target_full=0.5, target_paired_human=0.5,
-               target_paired_c=0.5, paired_ids=None):
+               target_paired_c=0.5, paired_ids=None, tier_b=False,
+               tau_a_to_b_full=0.83, tau_a_to_b_paired=0.83, tau_abc=0.75, tau_b=0.58):
     """Three verified TEST-IID artifacts + Haiku receipts + CAL threshold constants."""
     # Ids requested for the paired subset but absent from the Tier A artifact still have
     # to exist in the frozen split, or the Tier C artifact fails membership before the
@@ -239,22 +294,37 @@ def _mini_repo(tmp_path, *, cost_sha256, tau_full=0.83, tau_paired_human=0.83,
          "extra": {"raw_log_path": str(log), "model_slug": SLUG,
                    "pricing_snapshot": PRICING}},
     ]
+    b_ids = _tier_b_runs(tmp_path, splits_dir, IDS, Y_TRUE, records) if tier_b else {}
     results = tmp_path / "runs.jsonl"
     results.write_text("".join(json.dumps(r) + "\n" for r in records))
 
     thresholds = tmp_path / "thresholds"
-    for family, dataset, tau, target in (
+    families = [
         (threshold_opt.FAMILY_A_TO_HUMAN, threshold_opt.DATASET_FULL_CAL, tau_full,
-         target_full),
+         target_full, None),
         (threshold_opt.FAMILY_A_TO_HUMAN, threshold_opt.DATASET_PAIRED,
-         tau_paired_human, target_paired_human),
+         tau_paired_human, target_paired_human, None),
         (threshold_opt.FAMILY_A_TO_C, threshold_opt.DATASET_PAIRED, tau_paired_c,
-         target_paired_c),
-    ):
+         target_paired_c, None),
+    ]
+    if tier_b:
+        families += [
+            (threshold_opt.FAMILY_A_TO_B, threshold_opt.DATASET_FULL_CAL,
+             tau_a_to_b_full, target_full, None),
+            (threshold_opt.FAMILY_A_TO_B, threshold_opt.DATASET_PAIRED,
+             tau_a_to_b_paired, target_paired_human, None),
+            (threshold_opt.FAMILY_A_TO_B_TO_C, threshold_opt.DATASET_PAIRED,
+             tau_abc, target_paired_c,
+             {"tau_b_star": tau_b, "n_answered_b_at_tau_star": 1,
+              "coverage_b_marginal": 0.5, "fit": "joint_2d_argmin"}),
+        ]
+    for family, dataset, tau, target, gate_b in families:
         _write_threshold_file(thresholds, family=family, dataset=dataset, tau_star=tau,
-                              target_coverage=target, cost_sha256=cost_sha256)
+                              target_coverage=target, cost_sha256=cost_sha256,
+                              tier_b_gate=gate_b)
     return {"results": results, "thresholds": thresholds, "log": log,
-            "a_id": a_id, "cnb_id": cnb_id, "c_id": c_id, "c_ids": c_ids}
+            "a_id": a_id, "cnb_id": cnb_id, "c_id": c_id, "c_ids": c_ids,
+            "b_ids": b_ids}
 
 
 def _build(tmp_path, **kwargs):
@@ -343,6 +413,174 @@ def test_parse_failed_row_is_routed_to_human_and_never_scored(tmp_path):
     assert router["accuracy_system"] == pytest.approx(5 / 6)
     assert router["macro_f1_answered"] is not None
     assert router["macro_f1_system"] >= router["macro_f1_answered"]
+
+
+# ---------------------------------------------------------------------------
+# Tier B policies (present only under a cost config that prices Tier B)
+# ---------------------------------------------------------------------------
+
+def _build_tier_b(tmp_path, **kwargs):
+    cfg = _cost_config(tmp_path, tier_b=True)
+    repo = _mini_repo(tmp_path, cost_sha256=cfg.sha256, tier_b=True, **kwargs)
+    evaluations = router_sim.build_all(
+        cfg, preds_dir=tmp_path, results_path=repo["results"],
+        thresholds_dir=repo["thresholds"], n_resamples=25, verify_replay=False)
+    return repo, cfg, evaluations
+
+
+def test_tier_b_policies_exist_only_when_the_cost_config_prices_tier_b(tmp_path):
+    """The switch is the PRICES, not a flag: an unpriced tier cannot be a frontier point."""
+    _, _, without = _build(tmp_path)
+    assert not any(p.startswith(("b", "a_to_b"))
+                   for p in without[router_sim.EVAL_FULL]["policies"])
+
+    priced = tmp_path / "priced"
+    priced.mkdir()
+    _, cfg, ev = _build_tier_b(priced)
+    assert cost_model.prices_tier_b(cfg)
+    full = set(ev[router_sim.EVAL_FULL]["policies"])
+    paired = set(ev[router_sim.EVAL_PAIRED]["policies"])
+    assert {"b1_only_sa", "b1_only_sb", "b1_only_sc", "b2_only", "a_to_b"} <= full
+    assert "a_to_b_to_c" not in full          # Tier C is not defined on the full slice
+    assert {"b1_only_sa", "b2_only", "a_to_b", "a_to_b_to_c"} <= paired
+    assert router_sim.model_baselines(cfg) == router_sim.MODEL_BASELINES | {
+        "b1_only_sa", "b1_only_sb", "b1_only_sc", "b2_only"}
+    assert router_sim.expected_threshold_keys(cfg) == (
+        router_sim.EXPECTED_THRESHOLD_KEYS | router_sim.TIER_B_THRESHOLD_KEYS)
+
+
+def test_hand_computed_a_to_b_full_slice(tmp_path):
+    _, _, ev = _build_tier_b(tmp_path)
+    pol = ev[router_sim.EVAL_FULL]["policies"]
+
+    def per1k(usd):
+        return usd * 1000 / 12
+
+    # b2_only: wrong on the 3 rows Tier A is most confident about; every row pays compute.
+    assert pol["b2_only"]["expected_cost_per_1k"]["total"]["point"] == \
+        pytest.approx(per1k(3 * 6.0 + 12 * B_PER_EXAMPLE))
+    assert pol["b2_only"]["routing"]["n_to_human"] == 0
+    # a_to_b @ tau=0.83: A answers the 5 most confident (all correct); B takes the other 7
+    # and is right on all of them -> no misroute at all, just 7 x $0.05 of compute.
+    a2b = pol["a_to_b"]
+    assert a2b["routing"]["coverage_a"] == pytest.approx(5 / 12)
+    assert a2b["routing"]["n_to_human"] == 0          # Tier B never defers
+    assert a2b["expected_cost_per_1k"]["misroute"]["point"] == 0.0
+    assert a2b["expected_cost_per_1k"]["human"]["point"] == 0.0
+    assert a2b["expected_cost_per_1k"]["total"]["point"] == \
+        pytest.approx(per1k(7 * B_PER_EXAMPLE))
+    assert a2b["accuracy_system"] == 1.0
+
+
+def test_hand_computed_a_to_b_to_c_paired_subset(tmp_path):
+    """The full §4.2 cascade, including the row Tier B rescues from a Tier C parse failure.
+
+    Paired rows (Tier A p_max .99 .91 .83 .75 .67 .59; A correct on the first three).
+    tau_A = 0.75 -> A answers 4 (the 4th is WRONG -> $6). The remaining two escalate and
+    each pays Tier B's $0.05 compute. Their Tier B confidences are 0.60 and 0.55, so at
+    tau_B = 0.58 the first is answered by Tier B (correctly) and the second falls through
+    to Tier C (which is right, and costs one receipt).
+
+    The Tier-B-answered row is the parse-failed one in the Tier C receipts: because Tier C
+    was never asked, no human charge may fire.
+    """
+    _, _, ev = _build_tier_b(tmp_path)
+    router = ev[router_sim.EVAL_PAIRED]["policies"]["a_to_b_to_c"]
+
+    def per1k(usd):
+        return usd * 1000 / 6
+
+    assert router["routing"]["coverage_a"] == pytest.approx(4 / 6)
+    assert router["gate"]["coverage_b"] == pytest.approx(1 / 6)
+    assert router["gate"]["tier_c_rate"] == pytest.approx(1 / 6)
+    assert router["routing"]["n_to_human"] == 0
+    comps = router["expected_cost_per_1k"]
+    assert comps["misroute"]["point"] == pytest.approx(per1k(6.0))
+    assert comps["human"]["point"] == 0.0
+    assert comps["api"]["point"] == pytest.approx(per1k(2 * B_PER_EXAMPLE + RECEIPT_COST))
+    assert comps["total"]["point"] == \
+        pytest.approx(per1k(6.0 + 2 * B_PER_EXAMPLE + RECEIPT_COST))
+
+
+def test_a_to_b_to_c_pays_both_tiers_when_a_row_falls_through(tmp_path):
+    """Incurred spend composes: a row that runs B and then C pays for both.
+
+    Raising tau_B above every Tier B confidence sends both escalated rows to Tier C — and
+    the parse-failed one now DOES reach a human, still having paid for both calls.
+    """
+    _, _, ev = _build_tier_b(tmp_path, tau_b=0.99)
+    router = ev[router_sim.EVAL_PAIRED]["policies"]["a_to_b_to_c"]
+
+    def per1k(usd):
+        return usd * 1000 / 6
+
+    assert router["gate"]["coverage_b"] == 0.0
+    assert router["routing"]["n_to_human"] == 1               # the parse-failed row
+    comps = router["expected_cost_per_1k"]
+    assert comps["api"]["point"] == pytest.approx(per1k(2 * B_PER_EXAMPLE + 2 * RECEIPT_COST))
+    assert comps["human"]["point"] == pytest.approx(per1k(2.5))
+    # the parse-failed row's fallback label is never scored, so the only misroute is Tier A's
+    assert comps["misroute"]["point"] == pytest.approx(per1k(6.0))
+
+
+def test_tier_b_comparisons_and_dominance_census_include_the_new_points(tmp_path):
+    _, cfg, ev = _build_tier_b(tmp_path)
+    summary = router_sim.build_summary(ev, cfg)
+    dom = summary["dominance"]["by_router"]
+    assert f"{router_sim.EVAL_FULL}/a_to_b" in dom
+    assert f"{router_sim.EVAL_FULL}/b2_only" in dom
+    assert f"{router_sim.EVAL_PAIRED}/a_to_b_to_c" in dom
+    # the INCUMBENT router is now measured against the new baseline too, so its census row
+    # cannot report a dominance count that silently omits Tier B
+    assert "b2_only" in dom[f"{router_sim.EVAL_FULL}/a_to_human"]["compared_against"]
+    assert "b2_only" in summary["dominance"]["model_baselines"]
+    assert "b1_only_sa" in summary["dominance"]["note"]
+    for row in dom.values():
+        assert set(row["dominated"]) <= set(row["compared_against"])
+
+
+def test_tier_b_transfer_rows_report_both_gates(tmp_path):
+    _, _, ev = _build_tier_b(tmp_path)
+    rows = {r["policy"]: r for r in ev[router_sim.EVAL_PAIRED]["transfer"]["rows"]}
+    abc = rows["a_to_b_to_c"]
+    assert abc["cal_tau_b_star"] == pytest.approx(0.58)
+    assert abc["applied_tau_b"] == pytest.approx(0.58)
+    assert abc["realized_coverage_b"] == pytest.approx(1 / 6)
+    assert abc["realized_tier_c_rate"] == pytest.approx(1 / 6)
+    assert abc["coverage_matched_tau_b"] is not None
+    # one-gate policies do not grow a phantom second gate
+    assert "applied_tau_b" not in rows["a_to_human"]
+
+
+def test_tier_b_run_missing_under_a_tier_b_cost_config_is_a_hard_failure(tmp_path):
+    cfg = _cost_config(tmp_path, tier_b=True)
+    repo = _mini_repo(tmp_path, cost_sha256=cfg.sha256, tier_b=False)
+    with pytest.raises(ValueError, match="prices Tier B but there is no run record"):
+        router_sim.load_test_inputs(tmp_path, repo["results"], cost_config=cfg)
+
+
+def test_relabelled_tier_b_artifact_is_refused(tmp_path):
+    """A Tier B artifact scored against a different answer key never reaches a cascade.
+
+    Ids alone cannot catch this: the artifact carries the right complaints with the wrong
+    ground truth, and a cascade built on it would credit Tier B for answers Tier A is being
+    marked down for. The repo's own verification gate is what fires — `_load_tier_b_rungs`
+    runs `load_artifact_verified` on every rung before aligning it, so the Tier B rungs are
+    held to exactly the standard Tier A and Tier C are.
+    """
+    cfg = _cost_config(tmp_path, tier_b=True)
+    repo = _mini_repo(tmp_path, cost_sha256=cfg.sha256, tier_b=True)
+    run_id = repo["b_ids"][router_sim.TIER_B_CASCADE_CONFIG]
+    records = [json.loads(x) for x in repo["results"].read_text().splitlines() if x.strip()]
+    record = next(r for r in records if r["run_id"] == run_id)
+    flipped = [_flip(t) for t in Y_TRUE]
+    y_pred = _preds_from_correct(flipped, B2_CORRECT)
+    probs = _write_artifact(tmp_path, run_id, IDS, flipped, y_pred, LABELS, B2_P_MAX,
+                            config_sha256=record["config_sha256"])
+    record["metrics"] = _metrics_block(flipped, y_pred, probs, LABELS)
+    repo["results"].write_text("".join(json.dumps(r) + "\n" for r in records))
+    with pytest.raises(ValueError, match="y_true_matches_split"):
+        router_sim.load_test_inputs(tmp_path, repo["results"], cost_config=cfg)
 
 
 # ---------------------------------------------------------------------------
@@ -484,13 +722,48 @@ def test_non_test_iid_artifact_is_refused(tmp_path):
                                           allowed_splits=router_sim.ALLOWED_SPLITS)
 
 
-def test_threshold_file_from_a_different_cost_config_is_refused(tmp_path):
+def test_threshold_file_whose_name_and_body_disagree_on_cost_is_refused(tmp_path):
+    """A file NAMED for our cost model but FIT under another is tampering, not a generation.
+
+    This is the case the cost binding exists for: the name is what selects a generation, so
+    a file that lies about which one it belongs to would otherwise smuggle a tau fit under
+    different prices into this router's operating points.
+    """
     cfg = _cost_config(tmp_path)
-    repo = _mini_repo(tmp_path, cost_sha256="0" * 64)
+    repo = _mini_repo(tmp_path, cost_sha256=cfg.sha256)
+    path = next(repo["thresholds"].glob(f"{threshold_opt.FAMILY_A_TO_C}__*.json"))
+    obj = json.loads(path.read_text())
+    obj["cost_config"]["sha256"] = "0" * 64          # body says another cost model
+    path.write_text(json.dumps(obj, sort_keys=True, indent=2) + "\n")  # name still says ours
     with pytest.raises(ValueError, match="was fit under cost config"):
         router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
+                                       results_path=repo["results"],
+                                       verify_replay=False)
+
+
+def test_threshold_files_of_another_cost_generation_are_skipped_not_fatal(tmp_path):
+    """v1-cost and v2-cost threshold sets coexist: v1 evidence is never deleted.
+
+    A file that says the same thing twice — a foreign cost hash in BOTH its name and its
+    body — belongs to another cost generation and is simply not this router's input. What
+    must still fail is the requested generation being absent entirely.
+    """
+    cfg = _cost_config(tmp_path)
+    repo = _mini_repo(tmp_path, cost_sha256=cfg.sha256)
+    foreign = "0" * 64
+    for family, dataset in sorted(router_sim.EXPECTED_THRESHOLD_KEYS):
+        _write_threshold_file(repo["thresholds"], family=family, dataset=dataset,
+                              tau_star=0.11, target_coverage=0.5, cost_sha256=foreign)
+    cal = router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256=cfg.sha256,
                                          results_path=repo["results"],
                                          verify_replay=False)
+    assert set(cal) == set(router_sim.EXPECTED_THRESHOLD_KEYS)
+    assert all(entry.tau_star != 0.11 for entry in cal.values())
+    # ...and asking for the generation that is NOT there still fails loudly
+    with pytest.raises(ValueError, match="no primary-rung .* threshold files"):
+        router_sim.load_cal_thresholds(repo["thresholds"], cost_sha256="1" * 64,
+                                       results_path=repo["results"],
+                                       verify_replay=False)
 
 
 def test_missing_threshold_files_are_a_hard_failure(tmp_path):
@@ -667,24 +940,35 @@ def test_shipped_router_files_replay_exactly():
     reproduce its own routing counts and cost — the same self-check the threshold files
     carry, extended to the router's applied taus.
     """
-    cfg = cost_model.load_cost_config()
-    inputs = router_sim.load_test_inputs()
-    cals = {}   # one threshold set per operating-point version present on disk
+    # Keyed by (cost generation, operating-point version): a file must be replayed at the
+    # prices it was written under, and there is now more than one generation on disk.
+    cals: dict = {}
+    cfgs: dict = {}
+    inputs: dict = {}
     builders = {router_sim.EVAL_FULL: router_sim.build_full_policies,
                 router_sim.EVAL_PAIRED: router_sim.build_paired_policies}
 
     for path in _REAL_ROUTER_FILES:
         obj = json.loads(path.read_text())
+        cost_path = obj["cost_config"]["path"]
+        if cost_path not in cfgs:
+            cfgs[cost_path] = cost_model.load_cost_config(harness.REPO_ROOT / cost_path)
+            assert cfgs[cost_path].sha256 == obj["cost_config"]["sha256"], path.name
+            inputs[cost_path] = router_sim.load_test_inputs(
+                cost_config=cfgs[cost_path])
+        cfg = cfgs[cost_path]
         op_version = obj.get("operating_point_version", router_sim.OP_V1)
-        if op_version not in cals:
-            cals[op_version] = router_sim.load_cal_thresholds(
+        if (cost_path, op_version) not in cals:
+            cals[(cost_path, op_version)] = router_sim.load_cal_thresholds(
                 cost_sha256=cfg.sha256, derivation=op_version, cost_config=cfg)
-        cal = cals[op_version]
+        cal = cals[(cost_path, op_version)]
         name = obj["evaluation_set"]
         for transfer, block in ((router_sim.TRANSFER_PRIMARY, obj["policies"]),
                                 (router_sim.TRANSFER_SECONDARY,
                                  obj["secondary_coverage_matched"]["policies"])):
-            policies = {p.name: p for p in builders[name](inputs, cal, transfer=transfer)}
+            policies = {p.name: p
+                        for p in builders[name](inputs[cost_path], cal,
+                                                transfer=transfer)}
             for pname, published in block.items():
                 policy = policies[pname]
                 assert len(policy) == obj["n_examples"], f"{path.name}:{pname}"
@@ -1039,14 +1323,27 @@ _needs_thresholds = pytest.mark.skipif(
     reason="real thresholds/preds not present")
 
 
-def _tampered_threshold_dir(tmp_path, derivation, mutate):
-    """Copy the real threshold set, apply `mutate` to one matching file, return the dir."""
+# The cost generations present on disk. The tamper tests run against each of them: a gate
+# that fired only for the generation the file happened to sort first would be no gate at all
+# for the other.
+_REAL_COST_CONFIG_PATHS = sorted({
+    json.loads(p.read_text())["cost_config"]["path"] for p in _REAL_THRESHOLD_FILES
+})
+
+
+def _tampered_threshold_dir(tmp_path, derivation, mutate, cfg):
+    """Copy the real threshold set, apply `mutate` to one file of THIS cost generation.
+
+    The generation matters: a file belonging to another cost model is skipped by the
+    loader (both name and body say so), so tampering with one would prove nothing.
+    """
     out = tmp_path / "thresholds"
     out.mkdir()
     touched = False
     for path in _REAL_THRESHOLD_FILES:
         obj = json.loads(path.read_text())
         if (obj.get("derivation", threshold_opt.DERIVATION_V1) == derivation
+                and obj.get("cost_config", {}).get("sha256") == cfg.sha256
                 and not touched and obj.get("is_primary")
                 and obj["policy_family"] == threshold_opt.FAMILY_A_TO_HUMAN
                 and obj["dataset"] == threshold_opt.DATASET_FULL_CAL):
@@ -1058,46 +1355,52 @@ def _tampered_threshold_dir(tmp_path, derivation, mutate):
 
 
 @_needs_thresholds
-def test_shipped_thresholds_pass_the_tau_replay_gate():
-    cfg = cost_model.load_cost_config()
-    for derivation in (router_sim.OP_V1, router_sim.OP_V2):
+@pytest.mark.parametrize("cost_path", _REAL_COST_CONFIG_PATHS)
+def test_shipped_thresholds_pass_the_tau_replay_gate(cost_path):
+    cfg = cost_model.load_cost_config(harness.REPO_ROOT / cost_path)
+    derivations = ((router_sim.OP_V2,) if cost_model.prices_tier_b(cfg)
+                   else (router_sim.OP_V1, router_sim.OP_V2))
+    for derivation in derivations:
         cal = router_sim.load_cal_thresholds(cost_sha256=cfg.sha256, cost_config=cfg,
                                              derivation=derivation)
-        assert set(cal) == set(router_sim.EXPECTED_THRESHOLD_KEYS)
+        assert set(cal) == set(router_sim.expected_threshold_keys(cfg))
 
 
 @_needs_thresholds
-def test_tau_replay_catches_an_edited_answered_count(tmp_path):
+@pytest.mark.parametrize("cost_path", _REAL_COST_CONFIG_PATHS)
+def test_tau_replay_catches_an_edited_answered_count(tmp_path, cost_path):
     def mutate(obj):
         obj["n_answered_at_tau_star"] += 1
         obj["target_coverage_a"] = obj["n_answered_at_tau_star"] / obj["n_examples"]
-    cfg = cost_model.load_cost_config()
-    bad = _tampered_threshold_dir(tmp_path, router_sim.OP_V2, mutate)
+    cfg = cost_model.load_cost_config(harness.REPO_ROOT / cost_path)
+    bad = _tampered_threshold_dir(tmp_path, router_sim.OP_V2, mutate, cfg)
     with pytest.raises(ValueError, match="does not replay.*selects"):
         router_sim.load_cal_thresholds(bad, cost_sha256=cfg.sha256, cost_config=cfg,
                                        derivation=router_sim.OP_V2)
 
 
 @_needs_thresholds
-def test_tau_replay_catches_an_edited_tau(tmp_path):
+@pytest.mark.parametrize("cost_path", _REAL_COST_CONFIG_PATHS)
+def test_tau_replay_catches_an_edited_tau(tmp_path, cost_path):
     # Move tau to a value that still satisfies every METADATA check (finite, in range,
     # counts self-consistent) but selects a different set of rows.
     def mutate(obj):
         obj["tau_star"] = min(obj["tau_star"] + 0.05, 1.0)
-    cfg = cost_model.load_cost_config()
-    bad = _tampered_threshold_dir(tmp_path, router_sim.OP_V2, mutate)
+    cfg = cost_model.load_cost_config(harness.REPO_ROOT / cost_path)
+    bad = _tampered_threshold_dir(tmp_path, router_sim.OP_V2, mutate, cfg)
     with pytest.raises(ValueError, match="does not replay"):
         router_sim.load_cal_thresholds(bad, cost_sha256=cfg.sha256, cost_config=cfg,
                                        derivation=router_sim.OP_V2)
 
 
 @_needs_thresholds
-def test_tau_replay_catches_an_edited_objective(tmp_path):
+@pytest.mark.parametrize("cost_path", _REAL_COST_CONFIG_PATHS)
+def test_tau_replay_catches_an_edited_objective(tmp_path, cost_path):
     def mutate(obj):
         point = obj["operating_points"]["tau_star"]["expected_cost_per_1k"]["total"]
         point["point"] = point["point"] + 1.0
-    cfg = cost_model.load_cost_config()
-    bad = _tampered_threshold_dir(tmp_path, router_sim.OP_V2, mutate)
+    cfg = cost_model.load_cost_config(harness.REPO_ROOT / cost_path)
+    bad = _tampered_threshold_dir(tmp_path, router_sim.OP_V2, mutate, cfg)
     with pytest.raises(ValueError, match="does not replay.*objective"):
         router_sim.load_cal_thresholds(bad, cost_sha256=cfg.sha256, cost_config=cfg,
                                        derivation=router_sim.OP_V2)

@@ -17,6 +17,14 @@ prediction artifacts plus the committed Tier C receipts. `results/runs.jsonl` is
   TEST-IID, so that arm is empty here — reported as a robustness fact, not hidden. The
   ``c_human`` sensitivity therefore lives entirely in the ``a_to_human`` rung.
 - No Sonnet-terminal variant (deferred to the drift chapter).
+- **Tier B, when priced** (`configs/cost_model_v2.yaml`), adds four single-tier points
+  (ModernBERT ×3 seeds, DistilBERT) and two cascades: ``a_to_b`` (Tier A gate, Tier B
+  terminal — one gate; a local classifier always answers, so it has no human arm) and
+  ``a_to_b_to_c`` (the full §4.2 cascade, paired subset only, carrying the CAL-fit tau_B as
+  well as tau_A). B2 is the cascade rung in both: it wins the frozen protocol against all
+  three B1 seeds on macro-F1, ECE and AURC *and* is the cheaper model. Under a cost config
+  that does not price Tier B, none of these policies exist — an unpriced tier is a hard
+  failure at scoring time, so they would be unscorable rather than merely unreported.
 - **Threshold transfer is PRIMARY**: the CAL tau* constants are applied directly to the
   TEST artifact's ``p_max`` and the *realized* coverage is whatever it turns out to be.
   Coverage-matched transfer (pick tau on TEST to hit the CAL target coverage) appears only
@@ -70,6 +78,26 @@ TIER_A_CNB_TEST_CONFIG = "tier_a_cnb_test_iid"
 TIER_C_TEST_CONFIG = "tier_c_haiku_zeroshot_test_iid"
 ALLOWED_SPLITS = {"test_iid"}
 
+# The frozen Tier B TEST-IID runs and the frontier point each one is: three ModernBERT
+# seeds (the headline accuracy model, reported as three points rather than a mean, because
+# seed variance is the exhibit) and the DistilBERT deployment point. Loaded only when the
+# cost config prices Tier B.
+TIER_B_TEST_RUNGS: tuple[tuple[str, str, str], ...] = (
+    # (run config stem, policy/frontier point name, inputs-block key)
+    ("tier_b1_modernbert_sa", "b1_only_sa", "tier_b1_sa"),
+    ("tier_b1_modernbert_sb", "b1_only_sb", "tier_b1_sb"),
+    ("tier_b1_modernbert_sc", "b1_only_sc", "tier_b1_sc"),
+    ("tier_b2_distilbert_s0", "b2_only", "tier_b2"),
+)
+# The rung inside a_to_b and a_to_b_to_c. B2, not B1: it wins the frozen protocol on
+# macro-F1 (paired CIs excluding zero vs all three B1 seeds), on ECE and on AURC, and it is
+# also the cheaper model — so the cascade rung choice costs nothing on either axis. See
+# threshold_opt.TIER_B_CAL_CONFIG for the CAL side of the same decision.
+TIER_B_CASCADE_CONFIG = "tier_b2_distilbert_s0"
+
+POLICY_A_TO_B = threshold_opt.FAMILY_A_TO_B
+POLICY_A_TO_B_TO_C = threshold_opt.FAMILY_A_TO_B_TO_C
+
 EVAL_FULL = "full_test_iid"
 EVAL_PAIRED = "paired_subset"
 
@@ -95,6 +123,27 @@ EXPECTED_THRESHOLD_KEYS = frozenset({
     (threshold_opt.FAMILY_A_TO_HUMAN, threshold_opt.DATASET_PAIRED),
     (threshold_opt.FAMILY_A_TO_C, threshold_opt.DATASET_PAIRED),
 })
+
+# The Tier B families, which exist only under a cost config that prices Tier B.
+TIER_B_THRESHOLD_KEYS = frozenset({
+    (threshold_opt.FAMILY_A_TO_B, threshold_opt.DATASET_FULL_CAL),
+    (threshold_opt.FAMILY_A_TO_B, threshold_opt.DATASET_PAIRED),
+    (threshold_opt.FAMILY_A_TO_B_TO_C, threshold_opt.DATASET_PAIRED),
+})
+
+
+def expected_threshold_keys(cost_config: cost_model.CostConfig | None) -> frozenset:
+    """Which (family, dataset) constants a complete threshold set must contain.
+
+    A function of the PRICES, not a flag: an unpriced tier is a hard failure at scoring
+    time, so under `cost_model_v1.yaml` the Tier B families are unscorable and their
+    absence is correct rather than a hole. Under a Tier-B-pricing config their absence is
+    a missing input and must fail loudly. `None` (fixtures that only exercise the metadata
+    gate) means the base set.
+    """
+    if cost_config is not None and cost_model.prices_tier_b(cost_config):
+        return EXPECTED_THRESHOLD_KEYS | TIER_B_THRESHOLD_KEYS
+    return EXPECTED_THRESHOLD_KEYS
 
 # `target_coverage_a` is written rounded to JSON_ROUND (10 dp), so the count check has to
 # tolerate that rounding and nothing more.
@@ -147,6 +196,21 @@ MCNEMAR_NOTE = (
 # single tiers" claim that counts it is inflated, so the phase-acceptance count is reported
 # over model baselines only, with the full list alongside.
 MODEL_BASELINES = frozenset({"a_only", "a_only_cnb", "c_only"})
+TIER_B_MODEL_BASELINES = frozenset(name for _, name, _ in TIER_B_TEST_RUNGS)
+
+
+def model_baselines(cost_config: cost_model.CostConfig | None = None) -> frozenset:
+    """The competing single-tier systems under this cost generation.
+
+    Tier B points join the baseline set exactly when they can be priced, for the same
+    reason `expected_threshold_keys` grows: a policy that cannot be scored cannot be a
+    baseline. Keeping this a function (rather than widening the constant) is also what
+    lets the committed v1-cost evidence regenerate byte-identically — the set is
+    serialized into every summary.
+    """
+    if cost_config is not None and cost_model.prices_tier_b(cost_config):
+        return MODEL_BASELINES | TIER_B_MODEL_BASELINES
+    return MODEL_BASELINES
 
 DOMINANCE_NOTE = (
     "`dominated_model_baselines` counts only competing model systems (a_only, a_only_cnb, "
@@ -154,6 +218,21 @@ DOMINANCE_NOTE = (
     "at c_human=$2.50 the all-human policy costs $2,500/1k and any machine policy beats it "
     "by construction, so counting it would inflate the claim."
 )
+
+DOMINANCE_NOTE_TIER_B = (
+    "`dominated_model_baselines` counts only competing model systems — under a cost config "
+    "that prices Tier B those are a_only, a_only_cnb, c_only, b1_only_sa, b1_only_sb, "
+    "b1_only_sc and b2_only. Beating `all_human` is reported but never counted toward a "
+    "dominance claim: at c_human=$2.50 the all-human policy costs $2,500/1k and any machine "
+    "policy beats it by construction, so counting it would inflate the claim. Cascades "
+    "(a_to_human, a_to_c_parsefail_human, a_to_b, a_to_b_to_c) are compared against each "
+    "other and reported, but they are routers, not single-tier baselines, so they are not "
+    "counted either."
+)
+
+
+def dominance_note(baselines) -> str:
+    return DOMINANCE_NOTE if set(baselines) == set(MODEL_BASELINES) else DOMINANCE_NOTE_TIER_B
 
 COVERAGE_MATCH_NOTE = (
     "Coverage matching hits the NEAREST ACHIEVABLE coverage, not the requested one: "
@@ -188,6 +267,13 @@ class CalThreshold:
     tier_a_run_id: str
     source_file: str
     source_sha256: str
+    # Two-gate families only. `tau_b_star=None` with `has_tier_b_gate=True` is a REAL
+    # operating point — the joint argmin chose "no row clears the Tier B gate", i.e. the
+    # Tier B forward pass is paid for and its answer never used — so it is carried as a
+    # value rather than treated as a missing field.
+    has_tier_b_gate: bool = False
+    tau_b_star: float | None = None
+    coverage_b_marginal: float | None = None
 
 
 def _check_threshold_object(obj: dict, path, *, cal_record: dict,
@@ -262,6 +348,14 @@ def _check_threshold_object(obj: dict, path, *, cal_record: dict,
             f"(|delta| > {THRESHOLD_COUNT_TOL:g}); the file was not written by the code "
             "that computed it"
         )
+    gate_b = obj.get("tier_b_gate")
+    if gate_b is not None and gate_b.get("tau_b_star") is not None:
+        tau_b = float(gate_b["tau_b_star"])
+        if not math.isfinite(tau_b) or not (0.0 < tau_b <= 1.0):
+            raise ValueError(
+                f"threshold file {path.name} has tau_b_star {gate_b['tau_b_star']!r}, "
+                "which is not a finite probability threshold in (0, 1]"
+            )
 
 
 def _replay_threshold(obj: dict, path, entry_key, *, cal_record, cost_config,
@@ -289,16 +383,63 @@ def _replay_threshold(obj: dict, path, entry_key, *, cal_record, cost_config,
     else:
         index = threshold_opt.restrict_to_ids(art_a, art_c.complaint_id)
 
+    config_a = obj["inputs"]["tier_a"]["config_name"]
+
+    def tier_b_inputs():
+        """The Tier B CAL rung and its priced compute, loaded only where a family needs it."""
+        record_b = records[threshold_opt.TIER_B_CAL_CONFIG]
+        art_b = cost_model.load_artifact_verified(record_b, preds_dir,
+                                                  allowed_splits={"cal"})
+        per_example = cost_model.amortized_per_example_usd(
+            cost_config,
+            cost_model.tier_of_config_name(threshold_opt.TIER_B_CAL_CONFIG, cost_config))
+        return record_b, art_b, per_example
+
     if family == threshold_opt.FAMILY_A_TO_HUMAN:
         policy = threshold_opt.build_a_to_human(
-            art_a, cal_record, obj["inputs"]["tier_a"]["config_name"],
-            dataset=dataset, index=index)
-    else:
+            art_a, cal_record, config_a, dataset=dataset, index=index)
+    elif family == threshold_opt.FAMILY_A_TO_C:
         api, parse_failed, check, _ = threshold_opt.load_tier_c_arm_inputs(art_c, record_c)
         policy = threshold_opt.build_a_to_c(
-            art_a, cal_record, obj["inputs"]["tier_a"]["config_name"], art_c, record_c,
+            art_a, cal_record, config_a, art_c, record_c,
             threshold_opt.TIER_C_CAL_CONFIG, api_cost_usd=api,
             parse_failed=parse_failed, cost_sum_check=check)
+    elif family == threshold_opt.FAMILY_A_TO_B:
+        record_b, art_b, per_example = tier_b_inputs()
+        policy = threshold_opt.build_a_to_b(
+            art_a, cal_record, config_a, art_b, record_b,
+            threshold_opt.TIER_B_CAL_CONFIG, b_per_example_usd=per_example,
+            dataset=dataset, index=index)
+    elif family == threshold_opt.FAMILY_A_TO_B_TO_C:
+        record_b, art_b, per_example = tier_b_inputs()
+        api, parse_failed, check, _ = threshold_opt.load_tier_c_arm_inputs(art_c, record_c)
+        gate_b = obj.get("tier_b_gate") or {}
+        if "tau_b_star" not in gate_b:
+            raise ValueError(
+                f"threshold file {path.name} is a {family} file with no tier_b_gate."
+                "tau_b_star; the second gate cannot be replayed"
+            )
+        tau_b = (math.inf if gate_b["tau_b_star"] is None
+                 else float(gate_b["tau_b_star"]))
+        policy = threshold_opt.build_a_to_b_to_c(
+            art_a, cal_record, config_a, art_b, record_b,
+            threshold_opt.TIER_B_CAL_CONFIG, art_c, record_c,
+            threshold_opt.TIER_C_CAL_CONFIG, tau_b=tau_b,
+            b_per_example_usd=per_example, api_cost_usd=api, parse_failed=parse_failed,
+            cost_sum_check=check)
+        n_b = int(np.count_nonzero(
+            (np.asarray(policy.p_max, dtype=np.float64) < float(obj["tau_star"]))
+            & policy.arm.b_answered))
+        if n_b != int(gate_b["n_answered_b_at_tau_star"]):
+            raise ValueError(
+                f"threshold file {path.name} does not replay: (tau_star, tau_b_star) "
+                f"routes {n_b} row(s) to Tier B on the CAL artifact but the file records "
+                f"{gate_b['n_answered_b_at_tau_star']}"
+            )
+    else:
+        raise ValueError(
+            f"threshold file {path.name} declares unknown policy_family {family!r}"
+        )
 
     tau = float(obj["tau_star"])
     n_answered = int(np.count_nonzero(np.asarray(policy.p_max, dtype=np.float64) >= tau))
@@ -325,6 +466,23 @@ def _replay_threshold(obj: dict, path, entry_key, *, cal_record, cost_config,
         )
 
 
+def _is_other_cost_generation(obj: dict, path, cost_sha256: str | None) -> bool:
+    """Whether this file belongs, self-consistently, to a different cost model.
+
+    "Self-consistently" is the whole check: `threshold_opt.result_filename` writes the cost
+    hash into the file name, so a file that is a different generation says so twice. If the
+    two disagree, this returns False and the file falls through to
+    `_check_threshold_object`, which fails it — a file named for one cost model and fit
+    under another is the failure mode the binding was written to catch.
+    """
+    if cost_sha256 is None:
+        return False
+    recorded = obj.get("cost_config", {}).get("sha256")
+    if not recorded or recorded == cost_sha256:
+        return False
+    return path.name.endswith(f"__cost-{recorded[:8]}.json")
+
+
 def load_cal_thresholds(thresholds_dir=DEFAULT_THRESHOLDS_DIR, *,
                         cost_sha256: str | None = None,
                         tier_a_config: str | None = None,
@@ -347,6 +505,14 @@ def load_cal_thresholds(thresholds_dir=DEFAULT_THRESHOLDS_DIR, *,
     would make every router number depend on file order. The exact expected key set is
     required too, so a missing file is caught here rather than as a KeyError deep inside a
     policy builder.
+
+    **Cost generations coexist.** The cost model's hash is part of a threshold file's
+    identity — it is in the file NAME as well as its body — so a file that consistently
+    belongs to a *different* cost generation is skipped, not rejected: `cost_model_v1.yaml`
+    evidence stays committed and readable after `cost_model_v2.yaml` adds Tier B pricing.
+    What is still a hard failure is a file whose name and body DISAGREE about which cost
+    model it came from: that is a renamed or hand-edited file, and it is exactly the case
+    the check exists for.
     """
     thresholds_dir = Path(thresholds_dir)
     tier_a_config = tier_a_config or OP_VERSIONS[derivation]["tier_a_cal_config"]
@@ -371,6 +537,8 @@ def load_cal_thresholds(thresholds_dir=DEFAULT_THRESHOLDS_DIR, *,
             continue
         if tier_a.get("config_name") != tier_a_config or not obj.get("is_primary"):
             continue
+        if _is_other_cost_generation(obj, path, cost_sha256):
+            continue
         _check_threshold_object(obj, path, cal_record=cal_record, cost_sha256=cost_sha256)
         key = (obj["policy_family"], obj["dataset"])
         if verify_replay:
@@ -388,6 +556,7 @@ def load_cal_thresholds(thresholds_dir=DEFAULT_THRESHOLDS_DIR, *,
                 f"{path.name}; refusing to pick one by file order — remove the stale file"
             )
         sources[key] = path.name
+        gate_b = obj.get("tier_b_gate")
         out[key] = CalThreshold(
             policy_family=obj["policy_family"],
             dataset=obj["dataset"],
@@ -398,19 +567,26 @@ def load_cal_thresholds(thresholds_dir=DEFAULT_THRESHOLDS_DIR, *,
             tier_a_run_id=tier_a["run_id"],
             source_file=path.name,
             source_sha256=cost_model.sha256_file(path),
+            has_tier_b_gate=gate_b is not None,
+            tau_b_star=(None if gate_b is None or gate_b.get("tau_b_star") is None
+                        else float(gate_b["tau_b_star"])),
+            coverage_b_marginal=(None if gate_b is None
+                                 else float(gate_b["coverage_b_marginal"])),
         )
     if not out:
         raise ValueError(
             f"no primary-rung {derivation} threshold files for {tier_a_config!r} under "
             f"{thresholds_dir}; run `make thresholds` first"
         )
-    missing = EXPECTED_THRESHOLD_KEYS - set(out)
-    unexpected = set(out) - EXPECTED_THRESHOLD_KEYS
+    expected = expected_threshold_keys(cost_config)
+    missing = expected - set(out)
+    unexpected = set(out) - expected
     if missing or unexpected:
         raise ValueError(
             f"the {derivation} threshold set under {thresholds_dir} is not the expected "
             f"one — missing {sorted(missing)}, unexpected {sorted(unexpected)}; each "
-            f"derivation needs exactly {sorted(EXPECTED_THRESHOLD_KEYS)}"
+            f"derivation needs exactly {sorted(expected)} under cost config "
+            f"{(cost_sha256 or '?')[:12]}"
         )
     return out
 
@@ -543,6 +719,69 @@ def a_to_human_policy(art_a, tau, *, evaluation_set, gate, inputs,
         y_pred=np.asarray(art_a.y_pred[idx], dtype=object),
         to_human=~answered,
         api_cost_usd=np.zeros(n, dtype=np.float64),
+        gate=gate,
+        inputs=inputs,
+    )
+
+
+def a_to_b_policy(art_a, art_b, *, tau, b_per_example_usd, evaluation_set, gate, inputs,
+                  index=None, index_b=None) -> RouterPolicy:
+    """Tier A answers above tau; below it Tier B answers TERMINALLY.
+
+    No human arm: a local classifier always emits a label, so there is no analogue of Tier
+    C's parse failure. Escalated rows pay Tier B's declared amortized compute (an explicit
+    ESTIMATE from the cost config) and a wrong Tier B label costs `c_misroute`.
+    """
+    idx = slice(None) if index is None else index
+    idx_b = slice(None) if index_b is None else index_b
+    p_max = np.asarray(art_a.p_max[idx], dtype=np.float64)
+    answered_by_a = p_max >= tau
+    n = len(p_max)
+    return RouterPolicy(
+        name=POLICY_A_TO_B,
+        evaluation_set=evaluation_set,
+        ids=np.asarray(art_a.complaint_id[idx], dtype=np.int64),
+        y_true=np.asarray(art_a.y_true[idx], dtype=object),
+        y_pred=np.where(answered_by_a, np.asarray(art_a.y_pred[idx], dtype=object),
+                        np.asarray(art_b.y_pred[idx_b], dtype=object)),
+        to_human=np.zeros(n, dtype=bool),
+        api_cost_usd=np.where(answered_by_a, 0.0, float(b_per_example_usd)),
+        gate=gate,
+        inputs=inputs,
+    )
+
+
+def a_to_b_to_c_policy(art_a, index, art_b, index_b, art_c, *, tau, tau_b,
+                       b_per_example_usd, api_cost_usd, parse_failed, gate,
+                       inputs) -> RouterPolicy:
+    """Tier A above tau, else Tier B above tau_b, else Tier C TERMINALLY. The §4.2 cascade.
+
+    Every escalated row pays Tier B's compute whatever happens next — the forward pass has
+    to run before its confidence can be read — and a row that falls through pays Tier C's
+    measured per-call cost on top. Parse failure remains the only Tier C -> human signal,
+    and a parse-failed row's fallback label is discarded rather than scored.
+    """
+    p_max = np.asarray(art_a.p_max[index], dtype=np.float64)
+    answered_by_a = p_max >= tau
+    answered_by_b = (~answered_by_a) & (
+        np.asarray(art_b.p_max[index_b], dtype=np.float64) >= tau_b)
+    to_c = (~answered_by_a) & (~answered_by_b)
+    parse_failed = np.asarray(parse_failed, dtype=bool)
+
+    api = np.where(answered_by_a, 0.0, float(b_per_example_usd))
+    api = api + np.where(to_c, np.asarray(api_cost_usd, dtype=np.float64), 0.0)
+    y_pred = np.where(
+        answered_by_a, np.asarray(art_a.y_pred[index], dtype=object),
+        np.where(answered_by_b, np.asarray(art_b.y_pred[index_b], dtype=object),
+                 np.asarray(art_c.y_pred, dtype=object)))
+    return RouterPolicy(
+        name=POLICY_A_TO_B_TO_C,
+        evaluation_set=EVAL_PAIRED,
+        ids=np.asarray(art_c.complaint_id, dtype=np.int64),
+        y_true=np.asarray(art_c.y_true, dtype=object),
+        y_pred=y_pred,
+        to_human=to_c & parse_failed,
+        api_cost_usd=api,
         gate=gate,
         inputs=inputs,
     )
@@ -729,6 +968,26 @@ def _artifact_block(record, art, config_name) -> dict:
     }
 
 
+@dataclass(frozen=True)
+class TierBRung:
+    """One frozen Tier B TEST-IID point, aligned to the Tier A row order.
+
+    `index_full` / `index_paired` are positional indexes INTO this artifact for the Tier A
+    full-slice ids and for the paired-subset ids. They are computed by id join rather than
+    assumed equal to Tier A's order: the four Tier B artifacts do happen to share Tier A's
+    ordering, but a cascade that mixed one complaint's gate decision with another's label
+    would leave every aggregate metric plausible, so the join is done rather than trusted.
+    """
+
+    config_name: str
+    policy_name: str
+    block_key: str
+    art: object
+    per_example_usd: float
+    index_full: np.ndarray
+    index_paired: np.ndarray
+
+
 @dataclass
 class TestInputs:
     """Every frozen TEST-IID input the simulator consumes, already gate-verified."""
@@ -743,11 +1002,69 @@ class TestInputs:
     cost_sum_check: dict
     receipts_sha256: str
     blocks: dict
+    # Empty unless the cost config prices Tier B (see `cost_model.prices_tier_b`).
+    tier_b: tuple[TierBRung, ...] = ()
+
+    @property
+    def tier_b_cascade(self) -> TierBRung | None:
+        """The Tier B rung the cascades escalate to (B2), or None if Tier B is unpriced."""
+        for rung in self.tier_b:
+            if rung.config_name == TIER_B_CASCADE_CONFIG:
+                return rung
+        return None
+
+
+def _load_tier_b_rungs(records, art_a, art_c, preds_dir,
+                       cfg: cost_model.CostConfig) -> tuple[tuple[TierBRung, ...], dict]:
+    """Load, verify and align every Tier B TEST-IID rung. Returns (rungs, blocks)."""
+    missing = [c for c, _, _ in TIER_B_TEST_RUNGS if c not in records]
+    if missing:
+        raise ValueError(
+            f"cost config {cfg.path.name} prices Tier B but there is no run record for "
+            f"config(s) {missing}; a priced tier with no run is a missing input, not an "
+            "empty frontier slot"
+        )
+    rungs, blocks = [], {}
+    for config_name, policy_name, block_key in TIER_B_TEST_RUNGS:
+        record = records[config_name]
+        art = cost_model.load_artifact_verified(record, preds_dir,
+                                               allowed_splits=ALLOWED_SPLITS)
+        index_full = threshold_opt.restrict_to_ids(art, art_a.complaint_id)
+        if not np.array_equal(art.y_true[index_full], art_a.y_true):
+            raise ValueError(
+                f"Tier A and {config_name} TEST-IID artifacts disagree on y_true for the "
+                "joined ids; the two artifacts are not describing the same rows"
+            )
+        if not np.array_equal(np.asarray(art.class_labels),
+                              np.asarray(art_a.class_labels)):
+            raise ValueError(
+                f"Tier A and {config_name} artifacts use different class label orders"
+            )
+        per_example = cost_model.amortized_per_example_usd(
+            cfg, cost_model.tier_of_config_name(config_name, cfg))
+        rungs.append(TierBRung(
+            config_name=config_name, policy_name=policy_name, block_key=block_key,
+            art=art, per_example_usd=per_example, index_full=index_full,
+            index_paired=threshold_opt.restrict_to_ids(art, art_c.complaint_id),
+        ))
+        blocks[block_key] = {
+            **_artifact_block(record, art, config_name),
+            "policy_name": policy_name,
+            "per_example_usd": per_example,
+            "api_cost_evidence_class": "estimated (amortized compute; see the cost config)",
+        }
+    return tuple(rungs), blocks
 
 
 def load_test_inputs(preds_dir=DEFAULT_PREDS_DIR,
-                     results_path=DEFAULT_RESULTS_PATH) -> TestInputs:
-    """Load + verify the three TEST-IID artifacts and the Haiku receipts they pair with."""
+                     results_path=DEFAULT_RESULTS_PATH, *,
+                     cost_config: cost_model.CostConfig | None = None) -> TestInputs:
+    """Load + verify the TEST-IID artifacts and the Haiku receipts they pair with.
+
+    Tier B artifacts are loaded iff `cost_config` prices Tier B: under `cost_model_v1.yaml`
+    those runs cannot be scored at all, so loading them would only produce policies that
+    fail later at pricing time.
+    """
     records = predictions.records_by_config(results_path)
     missing = [c for c in (TIER_A_TEST_CONFIG, TIER_A_CNB_TEST_CONFIG, TIER_C_TEST_CONFIG)
                if c not in records]
@@ -805,11 +1122,16 @@ def load_test_inputs(preds_dir=DEFAULT_PREDS_DIR,
             "n_parse_failed": int(np.count_nonzero(parse_failed)),
         },
     }
+    tier_b: tuple[TierBRung, ...] = ()
+    if cost_config is not None and cost_model.prices_tier_b(cost_config):
+        tier_b, tier_b_blocks = _load_tier_b_rungs(records, art_a, art_c, preds_dir,
+                                                   cost_config)
+        blocks.update(tier_b_blocks)
     return TestInputs(
         records=records, art_a=art_a, art_cnb=art_cnb, art_c=art_c,
         index_paired=index, api_cost_usd=api, parse_failed=parse_failed,
         cost_sum_check=check, receipts_sha256=blocks["tier_c_haiku"]["receipts_sha256"],
-        blocks=blocks,
+        blocks=blocks, tier_b=tier_b,
     )
 
 
@@ -818,6 +1140,39 @@ def _with_rates(gate: dict, p_max, tau) -> dict:
     n = len(answered)
     return {**gate, "coverage_a": float(answered.sum()) / n,
             "escalation_rate": float((~answered).sum()) / n}
+
+
+def _with_b_rates(gate: dict, p_max_a, tau, p_max_b, tau_b) -> dict:
+    """Gate block for a two-gate policy: Tier A rates plus the realized Tier B share."""
+    answered_a = np.asarray(p_max_a, dtype=np.float64) >= tau
+    answered_b = (~answered_a) & (np.asarray(p_max_b, dtype=np.float64) >= tau_b)
+    n = len(answered_a)
+    return {
+        **_with_rates(gate, p_max_a, tau),
+        "tau_b": None if not math.isfinite(float(tau_b)) else float(tau_b),
+        "coverage_b": float(answered_b.sum()) / n,
+        "tier_c_rate": float((~answered_a & ~answered_b).sum()) / n,
+    }
+
+
+def _tier_b_source(cal_t: CalThreshold) -> dict:
+    return {"file": cal_t.source_file, "sha256": cal_t.source_sha256,
+            "cal_tau_star": cal_t.tau_star,
+            "cal_target_coverage_a": cal_t.target_coverage_a}
+
+
+def _single_tier_b_policies(inputs: TestInputs, *, evaluation_set: str) -> list[RouterPolicy]:
+    """The b1 x 3 seeds and b2 single-tier frontier points, on either evaluation set."""
+    paired = evaluation_set == EVAL_PAIRED
+    out = []
+    for rung in inputs.tier_b:
+        index = rung.index_paired if paired else rung.index_full
+        out.append(single_tier_policy(
+            rung.policy_name, rung.art, evaluation_set=evaluation_set, index=index,
+            api_cost_usd=np.full(len(index), rung.per_example_usd, dtype=np.float64),
+            gate=_gate("answer_all", model=rung.config_name),
+            inputs={rung.block_key: inputs.blocks[rung.block_key]}))
+    return out
 
 
 def build_full_policies(inputs: TestInputs, cal: dict, *,
@@ -831,7 +1186,7 @@ def build_full_policies(inputs: TestInputs, cal: dict, *,
               "cal_tau_star": cal_t.tau_star,
               "cal_target_coverage_a": cal_t.target_coverage_a}
     a_block = {"tier_a_logreg": inputs.blocks["tier_a_logreg"]}
-    return [
+    policies = [
         single_tier_policy("a_only", art_a, evaluation_set=EVAL_FULL,
                            gate=_gate("answer_all", model=TIER_A_TEST_CONFIG),
                            inputs=a_block),
@@ -846,6 +1201,20 @@ def build_full_policies(inputs: TestInputs, cal: dict, *,
         all_human_policy(art_a.complaint_id, art_a.y_true, evaluation_set=EVAL_FULL,
                          inputs=a_block),
     ]
+    rung = inputs.tier_b_cascade
+    if rung is not None:
+        cal_b = cal[(threshold_opt.FAMILY_A_TO_B, threshold_opt.DATASET_FULL_CAL)]
+        tau_b_gate = (cal_b.tau_star if transfer == TRANSFER_PRIMARY
+                      else coverage_matched_tau(art_a.p_max, cal_b.target_coverage_a))
+        policies.extend(_single_tier_b_policies(inputs, evaluation_set=EVAL_FULL))
+        policies.append(a_to_b_policy(
+            art_a, rung.art, tau=tau_b_gate, b_per_example_usd=rung.per_example_usd,
+            evaluation_set=EVAL_FULL, index_b=rung.index_full,
+            gate=_with_rates(_gate("tier_a_threshold", model=TIER_A_TEST_CONFIG,
+                                   tau=tau_b_gate, source=_tier_b_source(cal_b),
+                                   transfer=transfer), art_a.p_max, tau_b_gate),
+            inputs={**a_block, rung.block_key: inputs.blocks[rung.block_key]}))
+    return policies
 
 
 def build_paired_policies(inputs: TestInputs, cal: dict, *,
@@ -869,7 +1238,7 @@ def build_paired_policies(inputs: TestInputs, cal: dict, *,
     a_block = {"tier_a_logreg": inputs.blocks["tier_a_logreg"]}
     c_block = {"tier_c_haiku": inputs.blocks["tier_c_haiku"]}
     both = {**a_block, **c_block}
-    return [
+    policies = [
         single_tier_policy("a_only", art_a, evaluation_set=EVAL_PAIRED, index=index,
                            gate=_gate("answer_all", model=TIER_A_TEST_CONFIG),
                            inputs=a_block),
@@ -895,6 +1264,43 @@ def build_paired_policies(inputs: TestInputs, cal: dict, *,
         all_human_policy(art_c.complaint_id, art_c.y_true, evaluation_set=EVAL_PAIRED,
                          inputs=a_block),
     ]
+    rung = inputs.tier_b_cascade
+    if rung is None:
+        return policies
+
+    cal_b = cal[(threshold_opt.FAMILY_A_TO_B, threshold_opt.DATASET_PAIRED)]
+    cal_abc = cal[(threshold_opt.FAMILY_A_TO_B_TO_C, threshold_opt.DATASET_PAIRED)]
+    p_max_b = np.asarray(rung.art.p_max[rung.index_paired], dtype=np.float64)
+    b_block = {rung.block_key: inputs.blocks[rung.block_key]}
+
+    # The second gate transfers the same two ways as the first: the CAL constant as
+    # PRIMARY, and (secondary) a tau_B re-chosen on TEST to hit the CAL Tier B share.
+    tau_b_star = math.inf if cal_abc.tau_b_star is None else cal_abc.tau_b_star
+    if transfer != TRANSFER_PRIMARY:
+        tau_b_star = coverage_matched_tau(p_max_b, cal_abc.coverage_b_marginal or 0.0)
+    tau_ab, tau_abc = tau_for(cal_b), tau_for(cal_abc)
+
+    policies.extend(_single_tier_b_policies(inputs, evaluation_set=EVAL_PAIRED))
+    policies.append(a_to_b_policy(
+        art_a, rung.art, tau=tau_ab, b_per_example_usd=rung.per_example_usd,
+        evaluation_set=EVAL_PAIRED, index=index, index_b=rung.index_paired,
+        gate=_with_rates(_gate("tier_a_threshold", model=TIER_A_TEST_CONFIG, tau=tau_ab,
+                               source=_tier_b_source(cal_b), transfer=transfer),
+                         p_max, tau_ab),
+        inputs={**a_block, **b_block}))
+    policies.append(a_to_b_to_c_policy(
+        art_a, index, rung.art, rung.index_paired, art_c, tau=tau_abc, tau_b=tau_b_star,
+        b_per_example_usd=rung.per_example_usd, api_cost_usd=inputs.api_cost_usd,
+        parse_failed=inputs.parse_failed,
+        gate=_with_b_rates(
+            _gate("tier_a_threshold", model=TIER_A_TEST_CONFIG, tau=tau_abc,
+                  source={**_tier_b_source(cal_abc),
+                          "cal_tau_b_star": cal_abc.tau_b_star,
+                          "cal_coverage_b_marginal": cal_abc.coverage_b_marginal},
+                  transfer=transfer),
+            p_max, tau_abc, p_max_b, tau_b_star),
+        inputs={**a_block, **b_block, **c_block}))
+    return policies
 
 
 # Comparisons per evaluation set: (A, B) with A the policy making the claim.
@@ -905,6 +1311,36 @@ PAIRED_COMPARISONS = (("a_to_c_parsefail_human", "a_only"),
                       ("a_to_c_parsefail_human", "a_to_human"),
                       ("a_to_c_parsefail_human", "all_human"),
                       ("a_to_human", "a_only"))
+
+# Appended when Tier B is priced. Two kinds of row: the new points making their own claims,
+# and (last in each block) the INCUMBENT routers compared against b2_only — without those
+# the census would report the incumbents' old dominance counts while silently omitting the
+# baseline that might have overtaken them.
+FULL_COMPARISONS_TIER_B = (
+    ("b2_only", "a_only"), ("b2_only", "a_only_cnb"), ("b2_only", "b1_only_sa"),
+    ("b2_only", "a_to_human"), ("b2_only", "all_human"),
+    (POLICY_A_TO_B, "a_only"), (POLICY_A_TO_B, "b2_only"), (POLICY_A_TO_B, "b1_only_sa"),
+    (POLICY_A_TO_B, "a_to_human"), (POLICY_A_TO_B, "all_human"),
+    ("a_to_human", "b2_only"),
+)
+PAIRED_COMPARISONS_TIER_B = (
+    ("b2_only", "a_only"), ("b2_only", "c_only"), ("b2_only", "a_to_human"),
+    (POLICY_A_TO_B, "a_only"), (POLICY_A_TO_B, "b2_only"), (POLICY_A_TO_B, "a_to_human"),
+    (POLICY_A_TO_B, "a_to_c_parsefail_human"),
+    (POLICY_A_TO_B_TO_C, "a_only"), (POLICY_A_TO_B_TO_C, "c_only"),
+    (POLICY_A_TO_B_TO_C, "b2_only"), (POLICY_A_TO_B_TO_C, POLICY_A_TO_B),
+    (POLICY_A_TO_B_TO_C, "a_to_c_parsefail_human"),
+    (POLICY_A_TO_B_TO_C, "a_to_human"), (POLICY_A_TO_B_TO_C, "all_human"),
+    ("a_to_c_parsefail_human", "b2_only"), ("a_to_human", "b2_only"),
+)
+
+
+def comparisons_for(name: str, policies: list[RouterPolicy]) -> tuple:
+    """The comparison list for an evaluation set, extended iff the Tier B points exist."""
+    base, tier_b = ((FULL_COMPARISONS, FULL_COMPARISONS_TIER_B) if name == EVAL_FULL
+                    else (PAIRED_COMPARISONS, PAIRED_COMPARISONS_TIER_B))
+    present = {p.name for p in policies}
+    return base + tuple(pair for pair in tier_b if set(pair) <= present)
 
 
 def build_evaluation(name, policies, comparisons, inputs: TestInputs,
@@ -958,6 +1394,17 @@ def build_evaluation(name, policies, comparisons, inputs: TestInputs,
         realized = policy.gate["coverage_a"]
         target = src["cal_target_coverage_a"]
         secondary_gate = secondary_by_name[policy.name].gate
+        # The second gate transfers on exactly the same terms as the first, so it is
+        # reported on the same terms: CAL constant, applied value, realized share.
+        tier_b_gate_row = {} if "tau_b" not in policy.gate else {
+            "cal_tau_b_star": src.get("cal_tau_b_star"),
+            "cal_coverage_b_marginal": _round(src.get("cal_coverage_b_marginal") or 0.0),
+            "applied_tau_b": policy.gate["tau_b"],
+            "realized_coverage_b": _round(policy.gate["coverage_b"]),
+            "realized_tier_c_rate": _round(policy.gate["tier_c_rate"]),
+            "coverage_matched_tau_b": secondary_gate["tau_b"],
+            "coverage_matched_realized_coverage_b": _round(secondary_gate["coverage_b"]),
+        }
         transfer_rows.append({
             "policy": policy.name,
             "cal_tau_star": src["cal_tau_star"],
@@ -968,6 +1415,7 @@ def build_evaluation(name, policies, comparisons, inputs: TestInputs,
             "coverage_matched_tau": secondary_gate["tau"],
             "coverage_matched_realized_coverage_a": _round(secondary_gate["coverage_a"]),
             "coverage_matched_abs_error": _round(abs(secondary_gate["coverage_a"] - target)),
+            **tier_b_gate_row,
             "cal_source_file": src["file"],
             "cal_source_sha256": src["sha256"],
         })
@@ -1026,18 +1474,19 @@ def build_all(cfg: cost_model.CostConfig, *, preds_dir=DEFAULT_PREDS_DIR,
     exercise the metadata gate; production callers leave it on and the replay gate is
     additionally covered against the shipped files.
     """
-    inputs = load_test_inputs(preds_dir, results_path)
+    inputs = load_test_inputs(preds_dir, results_path, cost_config=cfg)
+    # The cost config is passed whatever `verify_replay` says: it decides which policy
+    # families must exist, not just whether the tau is replayed.
     cal = load_cal_thresholds(thresholds_dir, cost_sha256=cfg.sha256,
                               results_path=results_path, derivation=op_version,
-                              cost_config=cfg if verify_replay else None,
-                              preds_dir=preds_dir, verify_replay=verify_replay)
+                              cost_config=cfg, preds_dir=preds_dir,
+                              verify_replay=verify_replay)
     out = {}
-    for name, builder, comparisons in (
-        (EVAL_FULL, build_full_policies, FULL_COMPARISONS),
-        (EVAL_PAIRED, build_paired_policies, PAIRED_COMPARISONS),
-    ):
+    for name, builder in ((EVAL_FULL, build_full_policies),
+                          (EVAL_PAIRED, build_paired_policies)):
+        policies = builder(inputs, cal)
         out[name] = build_evaluation(
-            name, builder(inputs, cal), comparisons, inputs, cfg, cal,
+            name, policies, comparisons_for(name, policies), inputs, cfg, cal,
             secondary_policies=builder(inputs, cal, transfer=TRANSFER_SECONDARY),
             n_resamples=n_resamples, seed=seed, op_version=op_version,
         )
@@ -1049,7 +1498,7 @@ def result_filename(name: str, cfg: cost_model.CostConfig, op_version: str) -> s
     return f"{name}{OP_VERSIONS[op_version]['suffix']}__cost-{cfg.sha256[:8]}.json"
 
 
-def _dominance_row(evaluation: dict, router: str) -> dict:
+def _dominance_row(evaluation: dict, router: str, baselines=MODEL_BASELINES) -> dict:
     """Which baselines this router beats on cost with a paired CI excluding zero."""
     rows = [d for d in evaluation["paired_deltas"] if d["a"] == router]
     beaten = [d["b"] for d in rows
@@ -1058,9 +1507,18 @@ def _dominance_row(evaluation: dict, router: str) -> dict:
     return {
         "compared_against": [d["b"] for d in rows],
         "dominated": sorted(beaten),
-        "dominated_model_baselines": sorted(set(beaten) & MODEL_BASELINES),
-        "n_model_baselines_dominated": len(set(beaten) & MODEL_BASELINES),
+        "dominated_model_baselines": sorted(set(beaten) & baselines),
+        "n_model_baselines_dominated": len(set(beaten) & baselines),
         "not_dominated": sorted({d["b"] for d in rows} - set(beaten)),
+    }
+
+
+def dominance_census(evaluations: dict[str, dict], baselines=MODEL_BASELINES) -> dict:
+    """`<evaluation_set>/<claiming policy>` -> its dominance row, for every claim made."""
+    return {
+        f"{name}/{a}": _dominance_row(ev, a, baselines)
+        for name, ev in evaluations.items()
+        for a in dict.fromkeys(d["a"] for d in ev["paired_deltas"])
     }
 
 
@@ -1071,11 +1529,8 @@ def build_summary(evaluations: dict[str, dict], cfg: cost_model.CostConfig, *,
     router = "a_to_c_parsefail_human"
     decision_1 = next(d for d in paired["paired_deltas"]
                       if d["a"] == router and d["b"] == "a_to_human")
-    dominance = {
-        f"{name}/{a}": _dominance_row(ev, a)
-        for name, ev in evaluations.items()
-        for a in dict.fromkeys(d["a"] for d in ev["paired_deltas"])
-    }
+    baselines = model_baselines(cfg)
+    dominance = dominance_census(evaluations, baselines)
     headline = dominance[f"{EVAL_PAIRED}/{router}"]
     version_block = {} if op_version == OP_V1 else {
         "operating_point_version": op_version,
@@ -1135,8 +1590,8 @@ def build_summary(evaluations: dict[str, dict], cfg: cost_model.CostConfig, *,
                 "router is cheaper than the baseline with a paired bootstrap CI on the "
                 "cost/1k difference that excludes zero (CLAUDE.md comparison rule)"
             ),
-            "model_baselines": sorted(MODEL_BASELINES),
-            "note": DOMINANCE_NOTE,
+            "model_baselines": sorted(baselines),
+            "note": dominance_note(baselines),
             "by_router": dominance,
             "headline_router_model_baselines_dominated":
                 headline["dominated_model_baselines"],

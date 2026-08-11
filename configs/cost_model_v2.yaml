@@ -1,0 +1,108 @@
+# Business cost model v2 — v1 plus Tier B pricing. Same identity discipline as v1:
+#
+#   cost = c_misroute * P(error) + c_api * E[tokens] + c_human * P(human)
+#
+# (UPGRADE_PLAN §4.2 / §6.1). This file's raw bytes are sha256'd and that hash is bound
+# into every results/cost_model/, results/thresholds/, results/router_sim/ and
+# results/frontier/ artifact derived from it, so v1 and v2 evidence can never be silently
+# mixed. v1 is NOT edited and NOT deleted: it stays the identity of every Phase 4 number
+# reported before Tier B landed.
+#
+# WHAT CHANGED vs v1, and only this: two new `api_cost` entries (tier_b1, tier_b2). The
+# two ESTIMATED dollar parameters are byte-for-byte the v1 values —
+#
+#   c_misroute_usd: 6.00   c_human_usd: 2.50
+#
+# — deliberately, so that every Tier A and Tier C policy reproduces its v1 cost EXACTLY
+# under v2 and the only thing the Tier B backfill can move is the set of available
+# policies, never the price of an existing one. A v2-vs-v1 difference on any Tier A/C
+# number would be a bug, not a finding.
+#
+# Evidence discipline (CLAUDE.md rule 6, UPGRADE_PLAN §6.1): the two dollar figures below
+# are ESTIMATED business defaults — assumptions the reader is invited to move (the Phase 6
+# demo exposes them as sliders), not measurements. Tier C's API term is MEASURED from real
+# per-call token usage x published per-MTok prices. Tier B's compute term is ESTIMATED and
+# labeled as such; see the per-tier notes for exactly which half is measured.
+version: v2
+
+params:
+  # Cost of one misrouted complaint: the handling delay from landing in the wrong queue
+  # (re-triage + the SLA slip it causes). ESTIMATED default from UPGRADE_PLAN §4.2;
+  # user-adjustable in the Phase 6 demo. Not a measured figure — no CFPB field reports it.
+  c_misroute_usd: 6.00
+  # Cost of one human review of a complaint (analyst time at loaded rate x handling time).
+  # ESTIMATED default from UPGRADE_PLAN §4.2; user-adjustable in the Phase 6 demo.
+  c_human_usd: 2.50
+
+# Per-tier policy for the API/compute term. One entry per tier prefix of a run config's
+# name (tier_a_*, tier_b1_*, tier_b2_*, tier_c_*). A tier with no entry here is a HARD
+# FAILURE at scoring time, not a silent zero: assuming $0 for an unpriced tier is exactly
+# the error this model exists to prevent. Tier B is priced as TWO tiers rather than one
+# because the run configs are `tier_b1_modernbert_*` and `tier_b2_distilbert_*` (a single
+# `tier_b` prefix would match neither), and because the 149M ModernBERT is ~3.6x slower
+# per complaint than the 66M DistilBERT — one shared figure would flatter one of them.
+api_cost:
+  tier_a:
+    mode: amortized_zero
+    per_example_usd: 0.0
+    evidence_class: estimated
+    note: >-
+      TF-IDF + calibrated linear model inference runs on CPU in <1 ms/example with no
+      per-call vendor charge; the amortized compute cost per complaint rounds to $0 at
+      any volume this router operates at. Recorded as an ESTIMATE (a modeling choice to
+      charge zero), not a measurement, so the router's cost advantage is never credited
+      to an unmeasured Tier A expense.
+  tier_b1:
+    mode: amortized_estimate
+    per_example_usd: 2.0153e-05
+    evidence_class: estimated
+    note: >-
+      ModernBERT-base (149M) inference, amortized GPU rental. HALF MEASURED, HALF
+      ESTIMATED, and the split matters: the THROUGHPUT is measured — the slowest of the
+      three seed runs, tier_b1_modernbert_sc, logged wall_clock_seconds 15154.9 for
+      eval_sample_size 104443 (0.1451 s/complaint, 6.89 complaints/s, inference_hardware
+      mps) — while the PRICE is an estimate, $0.50 per GPU-hour, taken as the
+      order-of-magnitude community-cloud rate for the NVIDIA RTX A6000 these checkpoints
+      were trained on. 0.1451 s x $0.50/3600 s = $2.0153e-05 per complaint ($0.0202 per
+      1,000). Two conservatism notes, both stated rather than corrected for: the logged
+      wall clock is the WHOLE harness run (CAL inference for temperature scaling, TEST
+      inference, and the 1,000-replicate bootstrap), so it overstates pure inference; and
+      pricing MPS-measured throughput at a rented-A6000 rate mixes two machines. Both push
+      the figure UP, which is the safe direction for a tier whose cost advantage is the
+      claim. It is ~5 orders of magnitude below the c_misroute term at any realistic error
+      rate, so no frontier claim turns on the rental rate.
+  tier_b2:
+    mode: amortized_estimate
+    per_example_usd: 5.6254e-06
+    evidence_class: estimated
+    note: >-
+      DistilBERT (66M) inference, amortized GPU rental — the deployment point, and the
+      Tier B rung used inside the a_to_b and a_to_b_to_c cascades (frozen-protocol Tier B
+      winner: TEST-IID macro-F1 0.7950 [0.7909, 0.7988] vs B1's 0.7878/0.7878/0.7863 with
+      paired CIs excluding zero, plus better ECE and AURC — and the cheaper model, so the
+      choice costs the cascade nothing on either axis). Same derivation as tier_b1:
+      MEASURED throughput (run tier_b2_distilbert_s0, wall_clock_seconds 4230.2 for
+      eval_sample_size 104443 = 0.040503 s/complaint, 24.69 complaints/s, mps) x the same
+      ESTIMATED $0.50/GPU-hour rate = $5.6254e-06 per complaint ($0.0056 per 1,000). The
+      same two overstatements apply. Note this figure prices the PyTorch checkpoint the
+      artifacts were produced from, not the int8 ONNX export used in the browser demo,
+      whose marginal cost to the operator is zero because the user's device pays it.
+  tier_c:
+    mode: measured_receipts
+    evidence_class: measured
+    note: >-
+      Per-example USD joined on complaint_id from the run's own committed per-call
+      receipts (results/tier_c_raw/<run>/<ts>/calls.jsonl, field computed_cost_usd =
+      real prompt/completion token counts x published per-MTok prices). MEASURED. The
+      joined per-example sum is cross-checked against the run record's cost_usd at 1e-6
+      and reported as cost_sum_check; a mismatch fails the run.
+
+# Explicit evidence class per parameter, so a downstream chart can label its inputs
+# without re-deriving provenance from prose. Keys mirror the paths above.
+evidence_class:
+  params.c_misroute_usd: estimated
+  params.c_human_usd: estimated
+  api_cost.tier_a: estimated
+  api_cost.tier_b1: estimated
+  api_cost.tier_b2: estimated
+  api_cost.tier_c: measured

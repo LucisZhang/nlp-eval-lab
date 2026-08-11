@@ -220,7 +220,9 @@ def test_runs_index_has_one_verbatim_entry_per_record(payload, records):
 
 @_needs_demo
 def test_frontier_claims_are_a_verbatim_copy_of_the_primary_file(payload):
-    source = demo_build.primary_frontier_path()
+    # Selected by the cost config the payload was built under: one frontier file exists
+    # per cost generation, so "the only one there" stops being a selection.
+    source = demo_build.primary_frontier_path(cost_model.load_cost_config())
     claims = dict(payload["frontier.json"]["claims"])
     assert claims.pop("source") == "results/frontier/" + source.name
     assert claims == json.loads(source.read_text(encoding="utf-8"))

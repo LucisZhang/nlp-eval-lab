@@ -96,6 +96,23 @@ TOTAL_KEY = "total"
 
 POLICY_SINGLE_TIER = "single_tier_all_answered"
 
+# API-cost modes. Both amortized modes charge the SAME declared per-example figure through
+# the same code path; they differ only in what they claim. `amortized_zero` says "this tier
+# costs nothing per complaint and we are charging exactly that"; `amortized_estimate` says
+# "this tier costs something we did not receive an invoice for, and here is the figure we
+# derived". Charging a nonzero amortized figure under the name `amortized_zero` would be a
+# mislabeled measurement, which is the one thing this module exists to prevent.
+MODE_AMORTIZED_ZERO = "amortized_zero"
+MODE_AMORTIZED_ESTIMATE = "amortized_estimate"
+MODE_MEASURED_RECEIPTS = "measured_receipts"
+AMORTIZED_MODES = (MODE_AMORTIZED_ZERO, MODE_AMORTIZED_ESTIMATE)
+
+# Tier B is priced per fine-tune SIZE, not as one tier: `tier_of_config_name` matches on
+# `<tier>_` prefixes and the run configs are `tier_b1_modernbert_*` / `tier_b2_distilbert_*`,
+# which a single `tier_b` key would match neither of. Two keys also let the ~2.5x slower
+# ModernBERT carry its own figure instead of borrowing DistilBERT's.
+TIER_B_TIERS: tuple[str, ...] = ("tier_b1", "tier_b2")
+
 # Output schema id. Bumped when the meaning of a field changes, so two generations of
 # results/cost_model/*.json can never be silently compared. `cost-v1` charges api_cost_usd
 # unconditionally (incurred spend); there is no earlier released generation.
@@ -216,6 +233,55 @@ def load_cost_config(path=DEFAULT_COST_CONFIG) -> CostConfig:
         evidence_class=raw.get("evidence_class") or {},
         raw=raw,
     )
+
+
+def prices_tier_b(cfg: CostConfig) -> bool:
+    """Whether this cost generation prices Tier B, i.e. whether Tier B policies can exist.
+
+    Used as the switch for every Tier B frontier point rather than a command-line flag:
+    an unpriced tier is a hard failure at scoring time (`CostConfig.api_policy`), so under
+    `cost_model_v1.yaml` a Tier B policy is not merely unreported, it is unscorable. Making
+    the policy set a function of the prices keeps the two cost generations from ever
+    disagreeing about which points exist.
+    """
+    api_cost = cfg.api_cost or {}
+    return all(tier in api_cost for tier in TIER_B_TIERS)
+
+
+def amortized_per_example_usd(cfg: CostConfig, tier: str) -> float:
+    """The declared per-example charge for an amortized tier, validated.
+
+    No `.get` default: an amortized charge is a modeling DECISION and must be written down
+    in the hashed config, not implied by code. A missing field means nobody decided, and
+    "nobody decided" must not silently become $0.
+    """
+    policy_cfg = cfg.api_policy(tier)
+    mode = policy_cfg.get("mode")
+    if mode not in AMORTIZED_MODES:
+        raise ValueError(
+            f"cost config {cfg.path} prices tier {tier!r} with mode {mode!r}, not one of "
+            f"{list(AMORTIZED_MODES)}; there is no declared per-example figure to charge"
+        )
+    if "per_example_usd" not in policy_cfg:
+        raise ValueError(
+            f"cost config {cfg.path} api_cost.{tier} uses mode {mode!r} but declares no "
+            "per_example_usd; the amortized charge must be stated explicitly in the "
+            "config, never defaulted in code"
+        )
+    per_example = float(policy_cfg["per_example_usd"])
+    if not math.isfinite(per_example) or per_example < 0.0:
+        raise ValueError(
+            f"cost config {cfg.path} api_cost.{tier}.per_example_usd is "
+            f"{policy_cfg['per_example_usd']!r}; must be finite and non-negative"
+        )
+    if mode == MODE_AMORTIZED_ZERO and per_example != 0.0:
+        raise ValueError(
+            f"cost config {cfg.path} api_cost.{tier} declares mode 'amortized_zero' with "
+            f"per_example_usd {per_example!r}; a nonzero amortized charge must use mode "
+            f"{MODE_AMORTIZED_ESTIMATE!r} so the figure is not filed under a name that "
+            "denies its existence"
+        )
+    return per_example
 
 
 def config_block(cfg: CostConfig) -> dict:
@@ -631,8 +697,8 @@ def build_single_tier_policy(record: dict, art: predictions.PredictionsArtifact,
 
     `to_human` is all False by construction — this policy set is the "one tier answers
     everything" baseline the router must beat. API cost comes from the tier's policy in
-    the cost config: `amortized_zero` charges the declared per-example figure (an explicit
-    estimate), `measured_receipts` joins the run's committed receipts and runs the
+    the cost config: the amortized modes charge the declared per-example figure (an
+    explicit estimate), `measured_receipts` joins the run's committed receipts and runs the
     cost-sum verification gate.
     """
     config_name = Path(record.get("config_path", "")).stem
@@ -645,24 +711,9 @@ def build_single_tier_policy(record: dict, art: predictions.PredictionsArtifact,
     cost_sum_check = None
     receipts_hash = ""
 
-    if mode == "amortized_zero":
-        # No .get default: an amortized charge is a modeling DECISION and must be written
-        # down in the hashed config, not implied by code. A missing field means nobody
-        # decided, and "nobody decided" must not silently become $0.
-        if "per_example_usd" not in policy_cfg:
-            raise ValueError(
-                f"cost config {cfg.path} api_cost.{tier} uses mode 'amortized_zero' but "
-                "declares no per_example_usd; the amortized charge must be stated "
-                "explicitly in the config, never defaulted in code"
-            )
-        per_example = float(policy_cfg["per_example_usd"])
-        if not math.isfinite(per_example) or per_example < 0.0:
-            raise ValueError(
-                f"cost config {cfg.path} api_cost.{tier}.per_example_usd is "
-                f"{policy_cfg['per_example_usd']!r}; must be finite and non-negative"
-            )
-        api_cost = np.full(n, per_example, dtype=np.float64)
-    elif mode == "measured_receipts":
+    if mode in AMORTIZED_MODES:
+        api_cost = np.full(n, amortized_per_example_usd(cfg, tier), dtype=np.float64)
+    elif mode == MODE_MEASURED_RECEIPTS:
         raw_log_path = (record.get("extra") or {}).get("raw_log_path")
         if not raw_log_path:
             raise ValueError(
@@ -685,7 +736,7 @@ def build_single_tier_policy(record: dict, art: predictions.PredictionsArtifact,
     else:
         raise ValueError(
             f"cost config {cfg.path} gives tier {tier!r} unknown api-cost mode {mode!r}; "
-            "expected 'amortized_zero' or 'measured_receipts'"
+            f"expected one of {[*AMORTIZED_MODES, MODE_MEASURED_RECEIPTS]}"
         )
 
     return Policy(
@@ -905,21 +956,56 @@ def _resolve_run_ids(selectors, *, select_all: bool, preds_dir: Path) -> list[st
     return chosen
 
 
+def _run_ids_for_config_prefixes(prefixes, *, results_path: Path,
+                                 preds_dir: Path) -> list[str]:
+    """Run ids whose config stem starts with one of `prefixes` (e.g. `tier_b`).
+
+    Selecting by CONFIG rather than by run id is what makes "score the Tier B runs under
+    the new cost config" a stable command: it keeps working when a new Tier B run lands,
+    without a hash being pasted into the Makefile.
+    """
+    records = predictions.load_records(results_path)
+    chosen: list[str] = []
+    for prefix in prefixes:
+        matches = [r["run_id"] for r in records
+                   if Path(r.get("config_path", "")).stem.startswith(prefix)]
+        if not matches:
+            raise ValueError(f"no run record in {results_path} whose config starts with "
+                             f"{prefix!r}")
+        missing = [rid for rid in matches
+                   if not (Path(preds_dir) / f"{rid}.parquet").exists()]
+        if missing:
+            raise ValueError(
+                f"config prefix {prefix!r} selects run(s) {[m[:8] for m in missing]} with "
+                f"no artifact under {preds_dir}; run `make preds` first"
+            )
+        chosen.extend(matches)
+    return chosen
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m triage_lab.cost_model")
     parser.add_argument("run_id", nargs="*", help="run_id prefix(es) whose artifact to score")
     parser.add_argument("--all", action="store_true", help="every artifact under --preds-dir")
+    parser.add_argument(
+        "--config-prefix", action="append", default=[], dest="config_prefixes",
+        help="score every run whose config stem starts with this (repeatable), e.g. "
+             "`--config-prefix tier_b` to price the Tier B runs under a new cost config",
+    )
     parser.add_argument("--preds-dir", type=Path, default=DEFAULT_PREDS_DIR)
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_COST_DIR)
     parser.add_argument("--cost-config", type=Path, default=DEFAULT_COST_CONFIG)
     parser.add_argument("--results", type=Path, default=DEFAULT_RESULTS_PATH)
     args = parser.parse_args(argv)
 
-    if not args.all and not args.run_id:
-        parser.error("give run_id prefix(es) or --all")
+    if not args.all and not args.run_id and not args.config_prefixes:
+        parser.error("give run_id prefix(es), --config-prefix, or --all")
 
     cfg = load_cost_config(args.cost_config)
     run_ids = _resolve_run_ids(args.run_id, select_all=args.all, preds_dir=args.preds_dir)
+    if args.config_prefixes:
+        run_ids += _run_ids_for_config_prefixes(
+            args.config_prefixes, results_path=args.results, preds_dir=args.preds_dir)
     if not run_ids:
         # Empty selection is a failure, not a no-op: `make cost-model` finding nothing to
         # score means the preds artifacts are missing, and exiting 0 would let CI go green

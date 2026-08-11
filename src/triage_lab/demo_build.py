@@ -56,6 +56,7 @@ import numpy as np
 
 from triage_lab import (
     cost_model,
+    frontier,
     harness,
     metrics,
     predictions,
@@ -315,12 +316,18 @@ def record_for(resolved: dict, config_name: str, slice_name: str) -> dict:
 
 
 def tier_of(record: dict) -> str:
-    """`A` or `C` for a record. Tier B records do not exist yet (pending)."""
+    """`A`, `B` or `C` for a record, from its config stem.
+
+    Tier B configs are named per fine-tune SIZE (`tier_b1_modernbert_*`,
+    `tier_b2_distilbert_*`), so `tier_b_` alone matches neither — the same prefix trap
+    `cost_model.tier_of_config_name` has to handle. Both spellings are accepted here.
+    """
     extra = record.get("extra") or {}
     if extra.get("tier"):
         return str(extra["tier"]).replace("tier_", "").upper()
     name = _config_name(record)
-    for prefix, tier in (("tier_a_", "A"), ("tier_b_", "B"), ("tier_c_", "C")):
+    for prefix, tier in (("tier_a_", "A"), ("tier_b_", "B"), ("tier_b1_", "B"),
+                         ("tier_b2_", "B"), ("tier_c_", "C")):
         if name.startswith(prefix):
             return tier
     raise ValueError(f"cannot infer tier for config {name!r}")
@@ -334,6 +341,10 @@ def model_label(record: dict) -> str:
     if slug:
         base = f"Tier C — {MODEL_SLUG_LABELS.get(slug, slug)}"
         base += " (few-shot)" if "fewshot" in name else " (zero-shot)"
+    elif tier_of(record) == "B":
+        # Named from the record's own logged base model, not from the config stem: the
+        # stem says which frontier point it is, the record says what was actually fine-tuned.
+        base = f"Tier B — {extra.get('base_model') or name} (fine-tuned)"
     elif "_cnb_" in name:
         base = "Tier A — TF-IDF ComplementNB (word+char)"
     elif "_logreg_word_" in name or name.endswith("_logreg_word_cal"):
@@ -440,14 +451,32 @@ def build_runs_index(records: list[dict]) -> dict:
 # 3. frontier.json
 # ---------------------------------------------------------------------------
 
-def primary_frontier_path(frontier_dir=DEFAULT_FRONTIER_DIR) -> Path:
-    """The one committed opv2 frontier file. Zero or many is a hard failure."""
-    candidates = sorted(Path(frontier_dir).glob("frontier__opv2__*.json"))
+def primary_frontier_path(cfg: cost_model.CostConfig | None = None,
+                          frontier_dir=DEFAULT_FRONTIER_DIR) -> Path:
+    """The opv2 frontier file for THIS cost config.
+
+    Resolved by name (like `router_sim_path`) rather than by "the only one there": one
+    frontier file exists per cost generation, and once `cost_model_v2.yaml` adds Tier B
+    pricing there are legitimately several. Picking by the config the demo is being built
+    under is the only selection that cannot silently mix generations. Passing `cfg=None`
+    keeps the old behaviour for callers that have no config in hand: exactly one file, or
+    a hard failure.
+    """
+    frontier_dir = Path(frontier_dir)
+    if cfg is not None:
+        path = frontier_dir / frontier.result_filename(cfg, OP_VERSION)
+        if not path.exists():
+            raise ValueError(
+                f"missing frontier artifact {path} for cost config {cfg.path.name}; "
+                "run `make frontier` under that cost config first"
+            )
+        return path
+    candidates = sorted(frontier_dir.glob("frontier__opv2__*.json"))
     if len(candidates) != 1:
         raise ValueError(
             f"expected exactly one primary (opv2) frontier file under {frontier_dir}, "
             f"found {[p.name for p in candidates]}; `make frontier` writes one per cost "
-            "config and the demo cannot pick between them"
+            "config — pass the cost config to select one"
         )
     return candidates[0]
 
@@ -526,7 +555,7 @@ def _router_point(key: str, label: str, policy: dict, *, source: Path,
 def build_frontier(resolved: dict, cfg: cost_model.CostConfig, *,
                    frontier_dir=DEFAULT_FRONTIER_DIR, router_dir=DEFAULT_ROUTER_DIR,
                    cost_dir=DEFAULT_COST_DIR) -> dict:
-    frontier_path = primary_frontier_path(frontier_dir)
+    frontier_path = primary_frontier_path(cfg, frontier_dir)
     claims = json.loads(frontier_path.read_text(encoding="utf-8"))
     if claims.get("operating_point_version") != OP_VERSION:
         raise ValueError(

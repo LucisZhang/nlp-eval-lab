@@ -19,6 +19,16 @@ C_HUMAN = 2.50
 _REAL_FRONTIER = sorted(frontier.DEFAULT_FRONTIER_DIR.glob("frontier__*__cost-*.json"))
 _HAS_REAL = bool(_REAL_FRONTIER) and router_sim.DEFAULT_PREDS_DIR.exists()
 _needs_real = pytest.mark.skipif(not _HAS_REAL, reason="real frontier outputs not present")
+# One frontier file per cost generation, so every shipped-file test runs against each of
+# them under ITS OWN cost config. Reading the config off the file (rather than defaulting
+# to v1) is what stops a v2-cost file from being replayed at v1 prices and "passing".
+_REAL_FRONTIER_IDS = [p.name for p in _REAL_FRONTIER]
+
+
+def _cost_config_of(obj: dict):
+    cfg = cost_model.load_cost_config(harness.REPO_ROOT / obj["cost_config"]["path"])
+    assert cfg.sha256 == obj["cost_config"]["sha256"], "file names a config it was not built from"
+    return cfg
 
 
 def _cost_config(tmp_path, *, c_misroute=C_MISROUTE, c_human=C_HUMAN):
@@ -338,26 +348,123 @@ def test_not_established_verdict_is_directional_only(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# Tier B claims and slot bookkeeping
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("claim", [frontier.CLAIM_VS_TIER_B, frontier.CLAIM_VS_ROUTER])
+def test_tier_b_claims_are_gated_on_both_axes_like_claim_2(claim):
+    """A new rung earns a favourable sentence only by being cheaper AND better, both
+    significantly — the same two-axis gate claim 2 carries, not a weaker one."""
+    assert dict(frontier.CLAIM_GATED_METRICS[claim]) == dict(
+        frontier.CLAIM_GATED_METRICS[frontier.CLAIM_VS_ALL_LINEAR])
+
+
+def test_tier_b_claim_verdict_names_the_policy_it_beat(tmp_path):
+    cfg = _cost_config(tmp_path)
+    labels = ["a", "b"]
+    y_true = ["a", "b"] * 100
+    good = [t if i % 8 else ("b" if t == "a" else "a") for i, t in enumerate(y_true)]
+    bad = [t if i % 2 else ("b" if t == "a" else "a") for i, t in enumerate(y_true)]
+    claim = frontier.build_claim(
+        frontier.CLAIM_VS_TIER_B, _policy("a_to_b", y_true, good),
+        _policy("b2_only", y_true, bad), cfg, labels,
+        evaluation_set="fixture", n_resamples=200)
+    assert claim["gate"]["certified"] is True
+    assert "the b2_only policy" in claim["verdict"]
+    assert "all-linear" not in claim["verdict"]
+    # claim 2 keeps its §4.2 wording verbatim
+    claim2 = frontier.build_claim(
+        frontier.CLAIM_VS_ALL_LINEAR, _policy("a_to_b", y_true, good),
+        _policy("a_only", y_true, bad), cfg, labels,
+        evaluation_set="fixture", n_resamples=200)
+    assert "than the all-linear policy" in claim2["verdict"]
+
+
+def test_every_declared_slot_names_policies_and_every_exhibit_names_a_slot_policy():
+    """The three Tier B lists cannot drift apart without this failing.
+
+    `SLOT_POLICIES` is what decides a slot is filled and `TIER_B_EXHIBITS` is what gets
+    reported; a policy appearing in one and not the other would mean either a slot that
+    reports nothing or a claim that discharges no slot.
+    """
+    assert set(frontier.SLOT_POLICIES) == {s["point"] for s in frontier.PENDING_TIER_B}
+    slot_policies = {p for names in frontier.SLOT_POLICIES.values() for p in names}
+    claimants = {exhibit[1] for exhibit in frontier.TIER_B_EXHIBITS}
+    assert claimants <= slot_policies
+    # every Tier B exhibit is defined on an evaluation set that exists
+    assert all(exhibit[0] in (router_sim.EVAL_FULL, router_sim.EVAL_PAIRED)
+               for exhibit in frontier.TIER_B_EXHIBITS)
+
+
+def test_slot_is_filled_only_when_all_of_its_policies_exist():
+    b1 = next(s for s in frontier.PENDING_TIER_B if s["point"] == "b1_only")
+    assert not frontier._slot_is_filled(b1, {"b1_only_sa", "b1_only_sb"})
+    assert frontier._slot_is_filled(b1, {"b1_only_sa", "b1_only_sb", "b1_only_sc"})
+    assert not frontier._slot_is_filled(b1, set())
+
+
+def test_tier_b_slots_copy_their_numbers_from_the_router_evaluations():
+    """Frontier points are COPIED from router_sim, never recomputed here.
+
+    A point that carried a cost no `results/router_sim/` file contains would be a number
+    with no reproduction command.
+    """
+    policy = {
+        "expected_cost_per_1k": {"total": {"point": 12.5, "ci_lo": 10.0, "ci_hi": 15.0}},
+        "macro_f1_system": 0.8, "macro_f1_answered": 0.79, "accuracy_system": 0.9,
+        "routing": {"coverage_machine": 1.0, "human_rate": 0.0},
+    }
+    evaluations = {
+        router_sim.EVAL_FULL: {"n_examples": 12, "policies": {"b2_only": policy}},
+        router_sim.EVAL_PAIRED: {"n_examples": 6, "policies": {}},
+    }
+    slots = frontier.tier_b_slots(evaluations, {"b2_only"})
+    assert [s["point"] for s in slots] == ["b2_only"]
+    point = slots[0]["points"][0]
+    assert point["expected_cost_per_1k"] == policy["expected_cost_per_1k"]["total"]
+    assert point["evaluation_set"] == router_sim.EVAL_FULL
+    assert point["n_examples"] == 12
+    # a slot whose policies were not evaluated produces nothing (it stays pending)
+    assert frontier.tier_b_slots(evaluations, set()) == []
+
+
+# ---------------------------------------------------------------------------
 # Shipped output
 # ---------------------------------------------------------------------------
 
 @_needs_real
-def test_shipped_frontier_declares_every_pending_tier_b_slot():
-    obj = json.loads(_REAL_FRONTIER[0].read_text())
-    points = {p["point"] for p in obj["pending"]}
-    assert points == {slot["point"] for slot in frontier.PENDING_TIER_B}
+@pytest.mark.parametrize("path", _REAL_FRONTIER, ids=_REAL_FRONTIER_IDS)
+def test_shipped_frontier_accounts_for_every_declared_tier_b_slot(path):
+    """Every declared slot is either evaluated or explicitly pending — never dropped."""
+    obj = json.loads(path.read_text())
+    declared = {slot["point"] for slot in frontier.PENDING_TIER_B}
+    pending = {p["point"] for p in obj["pending"]}
+    filled = {s["point"] for s in obj.get("tier_b_points", [])}
+    assert pending | filled == declared
+    assert not (pending & filled)
     assert all(p["status"] == frontier.PENDING_STATUS for p in obj["pending"])
     assert obj["evidence_classes"]["c_misroute_usd"].startswith("estimated")
     assert obj["evidence_classes"]["tier_c_api_cost"].startswith("measured")
 
+    cfg = _cost_config_of(obj)
+    # The slot set follows the prices: Tier B points exist exactly when they are scorable.
+    assert bool(filled) == cost_model.prices_tier_b(cfg)
+    if filled:
+        assert obj["evidence_classes"]["tier_b_api_cost"].startswith("estimated")
+        for slot in obj["tier_b_points"]:
+            assert slot["status"] == frontier.FILLED_STATUS
+            names = {p["policy"] for p in slot["points"]}
+            assert names == set(frontier.SLOT_POLICIES[slot["point"]])
+
 
 @_needs_real
-def test_shipped_frontier_claims_replay_exactly():
+@pytest.mark.parametrize("path", _REAL_FRONTIER, ids=_REAL_FRONTIER_IDS)
+def test_shipped_frontier_claims_replay_exactly(path):
     """Every published claim is recomputed from the artifacts it names."""
-    cfg = cost_model.load_cost_config()
-    obj = json.loads(_REAL_FRONTIER[0].read_text())
+    obj = json.loads(path.read_text())
+    cfg = _cost_config_of(obj)
     op_version = obj["operating_point_version"]
-    inputs = router_sim.load_test_inputs()
+    inputs = router_sim.load_test_inputs(cost_config=cfg)
     cal = router_sim.load_cal_thresholds(cost_sha256=cfg.sha256,
                                         derivation=op_version, cost_config=cfg)
     builders = {router_sim.EVAL_FULL: router_sim.build_full_policies,
@@ -393,10 +500,11 @@ def test_shipped_frontier_claims_replay_exactly():
 
 
 @_needs_real
-def test_shipped_frontier_is_deterministic(tmp_path):
-    cfg = cost_model.load_cost_config()
-    obj = json.loads(_REAL_FRONTIER[0].read_text())
-    rebuilt = frontier.build_frontier(cfg, op_version=obj["operating_point_version"])
+@pytest.mark.parametrize("path", _REAL_FRONTIER, ids=_REAL_FRONTIER_IDS)
+def test_shipped_frontier_is_deterministic(path):
+    obj = json.loads(path.read_text())
+    rebuilt = frontier.build_frontier(_cost_config_of(obj),
+                                      op_version=obj["operating_point_version"])
     assert json.dumps(rebuilt, sort_keys=True) == json.dumps(obj, sort_keys=True)
 
 
@@ -436,12 +544,15 @@ def test_paired_macro_f1_handles_classes_missing_from_a_replicate():
 
 
 @_needs_real
-def test_frontier_cli_output_is_byte_deterministic(tmp_path):
+@pytest.mark.parametrize("path", _REAL_FRONTIER, ids=_REAL_FRONTIER_IDS)
+def test_frontier_cli_output_is_byte_deterministic(tmp_path, path):
     """Byte-level, not normalized-JSON: the file on disk must be reproducible verbatim."""
+    cfg_path = harness.REPO_ROOT / json.loads(path.read_text())["cost_config"]["path"]
     outs = []
     for name in ("out1", "out2"):
         out_dir = tmp_path / name
-        assert frontier.main(["--out-dir", str(out_dir), "--op-version", "v2-isocal"]) == 0
+        assert frontier.main(["--out-dir", str(out_dir), "--op-version", "v2-isocal",
+                              "--cost-config", str(cfg_path)]) == 0
         outs.append(out_dir)
     files = sorted(p.name for p in outs[0].glob("*.json"))
     assert files

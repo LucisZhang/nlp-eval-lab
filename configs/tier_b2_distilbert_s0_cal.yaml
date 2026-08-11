@@ -1,0 +1,47 @@
+# Tier B2 — DistilBERT fine-tune, CAL-split per-example artifact.
+#
+# Single experimental delta vs tier_b2_distilbert_s0.yaml (the TEST-IID final): data.split
+# test_iid -> cal (model.name changes too, because a config's name is its identifier, not a
+# variable). Everything else — checkpoint, seed, hyperparameters, inference settings — is
+# byte-for-byte identical. No retraining: this points the same trained checkpoint at CAL for
+# inference only.
+#
+# Purpose: Phase 4 router backfill. The cascade's tau_B threshold is fit on CAL, never on
+# TEST (UPGRADE_PLAN.md §4.2), so this run produces the CAL-split per-example probabilities
+# router calibration needs for Tier B.
+#
+# In-sample caveat, by design: with split: cal and the default cal_split: cal, temperature
+# scaling is FIT on CAL logits and APPLIED to the same CAL split (see tier_b.py
+# tier_b_runner: eval_split == cal_split here, so eval_logits and cal_logits come from
+# identical rows, just re-inferred). That is the same in-sample pattern documented in
+# tier_a_logreg_wordchar_isocal_cal.yaml for Tier A's isotonic calibrator — CAL has always
+# been the split thresholds are fit on, but the resulting CAL probabilities are in-sample
+# and will look better calibrated here than they would on held-out data. Router thresholds
+# derived from them are still evaluated only on TEST.
+model:
+  runner: tier_b
+  name: tier_b2_distilbert_s0_cal
+  base: distilbert-base-uncased           # 66M (training)
+  checkpoint: data/checkpoints/tier_b2_s0 # same trained dir as the TEST-IID final; eval only
+training:
+  epochs: 3
+  learning_rate: 5.0e-5
+  per_device_batch_size: 32   # 66M model, T4-comfortable at seq 256
+  grad_accum: 1               # effective batch 32
+  max_seq_length: 256
+  warmup_ratio: 0.06
+  weight_decay: 0.01
+  logging_steps: 50
+  save_steps: 500         # periodic resumable checkpoints (A6000 ~9.4k steps/epoch)
+  train_rows_cap: null        # full ~300k TRAIN
+data:
+  split: cal
+  train_split: train
+  cal_split: cal              # temperature scaling is fit here; same split as eval (in-sample, see above)
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+inference:
+  batch_size: 64
+calibration: temperature      # temperature | none
+seed: 20260805

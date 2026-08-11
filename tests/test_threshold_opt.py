@@ -62,12 +62,26 @@ def _sweep(policy, *, c_misroute=C_MISROUTE, c_human=C_HUMAN):
                                c_misroute=c_misroute, c_human=c_human)
 
 
-def _cost_config(tmp_path, *, c_misroute=C_MISROUTE, c_human=C_HUMAN):
-    path = tmp_path / "cost.yaml"
+B_PER_EXAMPLE = 0.05   # deliberately huge next to the real ~$5.6e-6, so it is VISIBLE
+
+
+def _cost_config(tmp_path, *, c_misroute=C_MISROUTE, c_human=C_HUMAN, tier_b=False,
+                 name="cost.yaml"):
+    """Synthetic cost config; `tier_b=True` adds the two Tier B tiers (the v2 shape)."""
+    path = tmp_path / name
+    tier_b_block = "" if not tier_b else (
+        "  tier_b1:\n    mode: amortized_estimate\n"
+        f"    per_example_usd: {B_PER_EXAMPLE}\n    evidence_class: estimated\n"
+        "    note: amortized gpu\n"
+        "  tier_b2:\n    mode: amortized_estimate\n"
+        f"    per_example_usd: {B_PER_EXAMPLE}\n    evidence_class: estimated\n"
+        "    note: amortized gpu\n"
+    )
     path.write_text(
         f"version: v1\nparams:\n  c_misroute_usd: {c_misroute}\n"
         f"  c_human_usd: {c_human}\napi_cost:\n  tier_a:\n    mode: amortized_zero\n"
         "    per_example_usd: 0.0\n    evidence_class: estimated\n    note: amortized\n"
+        + tier_b_block +
         "  tier_c:\n    mode: measured_receipts\n    evidence_class: measured\n"
         "    note: receipts\nevidence_class:\n  params.c_misroute_usd: estimated\n"
     )
@@ -179,7 +193,7 @@ def _metrics_block(y_true, y_pred, probs, labels):
 
 
 def _mini_repo(tmp_path, *, receipt_overrides=None, artifact_ids=None,
-               second_rung=None, tier_a_config=None):
+               second_rung=None, tier_a_config=None, tier_b=False):
     """Synthetic CAL mini-repo complete enough for the FULL predictions gate.
 
     That means real config YAMLs (re-hashed and compared), a frozen-split parquet the
@@ -228,6 +242,24 @@ def _mini_repo(tmp_path, *, receipt_overrides=None, artifact_ids=None,
                 metrics=_metrics_block(c_true, c_pred, c_probs, labels),
                 cost_usd=total, raw_log_path=log),
     ]
+    if tier_b:
+        # The B2 CAL rung the Tier B families escalate to. Correct wherever Tier A is
+        # wrong (and wrong on two rows Tier A gets right), with its own confidence
+        # ordering, so neither gate can be fit by accident from the other's ranking.
+        b_id = "b2" * 32
+        b_cfg = _write_config(tmp_path, threshold_opt.TIER_B_CAL_CONFIG, "tier_b",
+                              splits_dir)
+        b_sha = harness.config_sha256(b_cfg)
+        b_correct = [False, False] + [True] * 10
+        b_pred = [t if ok else ("b" if t == "a" else "a")
+                  for t, ok in zip(y_true, b_correct, strict=True)]
+        b_p_max = np.linspace(0.6, 0.95, 12)
+        b_probs = _write_artifact(tmp_path, b_id, ids, y_true, b_pred, labels, b_p_max,
+                                  config_sha256=b_sha)
+        records.append(_record(b_id, threshold_opt.TIER_B_CAL_CONFIG, config_path=b_cfg,
+                               config_sha256=b_sha,
+                               metrics=_metrics_block(y_true, b_pred, b_probs, labels)))
+
     if second_rung:
         # A second Tier A rung whose artifact carries a duplicate complaint_id: the first
         # rung builds fine, so the batch only fails AFTER real work is in memory — which
@@ -365,6 +397,150 @@ def test_argmin_tie_break_prefers_more_tier_a_coverage():
     cost = np.array([5.0, 3.0, 3.0, 7.0])
     assert threshold_opt.argmin_index(cost) == 2  # last minimum = highest coverage
     assert threshold_opt.argmin_index(np.array([1.0, 2.0, 3.0])) == 0
+
+
+# ---------------------------------------------------------------------------
+# Tier B families: a_to_b (one gate) and a_to_b_to_c (joint two-gate fit)
+# ---------------------------------------------------------------------------
+
+# Tier B on the 4-row fixture: wrong on the row Tier A is most confident about, right on
+# the three others — i.e. the tiers disagree in the region the gate has to find.
+B_CORRECT = [False, True, True, True]
+# Tier B's own confidence, deliberately NOT ordered like Tier A's, so a fit that silently
+# reused the Tier A ranking would land somewhere else.
+P_MAX_B = np.array([0.4, 0.8, 0.6, 0.2])
+
+
+def _tier_b_fixture_arm(per_example=B_PER_EXAMPLE):
+    y_true = np.array(["a", "b", "a", "b"], dtype=object)
+    y_pred = np.array([t if ok else ("b" if t == "a" else "a")
+                       for t, ok in zip(y_true, B_CORRECT, strict=True)], dtype=object)
+    return threshold_opt.tier_b_arm(y_true, y_pred, per_example)
+
+
+def test_a_to_b_hand_computed_sweep():
+    # Tier B compute $0.05/escalated row, c_misroute $6. Tier B is wrong only on r0.
+    #   k=0 all to B      : 4 x 0.05 + 6.00 (r0)   = $6.20 -> 1550/1k   (= b_only)
+    #   k=1 A answers r0  : 3 x 0.05               = $0.15 ->   37.5/1k
+    #   k=2 A answers r0r1: 2 x 0.05               = $0.10 ->   25/1k   <- argmin
+    #   k=3 + r2 (A wrong): 6.00 + 0.05            = $6.05 -> 1512.5/1k
+    #   k=4 all A         : 2 x 6.00               = $12.00 -> 3000/1k
+    policy = _policy(threshold_opt.FAMILY_A_TO_B, P_MAX, CORRECT_A, _tier_b_fixture_arm())
+    rows = _sweep(policy)
+    assert rows["cost_per_1k"] == pytest.approx([1550.0, 37.5, 25.0, 1512.5, 3000.0])
+    assert rows["human_rate"] == pytest.approx([0.0] * 5)   # Tier B never defers
+    assert rows["api_per_1k"] == pytest.approx([50.0, 37.5, 25.0, 12.5, 0.0])
+    j = threshold_opt.argmin_index(rows["cost_per_1k"])
+    assert rows["tau"][j] == 0.7
+    # System accuracy at tau*: A right on the 2 it answers, B right on the 2 it takes.
+    assert rows["accuracy_system"][j] == pytest.approx(1.0)
+
+
+def test_tier_b_then_c_arm_charges_b_always_and_c_only_on_fallthrough():
+    """The per-row semantics the whole two-gate family rests on.
+
+    At tau_B = 0.6, Tier B answers r1 (0.8) and r2 (0.6); r0 (0.4) and r3 (0.2) fall
+    through to Tier C. Row 2 is Tier C's parse-failed row, but Tier B answered it here, so
+    the parse-failure never fires — the arm must not leak a human charge for a row Tier C
+    was never asked about.
+    """
+    y_true = np.array(["a", "b", "a", "b"], dtype=object)
+    b_pred = np.array(["b", "b", "a", "b"], dtype=object)     # B wrong on r0 only
+    c_pred = np.array(["a", "b", "b", "a"], dtype=object)     # C wrong on r3
+    arm = threshold_opt.tier_b_then_c_arm(
+        y_true, b_pred, P_MAX_B, 0.6, B_PER_EXAMPLE, c_pred,
+        c_api_cost_usd=[0.10, 0.20, 0.30, 0.40],
+        parse_failed=[False, False, True, False])
+    # r0, r3 pay B's compute AND their Tier C call; r1, r2 pay B's compute alone.
+    assert arm.api_cost_usd == pytest.approx([0.15, 0.05, 0.05, 0.45])
+    assert arm.to_human.tolist() == [False, False, False, False]
+    assert arm.correct.tolist() == [True, True, True, False]   # r0 -> C right; r3 -> C wrong
+    assert arm.b_answered.tolist() == [False, True, True, False]
+
+    # Now drop the Tier B gate so r2 falls through: its parse failure fires, it routes to a
+    # human, its fallback label is discarded, and BOTH spends still stand.
+    arm2 = threshold_opt.tier_b_then_c_arm(
+        y_true, b_pred, P_MAX_B, 0.9, B_PER_EXAMPLE, c_pred,
+        c_api_cost_usd=[0.10, 0.20, 0.30, 0.40],
+        parse_failed=[False, False, True, False])
+    assert arm2.to_human.tolist() == [False, False, True, False]
+    assert arm2.api_cost_usd[2] == pytest.approx(0.35)
+    assert bool(arm2.correct[2]) is True       # human-resolved, never scored as a miss
+
+
+def _abc_make_policy(*, c_api=(0.10, 0.20, 0.30, 0.40),
+                     parse_failed=(False, False, True, False)):
+    y_true = np.array(["a", "b", "a", "b"], dtype=object)
+    b_pred = np.array(["b", "b", "a", "b"], dtype=object)
+    c_pred = np.array(["a", "b", "b", "a"], dtype=object)
+
+    def make(tau_b):
+        return _policy(threshold_opt.FAMILY_A_TO_B_TO_C, P_MAX, CORRECT_A,
+                       threshold_opt.tier_b_then_c_arm(
+                           y_true, b_pred, P_MAX_B, tau_b, B_PER_EXAMPLE, c_pred,
+                           c_api_cost_usd=list(c_api), parse_failed=list(parse_failed)))
+    return make
+
+
+def test_joint_sweep_matches_a_brute_force_search_over_the_whole_2d_grid():
+    """The joint argmin must be the argmin — checked against the row-by-row cost reference.
+
+    `joint_sweep` reuses the prefix-sum machinery inside an outer loop; the reference here
+    goes through `cost_at`, i.e. `cost_model.expected_cost_per_1k` per candidate pair, so
+    a reassociation bug in the fast path cannot hide.
+    """
+    make = _abc_make_policy()
+    tau_bs = threshold_opt.tau_b_candidates(P_MAX_B)
+    assert tau_bs[0] == np.inf
+    assert tau_bs[1:].tolist() == [0.8, 0.6, 0.4, 0.2]
+
+    fit = threshold_opt.joint_sweep(make, tau_bs, c_misroute=C_MISROUTE, c_human=C_HUMAN)
+
+    best = None
+    for tau_b in tau_bs:
+        policy = make(float(tau_b))
+        for tau_a in threshold_opt.build_grid(policy).tau:
+            total = threshold_opt.cost_at(policy, tau_a, c_misroute=C_MISROUTE,
+                                          c_human=C_HUMAN)["total"]
+            if best is None or total < best[0] - 1e-12:
+                best = (total, tau_b, tau_a)
+    assert fit.rows["cost_per_1k"][fit.j_star] == pytest.approx(best[0], abs=1e-9)
+    # every grid entry reports the best tau_A at ITS tau_B, and the argmin points at one
+    assert len(fit.grid) == len(tau_bs)
+    assert fit.grid[fit.j_grid_star]["cost_per_1k"] == pytest.approx(best[0], abs=1e-9)
+    assert min(row["cost_per_1k"] for row in fit.grid) == pytest.approx(best[0], abs=1e-9)
+
+
+def test_joint_fit_breaks_ties_toward_more_tier_a_then_more_tier_b():
+    """With a free, perfect Tier B and a perfect Tier A, every gate costs $0.
+
+    Every (tau_A, tau_B) pair then ties at zero, so the tie-break is the ONLY thing
+    choosing: it must answer everything at Tier A (largest coverage_a) and, among the
+    remaining ties, prefer the Tier B gate that sends fewest rows to the paid tier.
+    """
+    y_true = np.array(["a", "b", "a", "b"], dtype=object)
+
+    def make(tau_b):
+        return _policy(
+            threshold_opt.FAMILY_A_TO_B_TO_C, P_MAX, [True] * 4,
+            threshold_opt.tier_b_then_c_arm(
+                y_true, y_true, P_MAX_B, tau_b, 0.0, y_true,
+                c_api_cost_usd=[0.0] * 4, parse_failed=[False] * 4))
+
+    fit = threshold_opt.joint_sweep(make, threshold_opt.tau_b_candidates(P_MAX_B),
+                                    c_misroute=C_MISROUTE, c_human=C_HUMAN)
+    assert fit.rows["cost_per_1k"][fit.j_star] == pytest.approx(0.0)
+    assert fit.rows["coverage_a"][fit.j_star] == pytest.approx(1.0)
+    assert fit.tau_b == pytest.approx(float(P_MAX_B.min()))   # lowest gate = widest Tier B
+    assert fit.coverage_b_marginal == pytest.approx(1.0)
+
+
+def test_no_gate_endpoint_is_named_per_family():
+    assert threshold_opt.NO_GATE_LABEL[threshold_opt.FAMILY_A_TO_B] == "b_only"
+    assert threshold_opt.NO_GATE_LABEL[threshold_opt.FAMILY_A_TO_B_TO_C] == "b_to_c"
+    # and the pre-Tier-B families keep the names their committed files use
+    assert threshold_opt.NO_GATE_LABEL[threshold_opt.FAMILY_A_TO_HUMAN] == "all_human"
+    assert threshold_opt.NO_GATE_LABEL[threshold_opt.FAMILY_A_TO_C] == "c_only"
 
 
 # ---------------------------------------------------------------------------
@@ -512,6 +688,134 @@ def test_build_all_produces_both_families_on_the_right_datasets(tmp_path):
     assert all(r["is_primary"] for r in results)
     assert results[2]["inputs"]["tier_c"]["n_parse_failed"] == 1
     assert results[2]["inputs"]["tier_c"]["cost_sum_check"]["ok"] is True
+
+
+def _built_tier_b(tmp_path, **kwargs):
+    repo = _mini_repo(tmp_path, tier_b=True)
+    cfg = _cost_config(tmp_path, tier_b=True)
+    results = threshold_opt.build_all(
+        cfg, preds_dir=tmp_path, results_path=repo["results"],
+        tier_a_configs=(threshold_opt.PRIMARY_TIER_A_CONFIG,),
+        n_resamples=kwargs.pop("n_resamples", 25), **kwargs)
+    return repo, cfg, results
+
+
+def test_build_all_adds_the_tier_b_families_when_the_cost_config_prices_them(tmp_path):
+    _, _, results = _built_tier_b(tmp_path)
+    assert [(r["policy_family"], r["dataset"], r["n_examples"]) for r in results] == [
+        (threshold_opt.FAMILY_A_TO_HUMAN, threshold_opt.DATASET_FULL_CAL, 12),
+        (threshold_opt.FAMILY_A_TO_HUMAN, threshold_opt.DATASET_PAIRED, 6),
+        (threshold_opt.FAMILY_A_TO_C, threshold_opt.DATASET_PAIRED, 6),
+        (threshold_opt.FAMILY_A_TO_B, threshold_opt.DATASET_FULL_CAL, 12),
+        (threshold_opt.FAMILY_A_TO_B, threshold_opt.DATASET_PAIRED, 6),
+        (threshold_opt.FAMILY_A_TO_B_TO_C, threshold_opt.DATASET_PAIRED, 6),
+    ]
+    a_to_b = results[3]
+    assert set(a_to_b["operating_points"]) == {"tau_star", "a_only", "b_only"}
+    assert a_to_b["escalation_arm"] == "tier_b_terminal"
+    assert a_to_b["inputs"]["tier_b"]["config_name"] == threshold_opt.TIER_B_CAL_CONFIG
+    assert a_to_b["inputs"]["tier_b"]["per_example_usd"] == B_PER_EXAMPLE
+    # a one-gate family must not grow a second gate
+    assert "tier_b_gate" not in a_to_b
+
+
+def test_joint_family_records_both_gates_and_the_realized_routing_mix(tmp_path):
+    _, _, results = _built_tier_b(tmp_path)
+    abc = results[5]
+    assert set(abc["operating_points"]) == {"tau_star", "a_only", "b_to_c"}
+    gate = abc["tier_b_gate"]
+    assert gate["fit"] == "joint_2d_argmin"
+    mix = gate["routing_mix_at_joint_operating_point"]
+    # every complaint is accounted for exactly once across the four destinations
+    assert (mix["answered_tier_a"] + mix["answered_tier_b"] + mix["sent_to_tier_c"]
+            == abc["n_examples"])
+    assert mix["to_human_parse_failed"] <= mix["sent_to_tier_c"]
+    assert mix["answered_tier_a"] == abc["n_answered_at_tau_star"]
+    assert gate["grid"]["rows"][gate["grid"]["argmin_index"]]["cost_per_1k"] == \
+        pytest.approx(abc["operating_points"]["tau_star"]["cost_per_1k"])
+    # the joint sensitivity re-fits BOTH gates in every cell, so tau_b is a cell field
+    assert all("tau_b_star" in cell for cell in abc["sensitivity"]["cells"])
+    assert abc["notes"]["joint_sweep"].startswith("a_to_b_to_c's")
+
+
+def test_joint_operating_point_replays_through_the_row_by_row_cost_reference(tmp_path):
+    """The published (tau_A, tau_B) must reproduce the published objective from scratch."""
+    repo, cfg, results = _built_tier_b(tmp_path)
+    abc = results[5]
+    records = threshold_opt._records_by_config(repo["results"])
+    art_a = threshold_opt.load_artifact_checked(
+        records[threshold_opt.PRIMARY_TIER_A_CONFIG], tmp_path)
+    art_b = threshold_opt.load_artifact_checked(
+        records[threshold_opt.TIER_B_CAL_CONFIG], tmp_path)
+    art_c = threshold_opt.load_artifact_checked(
+        records[threshold_opt.TIER_C_CAL_CONFIG], tmp_path)
+    api, parse_failed, check, _ = threshold_opt.load_tier_c_arm_inputs(
+        art_c, records[threshold_opt.TIER_C_CAL_CONFIG])
+    policy = threshold_opt.build_a_to_b_to_c(
+        art_a, records[threshold_opt.PRIMARY_TIER_A_CONFIG],
+        threshold_opt.PRIMARY_TIER_A_CONFIG, art_b,
+        records[threshold_opt.TIER_B_CAL_CONFIG], threshold_opt.TIER_B_CAL_CONFIG,
+        art_c, records[threshold_opt.TIER_C_CAL_CONFIG], threshold_opt.TIER_C_CAL_CONFIG,
+        tau_b=abc["tier_b_gate"]["tau_b_star"], b_per_example_usd=B_PER_EXAMPLE,
+        api_cost_usd=api, parse_failed=parse_failed, cost_sum_check=check)
+    total = threshold_opt.cost_at(policy, abc["tau_star"], c_misroute=cfg.c_misroute_usd,
+                                 c_human=cfg.c_human_usd)["total"]
+    assert total == pytest.approx(
+        abc["operating_points"]["tau_star"]["expected_cost_per_1k"]["total"]["point"],
+        abs=1e-9)
+
+
+def test_summary_gains_tier_b_columns_only_when_the_families_exist(tmp_path):
+    _, cfg, results = _built_tier_b(tmp_path)
+    summary = threshold_opt.build_summary(results, cfg)
+    assert summary["tier_b_config"] == threshold_opt.TIER_B_CAL_CONFIG
+    cells = summary["sensitivity_comparison_paired_subset"]["cells"]
+    assert len(cells) == 36
+    for cell in cells:
+        assert {"cost_per_1k_a_to_b", "cost_per_1k_b_only", "cost_per_1k_a_to_b_to_c",
+                "tau_b_star_a_to_b_to_c"} <= set(cell)
+        # the winner is chosen over every family present, Tier B included
+        assert cell["winner_family"] in {
+            threshold_opt.FAMILY_A_TO_HUMAN, threshold_opt.FAMILY_A_TO_C,
+            threshold_opt.FAMILY_A_TO_B, threshold_opt.FAMILY_A_TO_B_TO_C}
+
+    # ...and a cost config without Tier B keeps exactly the columns it shipped with
+    plain_dir = tmp_path / "plain"
+    plain_dir.mkdir()
+    _, plain_cfg, plain_results = _built(plain_dir)
+    plain = threshold_opt.build_summary(plain_results, plain_cfg)
+    assert "tier_b_config" not in plain
+    assert all("cost_per_1k_a_to_b" not in cell
+               for cell in plain["sensitivity_comparison_paired_subset"]["cells"])
+
+
+def test_tier_b_cal_run_missing_under_a_tier_b_cost_config_is_a_hard_failure(tmp_path):
+    repo = _mini_repo(tmp_path, tier_b=False)
+    cfg = _cost_config(tmp_path, tier_b=True)
+    with pytest.raises(ValueError, match="no run record for config"):
+        threshold_opt.build_all(
+            cfg, preds_dir=tmp_path, results_path=repo["results"],
+            tier_a_configs=(threshold_opt.PRIMARY_TIER_A_CONFIG,), n_resamples=5)
+
+
+def test_tier_b_cli_is_byte_deterministic(tmp_path):
+    repo = _mini_repo(tmp_path, tier_b=True)
+    _cost_config(tmp_path, tier_b=True, name="cost_b.yaml")
+    outs = []
+    for name in ("out1", "out2"):
+        out_dir = tmp_path / name
+        assert threshold_opt.main([
+            "--preds-dir", str(tmp_path), "--out-dir", str(out_dir),
+            "--results", str(repo["results"]),
+            "--cost-config", str(tmp_path / "cost_b.yaml"), "--max-points", "8",
+            "--tier-a-config", threshold_opt.PRIMARY_TIER_A_CONFIG,
+        ]) == 0
+        outs.append(out_dir)
+    files = sorted(p.name for p in outs[0].glob("*.json"))
+    assert len(files) == 7  # 6 policy files + summary
+    assert any(f.startswith(f"{threshold_opt.FAMILY_A_TO_B_TO_C}__") for f in files)
+    for name in files:
+        assert (outs[0] / name).read_bytes() == (outs[1] / name).read_bytes()
 
 
 def test_cis_appear_only_at_operating_points(tmp_path):
@@ -751,21 +1055,43 @@ def test_serialized_thresholds_replay_on_a_synthetic_repo(tmp_path):
         assert cost == pytest.approx(star["point"], abs=1e-9), path.name
 
 
-def _rebuild_policy(obj, records, art_a, art_c, preds_dir):
-    """Rebuild the exact PolicyData a written result describes (no bootstraps)."""
+def _rebuild_policy(obj, records, art_a, art_c, preds_dir, art_b=None):
+    """Rebuild the exact PolicyData a written result describes (no bootstraps).
+
+    Two-gate files carry their fitted tau_B in `tier_b_gate`, so the rebuild is pinned to
+    the published pair — replaying a joint file at a re-derived tau_B would be testing the
+    optimizer twice instead of testing the file.
+    """
+    family = obj["policy_family"]
     name_a = obj["inputs"]["tier_a"]["config_name"]
     record_a = records[name_a]
-    if obj["policy_family"] == threshold_opt.FAMILY_A_TO_HUMAN:
-        index = (None if obj["dataset"] == threshold_opt.DATASET_FULL_CAL
-                 else threshold_opt.restrict_to_ids(art_a, art_c.complaint_id))
+    paired_index = threshold_opt.restrict_to_ids(art_a, art_c.complaint_id)
+    index = (None if obj["dataset"] == threshold_opt.DATASET_FULL_CAL else paired_index)
+
+    if family == threshold_opt.FAMILY_A_TO_HUMAN:
         return threshold_opt.build_a_to_human(art_a, record_a, name_a,
                                               dataset=obj["dataset"], index=index)
-    record_c = records[obj["inputs"]["tier_c"]["config_name"]]
+    if family == threshold_opt.FAMILY_A_TO_B:
+        name_b = obj["inputs"]["tier_b"]["config_name"]
+        return threshold_opt.build_a_to_b(
+            art_a, record_a, name_a, art_b, records[name_b], name_b,
+            b_per_example_usd=obj["inputs"]["tier_b"]["per_example_usd"],
+            dataset=obj["dataset"], index=index)
+
+    name_c = obj["inputs"]["tier_c"]["config_name"]
+    record_c = records[name_c]
     api, parse_failed, check, _ = threshold_opt.load_tier_c_arm_inputs(art_c, record_c)
-    return threshold_opt.build_a_to_c(
-        art_a, record_a, name_a, art_c, record_c,
-        obj["inputs"]["tier_c"]["config_name"], api_cost_usd=api,
-        parse_failed=parse_failed, cost_sum_check=check)
+    if family == threshold_opt.FAMILY_A_TO_C:
+        return threshold_opt.build_a_to_c(
+            art_a, record_a, name_a, art_c, record_c, name_c, api_cost_usd=api,
+            parse_failed=parse_failed, cost_sum_check=check)
+    name_b = obj["inputs"]["tier_b"]["config_name"]
+    gate_b = obj["tier_b_gate"]
+    return threshold_opt.build_a_to_b_to_c(
+        art_a, record_a, name_a, art_b, records[name_b], name_b, art_c, record_c, name_c,
+        tau_b=(np.inf if gate_b["tau_b_star"] is None else gate_b["tau_b_star"]),
+        b_per_example_usd=obj["inputs"]["tier_b"]["per_example_usd"],
+        api_cost_usd=api, parse_failed=parse_failed, cost_sum_check=check)
 
 
 @_needs_real
@@ -778,19 +1104,29 @@ def test_shipped_threshold_files_replay_exactly():
     file said 1,279 answers / $960.33 while its own published tau replayed to 1,278 /
     $962.00.
     """
-    cfg = cost_model.load_cost_config()
     records = threshold_opt._records_by_config()
     art_c = threshold_opt.load_artifact_checked(records[threshold_opt.TIER_C_CAL_CONFIG])
     arts_a: dict = {}   # resolved per file, so v1 and v2 rungs are both covered
+    cfgs: dict = {}     # ...and per COST generation, so a v2-cost file is not replayed
+    art_b = None        # at v1 prices
 
     for path in _REAL_POLICY_FILES:
         obj = json.loads(path.read_text())
+        cost_path = obj["cost_config"]["path"]
+        if cost_path not in cfgs:
+            cfgs[cost_path] = cost_model.load_cost_config(
+                threshold_opt.REPO_ROOT / cost_path)
+            assert cfgs[cost_path].sha256 == obj["cost_config"]["sha256"], path.name
+        cfg = cfgs[cost_path]
         name_a = obj["inputs"]["tier_a"]["config_name"]
         if name_a not in arts_a:
             arts_a[name_a] = threshold_opt.load_artifact_checked(records[name_a])
         art_a = arts_a[name_a]
+        if "tier_b" in obj["inputs"] and art_b is None:
+            art_b = threshold_opt.load_artifact_checked(
+                records[obj["inputs"]["tier_b"]["config_name"]])
         policy = _rebuild_policy(obj, records, art_a, art_c,
-                                 threshold_opt.DEFAULT_PREDS_DIR)
+                                 threshold_opt.DEFAULT_PREDS_DIR, art_b=art_b)
         assert len(policy) == obj["n_examples"], path.name
 
         tau = np.inf if obj["tau_star"] is None else obj["tau_star"]

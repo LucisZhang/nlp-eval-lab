@@ -1,4 +1,4 @@
-"""Frontier claims (Phase 4, partial — Tier B slots are declared pending).
+"""Frontier claims (Phase 4).
 
 UPGRADE_PLAN §4.2 names two headline claims, and this module is the only place either is
 allowed to be computed:
@@ -38,10 +38,19 @@ that fact stated. Every entry carries `human_credit` counts so a reader can see 
 is load-bearing for which policy (`a_to_c` has no human rows on TEST-IID — Haiku logged
 zero parse failures; `a_to_human` routes ~18-22%).
 
-**Tier B is not evaluated here.** Every Tier B frontier slot (B1/B2 single-tier points, the
-A→B cascade, the A→B→C cascade) is emitted as an explicit `pending_tier_b` placeholder
-rather than omitted, so the exhibit shows its own holes instead of implying the frontier is
-complete.
+**Tier B.** The four declared Tier B slots (B1's three seeds, B2, the A→B cascade, the
+A→B→C cascade) exist exactly when the cost config prices Tier B: under
+`configs/cost_model_v1.yaml` they are unscorable — an unpriced tier is a hard failure, not
+a free one — and are emitted as explicit `pending_tier_b` placeholders so the exhibit shows
+its own holes; under `configs/cost_model_v2.yaml` (v1 plus Tier B pricing, same dollar
+parameters) they are evaluated, reported under `tier_b_points`, and drop out of `pending`.
+Every slot is always accounted for in one list or the other.
+
+Two comparison shapes are added with them, both gated exactly like claim 2 (significantly
+cheaper AND significantly better system macro-F1): `claim_3_vs_tier_b` — is the cascade
+worth more than just shipping the fine-tune? — and `claim_4_vs_incumbent_router` — does the
+new rung beat the operating point the lab already had? The second is the one that answers
+whether the confidence gate or the model rung is what pays.
 """
 
 from __future__ import annotations
@@ -60,21 +69,53 @@ SCHEMA_VERSION = "frontier-v1"
 
 CLAIM_VS_ALL_LLM = "claim_1_vs_all_llm"
 CLAIM_VS_ALL_LINEAR = "claim_2_vs_all_linear"
+# Two more comparison shapes, added with the Tier B backfill. Both are gated exactly like
+# claim 2 (cheaper AND higher system macro-F1, both significant); they differ only in what
+# they are measured against, which is the whole point:
+#   claim 3 — against a Tier B single-tier point: does gating/cascading beat just shipping
+#             the fine-tune?
+#   claim 4 — against the INCUMBENT router: does the new rung beat the operating point the
+#             lab already had? This is the one that answers "is it the gate or the model
+#             that pays".
+CLAIM_VS_TIER_B = "claim_3_vs_tier_b"
+CLAIM_VS_ROUTER = "claim_4_vs_incumbent_router"
 
 ROUTER_CASCADE = "a_to_c_parsefail_human"
 ROUTER_GATED = "a_to_human"
+ROUTER_A_TO_B = router_sim.POLICY_A_TO_B
+ROUTER_A_TO_B_TO_C = router_sim.POLICY_A_TO_B_TO_C
+POINT_B2_ONLY = "b2_only"
 
 _round = cost_model._round
 
-# (evaluation_set, router, {claim: baseline}) — the exhibits this module reports.
+# (evaluation_set, claiming policy, ((claim, baseline), ...)) — the exhibits this module
+# reports. A tuple of pairs rather than a {claim: baseline} mapping so one policy can carry
+# several baselines under the same claim shape; the order here is the order in the output.
 EXHIBITS = (
     (router_sim.EVAL_PAIRED, ROUTER_CASCADE,
-     {CLAIM_VS_ALL_LLM: "c_only", CLAIM_VS_ALL_LINEAR: "a_only"}),
+     ((CLAIM_VS_ALL_LLM, "c_only"), (CLAIM_VS_ALL_LINEAR, "a_only"))),
     (router_sim.EVAL_FULL, ROUTER_GATED,
-     {CLAIM_VS_ALL_LINEAR: "a_only", CLAIM_VS_ALL_LLM: None}),
+     ((CLAIM_VS_ALL_LINEAR, "a_only"), (CLAIM_VS_ALL_LLM, None))),
 )
 
-# Frontier points that need Tier B before they exist. Declared, never silently omitted.
+# Appended when the Tier B points exist (i.e. under a cost config that prices Tier B).
+# Emitted in this order, after the two original exhibits, so the committed v1-cost file's
+# claim list is unchanged.
+TIER_B_EXHIBITS = (
+    (router_sim.EVAL_FULL, POINT_B2_ONLY,
+     ((CLAIM_VS_ALL_LINEAR, "a_only"), (CLAIM_VS_ROUTER, ROUTER_GATED))),
+    (router_sim.EVAL_FULL, ROUTER_A_TO_B,
+     ((CLAIM_VS_ALL_LINEAR, "a_only"), (CLAIM_VS_TIER_B, POINT_B2_ONLY),
+      (CLAIM_VS_ROUTER, ROUTER_GATED))),
+    (router_sim.EVAL_PAIRED, POINT_B2_ONLY,
+     ((CLAIM_VS_ALL_LLM, "c_only"),)),
+    (router_sim.EVAL_PAIRED, ROUTER_A_TO_B_TO_C,
+     ((CLAIM_VS_ALL_LLM, "c_only"), (CLAIM_VS_ALL_LINEAR, "a_only"),
+      (CLAIM_VS_TIER_B, POINT_B2_ONLY), (CLAIM_VS_ROUTER, ROUTER_CASCADE))),
+)
+
+# Frontier points that need Tier B before they exist. Declared, never silently omitted:
+# each slot is emitted under `pending` until every policy it names has been evaluated.
 PENDING_TIER_B = (
     {"point": "b1_only", "description": "ModernBERT-base single-tier point (3 seeds)"},
     {"point": "b2_only", "description": "DistilBERT deployment single-tier point"},
@@ -83,6 +124,16 @@ PENDING_TIER_B = (
      "description": "Tier A gate -> Tier B gate -> Tier C terminal cascade (full §4.2)"},
 )
 PENDING_STATUS = "pending_tier_b"
+FILLED_STATUS = "evaluated"
+
+# Which evaluated policies each declared slot is made of. A slot is filled only when ALL of
+# its policies exist — the three-seed B1 point is not "done" with one seed.
+SLOT_POLICIES = {
+    "b1_only": ("b1_only_sa", "b1_only_sb", "b1_only_sc"),
+    "b2_only": (POINT_B2_ONLY,),
+    "a_to_b": (ROUTER_A_TO_B,),
+    "a_to_b_to_c": (ROUTER_A_TO_B_TO_C,),
+}
 
 EVIDENCE_CLASSES = {
     "predictions": "measured (frozen prediction artifacts, gate-verified)",
@@ -91,6 +142,13 @@ EVIDENCE_CLASSES = {
     "c_misroute_usd": "estimated (business default, UPGRADE_PLAN §4.2)",
     "c_human_usd": "estimated (business default, UPGRADE_PLAN §4.2)",
     "human_resolution_correctness": "assumed (P(error|human) = 0)",
+}
+
+TIER_B_EVIDENCE_CLASS = {
+    "tier_b_api_cost": (
+        "estimated (amortized_estimate: MEASURED harness throughput x an ESTIMATED "
+        "cloud GPU rental rate; see the cost config's per-tier note for both halves)"
+    ),
 }
 
 # ---------------------------------------------------------------------------
@@ -123,6 +181,16 @@ CLAIM_GATED_METRICS = {
         ("pct_cost_reduction", HIGHER_IS_BETTER),
     ),
     CLAIM_VS_ALL_LINEAR: (
+        ("delta_cost_per_1k", LOWER_IS_BETTER),
+        ("delta_macro_f1_system", HIGHER_IS_BETTER),
+    ),
+    # Same two-axis gate as claim 2: a new rung has to be cheaper AND better, both
+    # significantly, before it is allowed a favourable sentence.
+    CLAIM_VS_TIER_B: (
+        ("delta_cost_per_1k", LOWER_IS_BETTER),
+        ("delta_macro_f1_system", HIGHER_IS_BETTER),
+    ),
+    CLAIM_VS_ROUTER: (
         ("delta_cost_per_1k", LOWER_IS_BETTER),
         ("delta_macro_f1_system", HIGHER_IS_BETTER),
     ),
@@ -380,6 +448,19 @@ _METRIC_PHRASE = {
 }
 
 
+# How each claim names its baseline in the quotable sentence. Claims 3 and 4 name the
+# policy itself, because "the Tier B point" / "the incumbent router" is ambiguous once
+# there are four of them; claims 1 and 2 keep the §4.2 wording verbatim.
+_CLAIM_BASELINE_PHRASE = {
+    CLAIM_VS_ALL_LLM: "the all-LLM policy",
+    CLAIM_VS_ALL_LINEAR: "the all-linear policy",
+}
+
+
+def _baseline_phrase(claim: str, baseline) -> str:
+    return _CLAIM_BASELINE_PHRASE.get(claim) or f"the {baseline.name} policy"
+
+
 def _band_text(name: str, bands: dict) -> str:
     b = bands[name]
     unit = "%" if name == "pct_cost_reduction" else ""
@@ -428,11 +509,52 @@ def _verdict_sentence(claim, router, baseline, bands, gate) -> str:
         )
     cost, f1 = bands["delta_cost_per_1k"], bands["delta_macro_f1_system"]
     return (
-        f"At significantly LOWER cost than the all-linear policy (paired cost delta "
-        f"${cost['point']:+.2f}/1k [{cost['ci_lo']:.2f}, {cost['ci_hi']:.2f}]), the "
-        f"{router.name} router raises system macro-F1 by {f1['point']:+.4f} "
-        f"[{f1['ci_lo']:.4f}, {f1['ci_hi']:.4f}] — measured on {where}."
+        f"At significantly LOWER cost than {_baseline_phrase(claim, baseline)} (paired "
+        f"cost delta ${cost['point']:+.2f}/1k [{cost['ci_lo']:.2f}, "
+        f"{cost['ci_hi']:.2f}]), the {router.name} router raises system macro-F1 by "
+        f"{f1['point']:+.4f} [{f1['ci_lo']:.4f}, {f1['ci_hi']:.4f}] — measured on {where}."
     )
+
+
+# ---------------------------------------------------------------------------
+# Declared Tier B slots: pending until every policy they name exists
+# ---------------------------------------------------------------------------
+
+def _slot_is_filled(slot: dict, available: set) -> bool:
+    return set(SLOT_POLICIES[slot["point"]]) <= set(available)
+
+
+def tier_b_slots(evaluations: dict[str, dict], available: set) -> list[dict]:
+    """One entry per FILLED slot: where each of its points was evaluated, and what it cost.
+
+    The frontier scatter needs (cost/1k, macro-F1) per point and the case study needs to be
+    able to say which slot each point discharges; both are copied here from the router
+    evaluations rather than recomputed, so a point can never appear on the frontier with a
+    number that no `results/router_sim/` file contains.
+    """
+    out = []
+    for slot in PENDING_TIER_B:
+        if not _slot_is_filled(slot, available):
+            continue
+        points = []
+        for policy_name in SLOT_POLICIES[slot["point"]]:
+            for eval_name, ev in evaluations.items():
+                point = ev["policies"].get(policy_name)
+                if point is None:
+                    continue
+                points.append({
+                    "policy": policy_name,
+                    "evaluation_set": eval_name,
+                    "n_examples": ev["n_examples"],
+                    "expected_cost_per_1k": point["expected_cost_per_1k"]["total"],
+                    "macro_f1_system": point["macro_f1_system"],
+                    "macro_f1_answered": point["macro_f1_answered"],
+                    "accuracy_system": point["accuracy_system"],
+                    "coverage_machine": point["routing"]["coverage_machine"],
+                    "human_rate": point["routing"]["human_rate"],
+                })
+        out.append({**slot, "status": FILLED_STATUS, "points": points})
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -446,8 +568,8 @@ def build_frontier(cfg: cost_model.CostConfig, *,
                    op_version: str = router_sim.OP_V2,
                    n_resamples: int = harness.N_RESAMPLES,
                    seed: int = harness.BOOTSTRAP_SEED) -> dict:
-    """Both claims for both routers, the dominance census, and the Tier B placeholders."""
-    inputs = router_sim.load_test_inputs(preds_dir, results_path)
+    """Every claim, the dominance census, and the state of each declared Tier B slot."""
+    inputs = router_sim.load_test_inputs(preds_dir, results_path, cost_config=cfg)
     cal = router_sim.load_cal_thresholds(thresholds_dir, cost_sha256=cfg.sha256,
                                          results_path=results_path,
                                          derivation=op_version, cost_config=cfg,
@@ -455,12 +577,23 @@ def build_frontier(cfg: cost_model.CostConfig, *,
     class_labels = list(inputs.art_a.class_labels)
     builders = {router_sim.EVAL_FULL: router_sim.build_full_policies,
                 router_sim.EVAL_PAIRED: router_sim.build_paired_policies}
+    built = {name: {p.name: p for p in builder(inputs, cal)}
+             for name, builder in builders.items()}
+    available = {name for policies in built.values() for name in policies}
+
+    # A Tier B exhibit is emitted only when every policy it names was actually evaluated,
+    # so the exhibit list and the `pending` list can never disagree about what exists.
+    exhibits = EXHIBITS + tuple(
+        exhibit for exhibit in TIER_B_EXHIBITS
+        if {exhibit[1], *(b for _, b in exhibit[2] if b is not None)}
+        <= set(built[exhibit[0]])
+    )
 
     claims = []
-    for evaluation_set, router_name, baselines in EXHIBITS:
-        policies = {p.name: p for p in builders[evaluation_set](inputs, cal)}
+    for evaluation_set, router_name, baselines in exhibits:
+        policies = built[evaluation_set]
         router = policies[router_name]
-        for claim, baseline_name in baselines.items():
+        for claim, baseline_name in baselines:
             if baseline_name is None:
                 claims.append({
                     "claim": claim,
@@ -483,11 +616,9 @@ def build_frontier(cfg: cost_model.CostConfig, *,
         cfg, preds_dir=preds_dir, results_path=results_path,
         thresholds_dir=thresholds_dir, n_resamples=n_resamples, seed=seed,
         op_version=op_version)
-    census = {
-        f"{name}/{a}": router_sim._dominance_row(ev, a)
-        for name, ev in evaluations.items()
-        for a in dict.fromkeys(d["a"] for d in ev["paired_deltas"])
-    }
+    baselines = router_sim.model_baselines(cfg)
+    census = router_sim.dominance_census(evaluations, baselines)
+    slots = tier_b_slots(evaluations, available)
 
     return {
         "schema_version": SCHEMA_VERSION,
@@ -511,16 +642,20 @@ def build_frontier(cfg: cost_model.CostConfig, *,
                 "router cheaper than the baseline with a paired bootstrap CI on the "
                 "cost/1k difference excluding zero"
             ),
-            "model_baselines": sorted(router_sim.MODEL_BASELINES),
-            "note": router_sim.DOMINANCE_NOTE,
+            "model_baselines": sorted(baselines),
+            "note": router_sim.dominance_note(baselines),
             "by_router": census,
         },
         "pending": [
             {**slot, "status": PENDING_STATUS,
              "blocked_on": "Tier B fine-tunes are not yet trained (UPGRADE_PLAN Phase 2)"}
             for slot in PENDING_TIER_B
+            if not _slot_is_filled(slot, available)
         ],
-        "evidence_classes": EVIDENCE_CLASSES,
+        **({} if not slots else {"tier_b_points": slots}),
+        "evidence_classes": (
+            EVIDENCE_CLASSES if not cost_model.prices_tier_b(cfg)
+            else {**EVIDENCE_CLASSES, **TIER_B_EVIDENCE_CLASS}),
         "bootstrap": {
             "n_resamples": int(n_resamples),
             "seed": int(seed),
@@ -590,6 +725,15 @@ def main(argv: list[str] | None = None) -> int:
         for name, m in claim["gate"]["metrics"].items():
             print(f"    gate {name:24s} {m['classification']}")
         print(f"  {claim['verdict']}")
+    for slot in obj.get("tier_b_points", []):
+        print(f"\n[{slot['point']}] {slot['description']} — {slot['status']}")
+        for point in slot["points"]:
+            total = point["expected_cost_per_1k"]
+            print(f"  {point['policy']:14s} {point['evaluation_set']:14s} "
+                  f"n={point['n_examples']:6d} "
+                  f"cost/1k=${total['point']:8.2f} "
+                  f"[{total['ci_lo']:8.2f}, {total['ci_hi']:8.2f}] "
+                  f"macroF1_sys={point['macro_f1_system']:.4f}")
     print(f"\npending Tier B slots: {[p['point'] for p in obj['pending']]}")
     return 0
 

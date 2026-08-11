@@ -67,7 +67,7 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 | Sonnet 5 subsample (**zero-shot** per §4.2 amendment 2026-08-07) | done | EXPERIMENT_LOG 2026-08-07 (step 5); runs `e1503146…`, `d1c42d7d…`; IID macro-F1 0.7418, POSTCUTOFF 0.7876; $3.66–3.85/1k; 1,500-row subsets pair with Haiku rows (verified) |
 | Both Tier C points with CIs on both slices; measured $/1k + p50/p95 latency; Haiku-vs-Sonnet paired delta; contamination delta; raw API logs retained | done | EXPERIMENT_LOG 2026-08-07 (step 6); paired Sonnet−Haiku: IID ≈0 (McNemar p=1.00), POSTCUTOFF +0.0553 acc / +0.0458 macro-F1 (p=2e-10); sensitivity excl. fallback rows agrees; fallback asymmetry 0 vs 12/37 reported. **Latency labeling (step 7 audit):** all Tier C p50/p95 figures are client-side wall-clock through OpenRouter with **no provider pinning** — served ≈99.8% by Amazon Bedrock (rest Anthropic/Azure; per-call provider in receipts) at `max_concurrency: 8`; they characterize the OpenRouter→Bedrock route, not the Anthropic first-party API |
 
-### Phase 4 — Calibration + router  ✅ **COMPLETE 2026-08-08 in owner-approved partial form** (Tier B backfill pending GPU)
+### Phase 4 — Calibration + router  ✅ **COMPLETE 2026-08-11** (Tier B frontier points backfilled — no pending slots remain)
 | Task | Status | Evidence |
 |---|---|---|
 | Risk-coverage machinery (+ per-example prediction artifacts, all runs) | done | `182d425`; EXPERIMENT_LOG 2026-08-07 Phase 4 task 1 (row was stale — completed previous session, flipped 2026-08-07) |
@@ -75,6 +75,7 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 | Threshold optimization on CAL (per owner-amended §4.2: τ at A/B only, Tier C terminal, parse-failure→human; amendment recorded in UPGRADE_PLAN §4.2 + EXPERIMENT_LOG) | done | EXPERIMENT_LOG 2026-08-07 Phase 4 task 3; `results/thresholds/`; carry-forwards for task 4: cross-family delta directional-only at n=1,500; τ→TEST transfer rule (calibration-space) open; parse-fail arm empty on Haiku, fires on Sonnet; `tier_a_logreg_test_iid.yaml` "winning CAL rung" comment unsupported by runs.jsonl |
 | Router simulator vs all policies (TEST-IID, owner decisions 1–4 of 2026-08-07 applied) | done | EXPERIMENT_LOG 2026-08-08 Phase 4 task 4; `results/router_sim/`; A→human dominates a_only + a_only_cnb (paired CIs ✓); Haiku-terminal headline dominates c_only only; cross-family delta directional-only (owner decision 1 verdict) |
 | Two headline frontier claims with CIs; router dominates ≥2 single tiers (or honest diagnosis) | done (partial form, owner-approved 2026-08-08) — v2 isocal thresholds primary (run `40513354…`; coverage gap closed ~10×); CLAIM 2 a_to_human CERTIFIED on full TEST-IID (−$60.60/1k ✓, macro-F1 +0.0870 ✓); a_to_c claims NOT ESTABLISHED at n=5,000 (honest diagnosis); dominance ≥2 met by a_to_human; cross-family resolved against the cascade (+47.74 ✓); v1 retained as calibration-mismatch lesson; Tier B frontier points **pending Tier B** | EXPERIMENT_LOG 2026-08-08 Phase 4 task 5; `results/frontier/` |
+| Tier B frontier points backfill (b1_only ×3 / b2_only / a_to_b / a_to_b_to_c) | done (2026-08-11) — B2 CAL artifact run `aa89db57…` (n=86,972); `configs/cost_model_v2.yaml` (v1 + tier_b1/tier_b2 estimated amortized pricing, params byte-identical; sha `2c969255…`); (τ_A, τ_B) joint 2-D fit on CAL; `results/frontier/frontier__opv2__cost-2c969255.json` pending **[]**, pre-Tier-B claims reproduce byte-identically. **Dominance shifted:** `a_to_b` new best full-slice row (beats a_only/b1_only/b2_only, cost CIs excl. 0); `a_to_b_to_c` 786.10/1k = cheapest Phase 4 policy; incumbents a_to_human + a_to_c both now fail to beat b2_only. **Verdict: "gate not LLM" restated — what pays is routing to cheap capacity; gate certified two-axis in front of B2 (−$21.49/1k AND +0.0025 F1) but worth ~4× less than in front of A; C rung still not established (n=5,000).** Acceptance "dominates ≥2 single tiers" now met by a_to_b at 3; `headline_router` repoint = open owner decision | EXPERIMENT_LOG 2026-08-11 Phase 4 backfill; `make tier-b-frontier` |
 
 ### Phase 5 — Drift protocol  ✅ **core COMPLETE for available tiers 2026-08-10** (novel-class probe = unstarted stretch; Tier B rows pending Tier B)
 | Task | Status | Evidence |
@@ -134,8 +135,11 @@ temperature scaling (runbook §6), then B1-vs-A / B1-vs-B2 paired deltas + seed 
 B1 seeds, paired CIs excl. 0 — the pre-registered surprise held under the frozen protocol);
 ~~**(2)** DistilBERT int8 ONNX export + parity (runbook §7)~~ **done 2026-08-11**
 (EXPERIMENT_LOG 2026-08-11; agreement 0.9944 ✓ with per-channel QInt8 — Phase 2 fully closed);
-**(3)** every item marked **pending Tier B** above (Phase 4 frontier points, Phase 5 drift rows,
-Phase 6 panels) — **next**.
+**(3)** every item marked **pending Tier B** above — ~~Phase 4 frontier points~~ **done
+2026-08-11** (EXPERIMENT_LOG Phase 4 backfill; dominance table shifted — a_to_b is the new
+best full-slice row, `headline_router` repoint left as an owner decision); Phase 5 drift rows —
+**next**; then Phase 6 panels (`make demo-data` regen belongs there; demo/data stale at 46 of 51
+runs, one known failing demo test until then).
 
 ---
 

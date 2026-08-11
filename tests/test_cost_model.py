@@ -322,6 +322,96 @@ def test_unpriced_tier_hard_fails_rather_than_charging_zero():
         cfg.api_policy("tier_b")
 
 
+def test_shipped_cost_config_v2_is_v1_plus_tier_b_pricing():
+    """v2 must move ONLY the policy set, never a price.
+
+    Every Tier A and Tier C number reported under v1 has to reproduce exactly under v2, so
+    the two ESTIMATED dollar parameters and both pre-existing api_cost entries are pinned
+    byte-for-byte against v1 here. A drift in either would silently restate published
+    numbers under a new hash.
+    """
+    v1 = cost_model.load_cost_config()
+    v2 = cost_model.load_cost_config(cost_model.REPO_ROOT / "configs/cost_model_v2.yaml")
+    assert v2.version == "v2"
+    assert v2.sha256 != v1.sha256
+    assert v2.params == v1.params
+    assert v2.api_cost["tier_a"] == v1.api_cost["tier_a"]
+    assert v2.api_cost["tier_c"] == v1.api_cost["tier_c"]
+
+    assert cost_model.prices_tier_b(v2) and not cost_model.prices_tier_b(v1)
+    for tier in cost_model.TIER_B_TIERS:
+        policy = v2.api_policy(tier)
+        assert policy["mode"] == cost_model.MODE_AMORTIZED_ESTIMATE
+        assert policy["evidence_class"] == "estimated"
+        assert cost_model.amortized_per_example_usd(v2, tier) > 0.0
+    # B1 (149M) must not be priced at B2's (66M) rate
+    assert (cost_model.amortized_per_example_usd(v2, "tier_b1")
+            > cost_model.amortized_per_example_usd(v2, "tier_b2"))
+    # ...and the real run config names resolve to those tiers (the prefix match is
+    # `tier_b1_`/`tier_b2_`; a single `tier_b` key would match neither)
+    assert cost_model.tier_of_config_name("tier_b1_modernbert_sa", v2) == "tier_b1"
+    assert cost_model.tier_of_config_name("tier_b2_distilbert_s0", v2) == "tier_b2"
+    assert cost_model.tier_of_config_name("tier_b2_distilbert_s0_cal", v2) == "tier_b2"
+    assert cost_model.tier_of_config_name("tier_a_logreg_test_iid", v2) == "tier_a"
+
+
+def _tier_b_cost_yaml(*, mode, per_example):
+    return (
+        "version: vtest\nparams:\n  c_misroute_usd: 6.0\n  c_human_usd: 2.5\n"
+        "api_cost:\n  tier_a:\n    mode: amortized_zero\n    per_example_usd: 0.0\n"
+        "    evidence_class: estimated\n    note: a\n"
+        f"  tier_b2:\n    mode: {mode}\n    per_example_usd: {per_example}\n"
+        "    evidence_class: estimated\n    note: b\n"
+        "  tier_c:\n    mode: measured_receipts\n    evidence_class: measured\n"
+        "    note: c\n"
+    )
+
+
+def test_amortized_zero_with_a_nonzero_figure_is_refused(tmp_path):
+    """A nonzero charge filed under a name that denies its existence is a mislabel."""
+    path = tmp_path / "liar.yaml"
+    path.write_text(_tier_b_cost_yaml(mode="amortized_zero", per_example="0.5"))
+    cfg = cost_model.load_cost_config(path)
+    with pytest.raises(ValueError, match="must use mode 'amortized_estimate'"):
+        cost_model.amortized_per_example_usd(cfg, "tier_b2")
+
+
+def test_amortized_estimate_charges_the_declared_figure(tmp_path):
+    run_id = "b2" * 32
+    _write_artifact(tmp_path, run_id, [1, 2], ["a", "b"], ["a", "a"], ["a", "b"])
+    record = _record(run_id, "tier_b2_distilbert_s0")
+    path = tmp_path / "tierb.yaml"
+    path.write_text(_tier_b_cost_yaml(mode="amortized_estimate", per_example="0.25"))
+    cfg = cost_model.load_cost_config(path)
+    obj = cost_model.score_run(record, cfg, preds_dir=tmp_path)
+    assert obj["tier"] == "tier_b2"
+    assert obj["api_cost"]["mode"] == cost_model.MODE_AMORTIZED_ESTIMATE
+    assert obj["api_cost"]["evidence_class"] == "estimated"
+    assert obj["api_cost"]["mean_per_example_usd"] == pytest.approx(0.25)
+    # 1 of 2 wrong -> $6 misroute + 2 x $0.25 compute over 2 rows, x1000
+    assert obj["expected_cost_per_1k"]["total"]["point"] == pytest.approx(3250.0)
+    assert obj["cost_sum_check"] is None      # nothing measured to cross-check
+
+
+def test_config_prefix_selection_picks_runs_by_config_not_by_hash(tmp_path):
+    run_id = "b2" * 32
+    _write_artifact(tmp_path, run_id, [1], ["a"], ["a"], ["a", "b"])
+    results = tmp_path / "runs.jsonl"
+    results.write_text("".join(json.dumps(r) + "\n" for r in [
+        _record(run_id, "tier_b2_distilbert_s0"),
+        _record("aa" * 32, "tier_a_logreg_test_iid"),
+    ]))
+    assert cost_model._run_ids_for_config_prefixes(
+        ["tier_b"], results_path=results, preds_dir=tmp_path) == [run_id]
+    # a prefix that names no run, and one whose run has no artifact, both fail loudly
+    with pytest.raises(ValueError, match="no run record"):
+        cost_model._run_ids_for_config_prefixes(
+            ["tier_z"], results_path=results, preds_dir=tmp_path)
+    with pytest.raises(ValueError, match="no artifact under"):
+        cost_model._run_ids_for_config_prefixes(
+            ["tier_a"], results_path=results, preds_dir=tmp_path)
+
+
 def test_non_finite_or_negative_prices_are_rejected(tmp_path):
     for bad in (".nan", ".inf", "-1.0"):
         path = _write_cost_config(tmp_path, c_misroute=bad, name=f"bad_{bad}.yaml")

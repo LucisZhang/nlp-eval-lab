@@ -1701,3 +1701,132 @@ reported runs. Every portfolio-bound number carries its reproduction command
   `uv sync --frozen --extra tierb && uv run python scripts/export_onnx_distilbert.py --checkpoint data/checkpoints/tier_b2_s0 --out data/onnx/tier_b2_s0`
   (expect the per-channel row above; per-tensor row reproducible with
   `--no-per-channel`).
+
+## 2026-08-11 — Phase 4: Tier B frontier points backfill (eval backfill task 3)
+
+- **Hypothesis (pre-registered question, STATUS.md §b item 3):** adding the Tier B
+  rung changes the Phase 4 headline conclusion — "the confidence gate, not the LLM
+  cascade, is what pays" — by giving the router a cheap accurate escalation arm.
+  Concretely: the four pending frontier slots (`b1_only`, `b2_only`, `a_to_b`,
+  `a_to_b_to_c`) fill with claims + CIs, and the dominance census is re-read.
+- **Setup (one new model run; everything else derivation-only):**
+  - **B2 CAL artifact** — `configs/tier_b2_distilbert_s0_cal.yaml` (new; identical
+    to the TEST-IID final config except `data.split: cal`): run `aa89db57…`, full
+    CAL n=86,972, MPS, temperature fit on CAL and applied in-sample (fitted
+    T=1.3192, byte-identical to the TEST-IID run's — same fit data), CAL macro-F1
+    0.7923 [0.7879, 0.7964], ECE 0.0086. Exists solely so τ thresholds can be fit
+    on CAL (hard rule: TEST is never used for fitting). In-sample calibration
+    mirrors the v2-isocal Tier A CAL rung; the same caveat note rides in every
+    Tier B threshold artifact (`TIER_B_IN_SAMPLE_NOTE`).
+  - **`configs/cost_model_v2.yaml`** (new version file, per v1's own edit rule):
+    v1 verbatim + `tier_b1` $2.0153e-05/example, `tier_b2` $5.6254e-06/example,
+    new mode `amortized_estimate`, `evidence_class: estimated`. Derivation stated
+    in-file: MEASURED harness wall-clock (B1 slowest seed 15,154.9 s; B2 4,230.2 s;
+    both /104,443 rows) × ESTIMATED $0.50/GPU-hour rental, with the conservatism
+    caveats written down (wall-clock overstates pure inference; MPS throughput
+    priced at a rented-A6000 rate). Two keys, not one: `tier_of_config_name`
+    prefix-matches `tier_b1_*`/`tier_b2_*`, and the 3.6×-slower ModernBERT
+    carries its own figure. `c_misroute` $6.00 / `c_human` $2.50 byte-identical
+    to v1 (test-pinned) — which is what makes every Tier A/C number reproduce
+    exactly under v2. Cost-config sha `2c969255…`.
+  - **Machinery (existing design, extended not redesigned):** `threshold_opt` grew
+    `build_a_to_b` (A gate → B terminal; existing 1-D prefix-sum sweep) and
+    `build_a_to_b_to_c` ((τ_A, τ_B) by exhaustive joint 2-D argmin on CAL — 3.2 s
+    at n=1,500; sequential fitting rejected because it chooses τ_A against a
+    different arm than the one it faces); `router_sim` grew the six Tier B
+    policies + id-joined Tier B inputs; `frontier` moved the four slots from
+    `PENDING_TIER_B` into real exhibits. **B2 is the cascade rung in both
+    cascades** — frozen-protocol justification: B2 beats every B1 seed on
+    macro-F1 (paired CIs excl. 0), ECE, AURC, *and* cost, so the choice is
+    dominated on every axis. B1's three seeds keep their own single-tier points.
+    Tier C stays terminal, parse-fail→human (owner amendment §4.2 unchanged).
+  - Evaluation sets as before: `b*_only`/`a_to_b` on full TEST-IID (n=104,443);
+    anything touching Tier C on the paired 5,000-row subset. No TEST-slice model
+    inference — all four Tier B TEST artifacts are the frozen 2026-08-10 runs.
+  - **Integrity check:** the three pre-Tier-B claims reproduce **byte-identically**
+    under cost v2 (field-by-field vs `frontier__opv2__cost-f76ad15a.json`). v2
+    moved the policy set, not a price. v1 artifacts retained untouched.
+- **Result (all v2-isocal primary, cost sha `2c969255…`):**
+
+  Fitted CAL operating points: `a_to_b` full τ_A=0.6449 (cov_A 0.684);
+  paired-family τ_A=0.7981 (cov_A 0.450); `a_to_b_to_c` τ_B=0.5770 → realized
+  mix 45.0% A / 46.7% B / 8.3% C, 0 human. All gates interior (no degenerate
+  escalate-everything fit).
+
+  | claim | policy | vs baseline | slice | Δcost/1k [95% CI] | Δmacro-F1_sys [95% CI] | verdict |
+  |---|---|---|---|---|---|---|
+  | 2 | b2_only | a_only | full | **−$99.09** [−110.35, −88.23] | +0.0345 [+0.0310, +0.0382] | ✅ certified |
+  | 2 | a_to_b | a_only | full | **−$120.58** [−131.04, −110.24] | +0.0370 [+0.0337, +0.0402] | ✅ certified |
+  | 3 | a_to_b | b2_only | full | **−$21.49** [−26.14, −16.66] | **+0.0025** [+0.0010, +0.0042] | ✅ certified (two-axis) |
+  | 4 | b2_only | a_to_human | full | −$38.49 [−48.25, −27.64] | −0.0524 [−0.0561, −0.0487] | cheaper, adverse F1* |
+  | 4 | a_to_b | a_to_human | full | −$59.98 [−69.11, −50.02] | −0.0499 [−0.0534, −0.0465] | cheaper, adverse F1* |
+  | 1 | b2_only | c_only | paired | **−$105.71** [−162.10, −51.71] | +0.0235 [+0.0055, +0.0407] | ✅ certified |
+  | 1 | a_to_b_to_c | c_only | paired | **−$130.81** [−177.60, −83.97] | +0.0288 [+0.0150, +0.0430] | ✅ certified |
+  | 2 | a_to_b_to_c | a_only | paired | **−$145.10** [−193.08, −93.50] | +0.0333 [+0.0155, +0.0485] | ✅ certified |
+  | 3 | a_to_b_to_c | b2_only | paired | −$25.10 [−53.94, **+4.93**] | +0.0053 [−0.0057, +0.0165] | not established (n=5,000) |
+  | 4 | a_to_b_to_c | a_to_c_parsefail_human | paired | **−$122.33** [−167.97, −75.54] | +0.0263 [+0.0120, +0.0404] | ✅ certified |
+
+  Frontier points (cost/1k, system macro-F1), full TEST-IID: a_only 933.41/0.7605 ·
+  a_only_cnb 1032.39/0.7265 · b1_only sa/sb/sc 862.60/865.58/867.94 at
+  0.7878/0.7878/0.7863 · b2_only 834.32/0.7950 · a_to_human 872.81/0.8475 ·
+  **a_to_b 812.83/0.7976**. Paired subset: c_only 916.92/0.7697 · a_to_c
+  908.44/0.7722 · **a_to_b_to_c 786.10/0.7985** — the cheapest policy measured
+  anywhere in Phase 4.
+
+  Dominance census (criterion: paired cost CI excluding zero; model baselines now
+  include b1_only ×3 + b2_only): pre-Tier-B best was full/a_to_human beating 2.
+  Now **full/a_to_b beats 3** (a_only, b1_only_sa, b2_only) with nothing
+  undominated against it; full/b2_only beats 3; and the two incumbents each
+  acquired an explicit loss — a_to_human and a_to_c_parsefail_human both fail to
+  beat b2_only.
+- **Verdict — the pre-registered question, answered honestly in both directions:**
+  1. *The LLM-cascade half survives.* Tier C still does not pay for itself:
+     a_to_c − a_to_human stays **+$47.74/1k** [+22.53, +74.74]; adding the C rung
+     on top of Tier B is directional-only at n=5,000 (a_to_b_to_c − a_to_b
+     −$16.70 [−45.50, +10.90]; vs b2_only −$25.10 [−53.94, +4.93]).
+  2. *The gate half does NOT survive as stated.* An ungated $0.0056/1k DistilBERT
+     is significantly cheaper than the gated-to-human Tier A policy (b2_only −
+     a_to_human = −$38.49/1k [−48.25, −27.64]): most of what the gate was buying
+     over Tier A was accuracy a fine-tune supplies outright.
+  3. *What the gate is still worth, measured:* in front of Tier B it is the one
+     certified two-axis win in the exhibit (a_to_b vs b2_only: −$21.49/1k AND
+     +0.0025 macro-F1, both CIs excl. 0) — but that is 2.58% [2.01, 3.12] of
+     policy cost vs the 12.92% the same gate is worth in front of Tier A.
+  **Restated conclusion: what pays is routing to cheap capacity; the gate's dollar
+  value is proportional to the price of its escalation arm.** Swap the $2.50 human
+  arm for a half-thousandth-of-a-cent fine-tune and the identical gate mechanism is
+  worth ~4× less while the whole policy gets $59.98/1k cheaper.
+  - *Caveat riding claim 4: the a_to_human comparisons are cost-clean but not
+    F1-clean — `macro_f1_system` credits human-routed rows (9.5%) as correct
+    (P(error|human)=0), while a_to_b answers 100% by machine; on machine-answered
+    rows the two score 0.8110 (over 90.5%) vs 0.7976 (over 100%), different row
+    sets, no paired CI. The cost axis is the one the cost model arbitrates, at
+    c_human=$2.50; the 36-cell sensitivity grid
+    (`results/thresholds/summary__v2-isocal__cost-2c969255.json`) shows how the
+    verdict moves with that price.*
+  - Phase 4 acceptance line re-read: "router dominates ≥2 single-tier policies" is
+    now met by a_to_b at 3 model baselines (previously a_to_human at 2).
+    `headline_router` in `router_sim.build_summary` still points at
+    `a_to_c_parsefail_human` — repointing it is a reporting decision left to the
+    owner (flagged, not changed).
+- **Artifacts:** results/runs.jsonl +1 (`aa89db57…`); `results/cost_model/` +5;
+  `results/thresholds/` +7 (`*__cost-2c969255.json`); `results/router_sim/` +3;
+  `results/frontier/frontier__opv2__cost-2c969255.json` (pending: **[]**). All
+  v1-cost (`f76ad15a`) artifacts untouched. `demo/data` remains stale (46 vs 51
+  runs after this session's CAL record; pre-existing failing test
+  `test_runs_index_has_one_verbatim_entry_per_record`, fails identically at HEAD)
+  — regeneration belongs to the pending Phase 6 Tier B panels task. Suite: 582
+  passed / 1 failed (that same pre-existing demo test) / 1 skipped; ruff clean.
+  Determinism proof: re-running `make tier-b-frontier` regenerates all 11
+  derived artifacts byte-identically (sha256-verified).
+- **Reproduce:**
+
+  ```
+  uv run python -m triage_lab.harness configs/tier_b2_distilbert_s0_cal.yaml
+  make tier-b-frontier
+  # equivalently, the chain the target runs:
+  # uv run python -m triage_lab.cost_model    --config-prefix tier_b --cost-config configs/cost_model_v2.yaml
+  # uv run python -m triage_lab.threshold_opt --derivation v2-isocal --cost-config configs/cost_model_v2.yaml
+  # uv run python -m triage_lab.router_sim    --op-version v2-isocal --cost-config configs/cost_model_v2.yaml
+  # uv run python -m triage_lab.frontier      --op-version v2-isocal --cost-config configs/cost_model_v2.yaml
+  ```
