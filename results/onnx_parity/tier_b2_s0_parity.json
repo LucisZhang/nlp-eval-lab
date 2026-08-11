@@ -1,0 +1,69 @@
+{
+  "agreement": {
+    "int8_vs_onnx_fp32": 0.9944,
+    "int8_vs_pytorch_fp32": 0.9944,
+    "onnx_fp32_vs_pytorch": 1.0
+  },
+  "argmax_agreement": 0.9944,
+  "checkpoint": "data/checkpoints/tier_b2_s0",
+  "class_labels": [
+    "card",
+    "credit_reporting",
+    "debt_collection",
+    "deposit_account",
+    "money_service",
+    "mortgage",
+    "payday_personal_loan",
+    "student_loan",
+    "vehicle_loan"
+  ],
+  "fp32_onnx_bytes": 267960719,
+  "int8_onnx_bytes": 67575183,
+  "macro_f1": {
+    "int8_minus_onnx_fp32": 0.0016393391827446147,
+    "int8_minus_pytorch_fp32": 0.0016393391827446147,
+    "onnx_fp32": 0.7866311646860237,
+    "onnx_int8": 0.7882705038687683,
+    "pytorch_fp32": 0.7866311646860237
+  },
+  "max_seq_length": 256,
+  "mean_abs_prob_delta": 0.001412195970377389,
+  "mean_abs_prob_delta_pairs": {
+    "int8_vs_onnx_fp32": 0.0014121941174671923,
+    "int8_vs_pytorch_fp32": 0.001412195970377389,
+    "onnx_fp32_vs_pytorch": 4.303171622758364e-08
+  },
+  "methodology": {
+    "batch_size": 32,
+    "cal_input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+    "cal_split_sha256": "d7c24d6db05f337ac3fca1922b16c4324775e2007833af1eae684ddc37533c94",
+    "comparison": "per-example argmax agreement (pairwise across pytorch_fp32/onnx_fp32/onnx_int8) + mean|prob delta| + macro-F1 vs gold labels (triage_lab.metrics.macro_f1_from_codes, same averaging as the eval harness)",
+    "label_mapping": "id2label/label2id read from the checkpoint's config.json; class_labels ordered by index [id2label[i] for i in range(num_labels)], mirroring src/triage_lab/tier_b.py's tier_b_runner convention",
+    "max_seq_length": 256,
+    "opset": 17,
+    "quantization": "onnxruntime.quantization.quantize_dynamic, weight_type=QInt8, per_channel=True (weights int8 per-channel scales, activations fp32)",
+    "reference": "PyTorch fp32, eval-mode, device=cpu",
+    "sample": "fixed-seed 20260805 subsample (n=5000) of the frozen CAL split, drawn via numpy default_rng permutation, re-sorted by complaint_id",
+    "softmax": "computed in fp64 numpy (max-shifted) on raw logits from each backend",
+    "tokenizer": "data/checkpoints/tier_b2_s0"
+  },
+  "n_samples": 5000,
+  "opset": 17,
+  "provenance": {
+    "checkpoint_model_weights_sha256": "fea0d60bc3bd8b8d4fc6919cca6be0ff3b452ead59dd18ae689ef8412ef53290",
+    "git_sha": "31df9ae27c7b3c5b2d8cfd58074aabfcf974628b",
+    "model_int8_onnx_sha256": "da931ec8310cf1280747e22fc6ebfd30fd5f92e312ede6544042e1190764bb4a",
+    "model_onnx_sha256": "2596276e394018886230082bfb9650dfeabc1868c59bc81a44f782ec1c029740",
+    "package_versions": {
+      "onnx": "1.22.0",
+      "onnxruntime": "1.28.0",
+      "torch": "2.13.0",
+      "transformers": "5.14.1"
+    },
+    "per_channel": true,
+    "wall_clock_seconds": 422.4917531013489
+  },
+  "pytorch_weights_bytes": 267854100,
+  "subsample_seed": 20260805,
+  "subsample_split": "cal"
+}

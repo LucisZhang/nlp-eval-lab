@@ -1639,3 +1639,65 @@ reported runs. Every portfolio-bound number carries its reproduction command
   then `uv run python scripts/compare_tier_b.py` (defaults select the latest run per
   config + the `8e4d6345…` Tier A baseline; expect the two tables above; writes
   `results/tier_b_compare/summary.json`).
+
+## 2026-08-11 — Phase 2: DistilBERT int8 ONNX export + parity (eval backfill task 2)
+
+- **Hypothesis (runbook §7 bar):** dynamic int8 weight quantization of the B2
+  DistilBERT deployment checkpoint preserves predictions — int8-vs-fp32 argmax
+  agreement ≥ 0.99 on the fixed parity sample.
+- **Setup:** `scripts/export_onnx_distilbert.py` extended (this session) from a
+  two-backend to a three-backend comparison: PyTorch fp32 (eval-mode, CPU,
+  reference) vs fp32 ONNX vs int8 ONNX, identical tokenized inputs (checkpoint
+  tokenizer, max_seq_length 256, batch 32), softmax in fp64 on raw logits.
+  Sample = fixed-seed 20260805 subsample, **n=5,000 of frozen CAL** (input sha
+  `170f66cd…`, split sha `d7c24d6d…`); TEST-* untouched. Metrics: pairwise
+  argmax agreement, mean |Δprob|, and macro-F1 vs gold labels
+  (`triage_lab.metrics.macro_f1_from_codes`, same averaging as the harness;
+  label mapping from checkpoint config.json, verified identical to
+  `tier_b.py`'s convention). Export: torch.onnx opset 17, dynamic axes;
+  quantization: `onnxruntime.quantization.quantize_dynamic`, QInt8 weights,
+  fp32 activations. torch 2.13.0 / onnx 1.22.0 / onnxruntime 1.28.0 /
+  transformers 5.14.1; git sha at run time `31df9ae`.
+- **Result:**
+
+  | config | agree vs PT fp32 | mean \|Δprob\| | macro-F1 (Δ vs fp32) | size |
+  |---|---|---|---|---|
+  | fp32 ONNX | **1.0000** | 4.3e-08 | 0.78663 (±0) | 255.6 MB |
+  | int8 per-tensor (initial) | 0.9824 ✗ | 0.00409 | 0.78971 (+0.0031) | 64.2 MB |
+  | **int8 per-channel (shipped)** | **0.9944 ✓** | 0.00141 | 0.78827 (**+0.0016**) | 64.4 MB |
+
+  The stock per-tensor `quantize_dynamic` **missed the ≥0.99 bar** at 0.9824.
+  fp32 ONNX matches PyTorch exactly (1.0000), so the entire gap is quantization,
+  not export. Notably both int8 variants score *higher* macro-F1 than fp32 on
+  the sample — the flipped predictions are quality-neutral borderline cases,
+  not systematic damage. Remedy measured under the same protocol:
+  `per_channel=True` lifts agreement to **0.9944** (bar cleared) at negligible
+  size cost (+0.2 MB); adding `quant_pre_process` produced metrically identical
+  results (and needs `skip_symbolic_shape=True` on this graph), so it was not
+  adopted. Per-channel promoted to the script's default
+  (`--per-channel`/`--no-per-channel` flags; setting recorded in the report's
+  methodology + provenance). Canonical artifacts regenerated at
+  `data/onnx/tier_b2_s0/` (int8 sha `da931ec8…`, fp32 sha `2596276e…`,
+  checkpoint weights sha `fea0d60b…`); full report committed at
+  `results/onnx_parity/tier_b2_s0_parity.json`. No `results/runs.jsonl` record —
+  parity is not a harness eval; per runbook §7 it is logged here + as the
+  committed report.
+- **Findings:** (1) Acceptance met by the shipped per-channel config:
+  int8-vs-fp32 agreement 0.9944 ≥ 0.99, macro-F1 delta +0.0016 (int8 favorable),
+  methodology in the committed report. (2) The per-tensor miss (0.9824) is
+  retained above as a real measurement — 9-class heads with fitted T > 1 leave
+  many near-ties, so per-tensor weight scales flip ~1.8% of argmaxes without
+  hurting F1. (3) **Labeling rule (owner directive):** the int8 ONNX artifact is
+  the *live-demo implementation only*; official Tier B2 numbers remain the
+  harness fp32 records in `results/runs.jsonl` (run `5517ebf1…`, macro-F1
+  0.7950 [0.7909, 0.7988] on TEST-IID), and the demo site must label them as
+  such. Parity-sample macro-F1 figures above are CAL-subsample diagnostics, not
+  headline numbers. (4) Open check deferred to the Phase 6 live-inference task:
+  validate per-channel `MatMulInteger` support in the browser runtime
+  (transformers.js / onnxruntime-web) before wiring the artifact in.
+- **Verdict:** ACCEPTED — Phase 2 fully closed (last open item). Bar met after a
+  measured, logged quantization-config fix; no threshold was relaxed.
+- **Repro:**
+  `uv sync --frozen --extra tierb && uv run python scripts/export_onnx_distilbert.py --checkpoint data/checkpoints/tier_b2_s0 --out data/onnx/tier_b2_s0`
+  (expect the per-channel row above; per-tensor row reproducible with
+  `--no-per-channel`).

@@ -13,7 +13,7 @@ _what's next_.
   is DONE and the block is lifted.** Checkpoints sit at the canonical `data/checkpoints/tier_b*`
   paths; next sessions run the Tier B **eval backfill** (harness TEST-IID finals + temperature
   scaling, then the pending Phase 4/5/6 Tier B slots), one task per session per §c.
-- Last updated: 2026-08-10.
+- Last updated: 2026-08-11.
 
 ---
 
@@ -41,7 +41,7 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 | Tier A TEST-IID finals (LogReg + CNB, isotonic) | done | `9750d53`; EXPERIMENT_LOG 2026-08-05 finals |
 | ≥3 logged runs in EXPERIMENT_LOG.md | done | 5 runs logged (2026-08-05) |
 
-### Phase 2 — Tier B fine-tuning  ▶ IN PROGRESS (harness TEST-IID finals done 2026-08-10; only ONNX export + parity left)
+### Phase 2 — Tier B fine-tuning  ✅ **COMPLETE 2026-08-11** (ONNX export + parity closed the phase)
 | Task | Status | Evidence |
 |---|---|---|
 | Tier B training kit (runner, cloud training script, data export, ONNX parity harness) | done | `ba13a08`, `0dfa94b` |
@@ -51,7 +51,7 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 | DistilBERT fine-tune | done (A6000 bf16, 2026-08-07; ingested + validated 2026-08-10) | EXPERIMENT_LOG 2026-08-10 (same bundle; final CAL macro-F1 0.7923 — edges B1 on training-script numbers, re-examine under harness) |
 | Temperature scaling + TEST-IID eval (both points, CIs) | done (2026-08-10, MPS local) | EXPERIMENT_LOG 2026-08-10 (eval backfill task 1); runs `8071d31d…`/`adb96307…`/`a523049a…`/`5517ebf1…`; B1 macro-F1 0.7878/0.7878/0.7863, B2 **0.7950** [0.7909, 0.7988], full TEST-IID n=104,443 |
 | B1-vs-A delta, B1-vs-B2 intra-tier delta, seed variance | done (2026-08-10) | EXPERIMENT_LOG 2026-08-10; `results/tier_b_compare/summary.json`; B1−A +0.026..+0.027 (CIs excl. 0 ✓); **B1−B2 negative all seeds** (−0.0072..−0.0088, CIs excl. 0, McNemar p≤6e-8) — pre-registered surprise CONFIRMED: B2 DistilBERT is the top Tier B point; seed sd 0.0009 (ddof=1) |
-| DistilBERT int8 ONNX export + parity check (≥99%) | pending (unblocked) | — |
+| DistilBERT int8 ONNX export + parity check (≥99%) | done (2026-08-11) | EXPERIMENT_LOG 2026-08-11; `results/onnx_parity/tier_b2_s0_parity.json`; int8-vs-fp32 agreement **0.9944** ✓ (per-channel QInt8; stock per-tensor missed at 0.9824 — measured + logged, config fixed, no threshold relaxed), macro-F1 Δ +0.0016, fp32-ONNX-vs-PyTorch exact 1.0000; artifact = demo implementation only, official numbers stay harness fp32 runs.jsonl |
 
 > **Checkpoints validated + placed at `data/checkpoints/tier_b{1_sa,1_sb,1_sc,2_s0}/`** (chain of
 > custody: bundle manifest ↔ frozen configs ↔ frozen kit manifest ↔ CFPB input sha, all verified;
@@ -132,8 +132,10 @@ sessions (one task per session): ~~**(1)** Tier B harness finals — the four co
 temperature scaling (runbook §6), then B1-vs-A / B1-vs-B2 paired deltas + seed variance~~
 **done 2026-08-10** (EXPERIMENT_LOG eval backfill task 1; headline: B2 DistilBERT 0.7950 tops all
 B1 seeds, paired CIs excl. 0 — the pre-registered surprise held under the frozen protocol);
-**(2)** DistilBERT int8 ONNX export + parity (runbook §7) — **next**; **(3)** every item marked
-**pending Tier B** above (Phase 4 frontier points, Phase 5 drift rows, Phase 6 panels).
+~~**(2)** DistilBERT int8 ONNX export + parity (runbook §7)~~ **done 2026-08-11**
+(EXPERIMENT_LOG 2026-08-11; agreement 0.9944 ✓ with per-channel QInt8 — Phase 2 fully closed);
+**(3)** every item marked **pending Tier B** above (Phase 4 frontier points, Phase 5 drift rows,
+Phase 6 panels) — **next**.
 
 ---
 
