@@ -27,11 +27,11 @@ artifact -- the same number in two different spaces. It is not repeated here: on
 the same space as the CAL rung the tau was fit on. There is deliberately no v1 code path,
 so a v1 drift number cannot be produced by passing a flag.
 
-**Three escalation arms, three thresholds, one per policy family.** A tau* is the argmin of
-a *specific* policy's cost curve; transplanting one family's constant onto another family
-is the same class of error as transplanting across calibration spaces. So each arm gets the
-tau the sweep derived for it, loaded from ``results/thresholds/`` via the router's own
-validating loader (never transcribed):
+**Five escalation arms, five thresholds, one per (policy family, support).** A tau* is the
+argmin of a *specific* policy's cost curve; transplanting one family's constant onto another
+family is the same class of error as transplanting across calibration spaces. So each arm
+gets the tau the sweep derived for it, loaded from ``results/thresholds/`` via the router's
+own validating loader (never transcribed):
 
 - ``a_to_human`` on the FULL slices -- tau from ``(a_to_human, full_cal)``, CAL escalation
   0.0994. The deployment-shaped question: what fraction of an incoming year does the shipped
@@ -45,6 +45,31 @@ validating loader (never transcribed):
   2026-08-07 amendment). Its CAL optimum escalates far LESS than the human arm's, because on
   CAL the LLM is not more accurate than Tier A on the rows Tier A is unsure about, so
   escalation buys error rather than removing it.
+- ``a_to_b`` on the FULL slices -- tau from ``(a_to_b, full_cal)``, CAL escalation 0.3165 --
+  and on the PAIRED subsets -- tau from ``(a_to_b, paired_subset)``, CAL escalation 0.5500.
+  Tier B2 (DistilBERT) is the cascade rung: it is the certified top Tier B point on TEST-IID
+  and the deployment point the demo ships. Its CAL optimum escalates by far the MOST of any
+  arm, which is the whole finding: unlike the LLM, B2 *is* more accurate than Tier A on the
+  rows Tier A is unsure about, and at amortized-compute prices sending a third of the traffic
+  to it is cheaper than being wrong. The paired duplicate exists for the same reason the
+  ``a_to_human`` one does -- so the Tier B and Tier C cascades can be read against each other
+  on identical rows, with support held fixed.
+
+**There is no tau_B in this module, and that is a frozen fact, not an omission.** The Phase 4
+``a_to_b`` family is ``escalation_arm: tier_b_terminal`` -- ONE gate. Tier B2 answers every
+escalated row; the residual human rate is structurally 0.0 and is reported as such (with its
+degenerate CI) rather than hidden. The only frozen tau_B in the repo belongs to ``a_to_b_to_c``
+(0.5769749672571918, paired subset), where the rows BELOW it go to Tier C at Tier C's measured
+prices -- not to a human at ``c_human``. Re-terminating that constant on a human queue would
+be a cross-family transplant of exactly the kind the paragraph above refuses, so an
+``a_to_b_to_human`` series is not produced here; it would need its own CAL sweep and its own
+threshold file first.
+
+**Cost model v2.** Tier B has a price only under ``configs/cost_model_v2.yaml``, so that is
+this module's default cost config and the generation its tau constants are loaded from. v2's
+two dollar parameters are byte-identical to v1's by design, and the ``a_to_human`` /
+``a_to_c`` tau* files under both generations carry the same numbers -- so the three Tier A/C
+arms are unchanged by the switch, and only the *set of available policies* grows.
 
 **Parse failure is read from receipts, never from the artifact.** A parse-failed row's
 ``y_pred`` in the Tier C parquet is the frozen *fallback* label (``card``), indistinguishable
@@ -76,8 +101,9 @@ answered-set quality move together; ``default_rng(seed)`` depends only on (seed,
 Haiku and Sonnet -- equal-sized artifacts on identical rows -- receive byte-identical index
 vectors and their arms are paired for free.
 
-Tier B is ``pending`` everywhere by construction, not omitted: a slot with an explicit
-evidence class is the honest report of a tier that has not landed.
+Tier B1 (ModernBERT) is ``pending`` by construction, not omitted: a slot with an explicit
+evidence class is the honest report of a tier that has not landed. Tier B2 has landed and
+carries a full series.
 """
 
 from __future__ import annotations
@@ -99,6 +125,10 @@ DEFAULT_RESULTS_PATH = harness.DEFAULT_RESULTS_PATH
 DEFAULT_SPLITS_STATS_PATH = harness.DEFAULT_SPLITS_STATS_PATH
 DEFAULT_OUT_DIR = REPO_ROOT / "results" / "drift"
 DEFAULT_CHARTS_DIRNAME = "charts"
+# v2, not cost_model's own v1 default: the a_to_b arm's tau exists only under a cost config
+# that prices Tier B, and mixing two cost generations inside one summary would make the
+# `cost_model` block a claim about half the file. See the module docstring.
+DEFAULT_COST_CONFIG = REPO_ROOT / "configs" / "cost_model_v2.yaml"
 
 SCHEMA_VERSION = 1
 JSON_ROUND = 10
@@ -120,21 +150,28 @@ SLICE_LABELS: dict[str, str] = dict(SLICES)
 # Config stem per (tier, slice): the TEST-IID final, and the yearly template.
 TIER_CONFIGS: dict[str, tuple[str, str]] = {
     "tier_a": ("tier_a_logreg_test_iid", "tier_a_logreg_test_drift_{year}"),
+    "tier_b2": ("tier_b2_distilbert_s0", "tier_b2_distilbert_s0_test_drift_{year}"),
     "tier_c_haiku": ("tier_c_haiku_zeroshot_test_iid",
                      "tier_c_haiku_zeroshot_test_drift_{year}"),
     "tier_c_sonnet": ("tier_c_sonnet_zeroshot_test_iid",
                       "tier_c_sonnet_zeroshot_test_drift_{year}"),
 }
-TIER_ORDER: tuple[str, ...] = ("tier_a", "tier_c_haiku", "tier_c_sonnet")
+TIER_ORDER: tuple[str, ...] = ("tier_a", "tier_b2", "tier_c_haiku", "tier_c_sonnet")
 TIER_DISPLAY: dict[str, str] = {
     "tier_a": "Tier A (LogReg word+char, isotonic)",
+    "tier_b2": "Tier B2 DistilBERT (temperature-scaled)",
     "tier_c_haiku": "Tier C Haiku 4.5 (zero-shot)",
     "tier_c_sonnet": "Tier C Sonnet 5 (zero-shot)",
 }
 GATE_TIER = "tier_a"                 # the only tier with a confidence gate (§4.2 amendment)
+CASCADE_TIER = "tier_b2"             # the Tier B rung of the a_to_b arm (router_sim §4.2)
 PAIRED_ID_SOURCE = "tier_c_sonnet"   # 1,500 rows on EVERY slice, incl. test_iid
 PAIRED_N = 1500
 TERMINAL_MODELS: tuple[str, ...] = ("tier_c_haiku", "tier_c_sonnet")
+# Tiers whose p_max is a real confidence signal, so ECE is defined on it. Tier C is excluded
+# by construction (ECE_TIER_C_EXCLUSION_NOTE); Tier A is isotonic-calibrated, B2 is
+# temperature-scaled on CAL, and both are gate-relevant: the router thresholds this number.
+ECE_TIERS: tuple[str, ...] = ("tier_a", "tier_b2")
 
 LOGGED_METRICS: tuple[str, ...] = ("macro_f1", "ece", "accuracy")
 
@@ -143,12 +180,17 @@ LOGGED_METRICS: tuple[str, ...] = ("macro_f1", "ece", "accuracy")
 ARM_A_TO_HUMAN_FULL = "a_to_human__full_slice"
 ARM_A_TO_HUMAN_PAIRED = "a_to_human__paired_subset"
 ARM_A_TO_C = "a_to_c_parsefail_human__paired_subset"
+ARM_A_TO_B_FULL = "a_to_b__full_slice"
+ARM_A_TO_B_PAIRED = "a_to_b__paired_subset"
 ARM_THRESHOLD_KEYS: dict[str, tuple[str, str]] = {
     ARM_A_TO_HUMAN_FULL: (threshold_opt.FAMILY_A_TO_HUMAN, threshold_opt.DATASET_FULL_CAL),
     ARM_A_TO_HUMAN_PAIRED: (threshold_opt.FAMILY_A_TO_HUMAN, threshold_opt.DATASET_PAIRED),
     ARM_A_TO_C: (threshold_opt.FAMILY_A_TO_C, threshold_opt.DATASET_PAIRED),
+    ARM_A_TO_B_FULL: (threshold_opt.FAMILY_A_TO_B, threshold_opt.DATASET_FULL_CAL),
+    ARM_A_TO_B_PAIRED: (threshold_opt.FAMILY_A_TO_B, threshold_opt.DATASET_PAIRED),
 }
-ARM_ORDER: tuple[str, ...] = (ARM_A_TO_HUMAN_FULL, ARM_A_TO_HUMAN_PAIRED, ARM_A_TO_C)
+ARM_ORDER: tuple[str, ...] = (ARM_A_TO_HUMAN_FULL, ARM_A_TO_HUMAN_PAIRED, ARM_A_TO_C,
+                              ARM_A_TO_B_FULL, ARM_A_TO_B_PAIRED)
 
 # v2-isocal ONLY. The v1 raw-CAL derivation is the documented calibration-mismatch lesson
 # and is deliberately unreachable from here (see module docstring).
@@ -180,11 +222,18 @@ TAXONOMY_CHANGE: dict = {
 
 TIER_B_PENDING: dict = {
     "status": "pending",
-    "tiers": ["tier_b1_modernbert", "tier_b2_distilbert"],
+    "tiers": ["tier_b1_modernbert"],
+    "landed": ["tier_b2_distilbert"],
     "note": (
-        "Tier B has no yearly drift runs, so it has no series on any chart. Reported as an "
-        "explicit pending slot rather than omitted: 'not measured' and 'measured to be "
-        "absent' are different claims. When Tier B lands, one entry in TIER_CONFIGS adds "
+        "Tier B2 (DistilBERT) HAS landed: it carries a yearly macro-F1 and ECE series and "
+        "is the Tier B rung of the a_to_b escalation arm. It was run first, ahead of B1, "
+        "because it is the certified top Tier B point on TEST-IID (Phase 4 backfill) and "
+        "the cascade rung the router and the demo actually ship. Tier B1 (ModernBERT) has "
+        "no yearly drift runs and stays an explicit PENDING slot: its series costs roughly "
+        "8h on MPS (4 yearly slices x ~107k rows of CAL + slice inference) and whether to "
+        "spend that is an OPEN OWNER DECISION, not a measurement that was attempted and "
+        "failed. Reported as a slot rather than omitted: 'not measured' and 'measured to "
+        "be absent' are different claims. When B1 lands, one entry in TIER_CONFIGS adds "
         "its series with no other change."
     ),
     "evidence_class": "pending",
@@ -199,11 +248,28 @@ ECE_TIER_C_EXCLUSION_NOTE = (
 )
 
 SUPPORT_NOTE = (
-    "Supports differ by tier and are NOT comparable as populations: Tier A is the full "
-    "slice (104,443 rows at 2022-H2, 20,000 per drift year); Tier C is a uniform-random "
-    "subsample (5,000 at 2022-H2 for Haiku, 1,500 elsewhere). Paired arms are pinned to the "
-    "1,500 ids of that slice's Sonnet artifact, verified identical to Haiku's on the drift "
-    "years and a verified subset of Haiku's 5,000 at 2022-H2."
+    "Supports differ by tier and are NOT comparable as populations: Tier A and Tier B2 are "
+    "the full slice (104,443 rows at 2022-H2, 20,000 per drift year); Tier C is a "
+    "uniform-random subsample (5,000 at 2022-H2 for Haiku, 1,500 elsewhere). Paired arms "
+    "are pinned to the 1,500 ids of that slice's Sonnet artifact, verified identical to "
+    "Haiku's on the drift years and a verified subset of Haiku's 5,000 at 2022-H2."
+)
+
+TIER_B_TERMINAL_NOTE = (
+    "The a_to_b arm has ONE gate by construction: the frozen Phase 4 family is "
+    "`escalation_arm: tier_b_terminal` -- per router_sim.a_to_b_policy, a local classifier "
+    "always emits a label, so there is no analogue of Tier C's parse failure. Tier B2 "
+    "answers every escalated row and the residual human rate is structurally 0.0 (reported "
+    "with its degenerate CI, not hidden). "
+    "`escalation_rate` is therefore the escalate-to-B2 rate and `human_rate` is the B2->human "
+    "rate. The only frozen tau_B in the repo is a_to_b_to_c's (0.5769749672571918, paired "
+    "subset), where rows below it go to Tier C at Tier C's measured prices rather than to a "
+    "human at c_human; re-terminating that constant on a human queue would be the "
+    "cross-family transplant this module refuses everywhere else, so no a_to_b_to_human "
+    "series is produced. Consequences for the accuracy views: with an empty human arm "
+    "accuracy_machine == accuracy_system and macro_f1_answered == macro_f1_system on this "
+    "arm, and no P(error|human)=0 assumption is load-bearing for it -- unlike the a_to_human "
+    "arms, whose *_system views assume it on a tenth of the traffic."
 )
 
 HUMAN_CREDIT_NOTE = router_sim.HUMAN_CREDIT_NOTE
@@ -247,10 +313,15 @@ EVIDENCE_CLASS: dict[str, str] = {
     "cost_model.params.c_misroute_usd": "estimated",
     "cost_model.params.c_human_usd": "estimated",
     "cost_model.api_cost.tier_a": "estimated",
+    "cost_model.api_cost.tier_b1": "estimated",
+    "cost_model.api_cost.tier_b2": "estimated",
     "cost_model.api_cost.tier_c": "measured",
     "taxonomy_change": "documented",
-    "series.logged.tier_b": "pending",
-    "series.escalation.tier_b": "pending",
+    "series.logged.tier_b2": "measured",
+    "series.escalation.a_to_b":
+        "measured (derived from frozen artifacts under frozen tau)",
+    "series.logged.tier_b1": "pending",
+    "series.escalation.tier_b1": "pending",
 }
 
 
@@ -524,6 +595,61 @@ def build_a_to_human_arm(split: str, *, dataset: str, tau: float, art_a, record_
     }
 
 
+def build_a_to_b_arm(split: str, *, dataset: str, tau: float, art_a, record_a, index_a,
+                     art_b, record_b, index_b, n_resamples: int, seed: int) -> dict:
+    """Tier A above tau, else Tier B2 TERMINALLY. One gate; the human arm is empty.
+
+    Row-level construction is `router_sim.a_to_b_policy`'s: the escalated rows take Tier B2's
+    label, nothing routes to a human, and the two artifacts are paired ON complaint_id (never
+    on row order) with `y_true` cross-checked, so a reordered artifact cannot mix one
+    complaint's confidence with another's label while the aggregates stay plausible.
+
+    See TIER_B_TERMINAL_NOTE for why there is no tau_B here.
+    """
+    class_labels = list(art_a.class_labels)
+    if list(art_b.class_labels) != class_labels:
+        raise ValueError(
+            f"{split}/{CASCADE_TIER}: Tier A and Tier B artifacts declare different class "
+            "label orders; a cascade over them would mix two label spaces"
+        )
+    p_max = np.asarray(art_a.p_max, dtype=np.float64)[index_a]
+    answered_by_a = p_max >= tau
+
+    true_a, pred_a = _codes(art_a, index_a, class_labels)
+    true_b, pred_b = _codes(art_b, index_b, class_labels)
+    if not np.array_equal(true_a, true_b):
+        n_bad = int(np.count_nonzero(true_a != true_b))
+        raise ValueError(
+            f"{split}/{CASCADE_TIER}: Tier A and Tier B disagree on y_true for {n_bad} of "
+            f"{len(true_a)} joined rows; the two are not scored against the same answer key"
+        )
+    pred_codes = np.where(answered_by_a, pred_a, pred_b)
+    to_human = np.zeros(len(pred_codes), dtype=bool)   # tier_b_terminal: no human arm
+
+    point = _arm_stats(true_a, pred_codes, answered_by_a, to_human, len(class_labels))
+    reps = bootstrap_arm(true_a, pred_codes, answered_by_a, to_human, len(class_labels),
+                         n_resamples=n_resamples, seed=seed)
+    return {
+        "policy": threshold_opt.FAMILY_A_TO_B,
+        "dataset": dataset,
+        "slice": split,
+        "slice_label": SLICE_LABELS[split],
+        "terminal_model": CASCADE_TIER,
+        "tau": float(tau),
+        "n": len(p_max),
+        "n_artifact": len(art_b),
+        "n_answered_a": int(answered_by_a.sum()),
+        "n_escalated": int((~answered_by_a).sum()),
+        "n_to_human": int(to_human.sum()),
+        "n_parse_failed_escalated": None,
+        "n_parse_failed_slice": None,
+        "gate_run_id": record_a["run_id"],
+        "gate_config": config_stem(GATE_TIER, split),
+        "terminal_run_id": record_b["run_id"],
+        **{k: _ci_block(point[k], reps[k]) for k in BOOTSTRAPPED_KEYS},
+    }
+
+
 def build_a_to_c_arm(split: str, terminal_tier: str, *, tau: float, art_a, record_a,
                      index_a, art_c, record_c, index_c, parse_failed,
                      n_resamples: int, seed: int) -> dict:
@@ -585,10 +711,22 @@ def escalation_series(records: dict, artifacts: dict, thresholds: dict, *,
     tau_full = thresholds[ARM_THRESHOLD_KEYS[ARM_A_TO_HUMAN_FULL]].tau_star
     tau_paired_human = thresholds[ARM_THRESHOLD_KEYS[ARM_A_TO_HUMAN_PAIRED]].tau_star
     tau_paired_c = thresholds[ARM_THRESHOLD_KEYS[ARM_A_TO_C]].tau_star
+    tau_full_b = thresholds[ARM_THRESHOLD_KEYS[ARM_A_TO_B_FULL]].tau_star
+    tau_paired_b = thresholds[ARM_THRESHOLD_KEYS[ARM_A_TO_B_PAIRED]].tau_star
 
     for split in SLICE_ORDER:
         art_a = artifacts[(GATE_TIER, split)]
         record_a = records[config_stem(GATE_TIER, split)]
+        if (CASCADE_TIER, split) not in artifacts:
+            raise ValueError(
+                f"{split}: the a_to_b escalation arm needs the {CASCADE_TIER} artifact for "
+                f"this slice (config {config_stem(CASCADE_TIER, split)!r}) and it did not "
+                "resolve; the Tier B2 yearly drift runs must land in results/runs.jsonl and "
+                "`make preds` must have written their parquet before this exhibit can be "
+                "built. A missing rung is a hard failure, never a dropped series"
+            )
+        art_b = artifacts[(CASCADE_TIER, split)]
+        record_b = records[config_stem(CASCADE_TIER, split)]
         keep = paired_ids(split, artifacts)
         index_a = threshold_opt.restrict_to_ids(art_a, keep)
         if len(index_a) != PAIRED_N:
@@ -603,6 +741,21 @@ def escalation_series(records: dict, artifacts: dict, thresholds: dict, *,
         rows.append(build_a_to_human_arm(
             split, dataset=threshold_opt.DATASET_PAIRED, tau=tau_paired_human, art_a=art_a,
             record_a=record_a, index=index_a, n_resamples=n_resamples, seed=seed))
+
+        # a_to_b, both supports. The full-slice arm is the deployment-shaped question; the
+        # paired one exists so the Tier B and Tier C cascades can be read against each other
+        # on identical rows (support held fixed, only the policy varying).
+        ids_full = np.asarray(art_a.complaint_id, dtype=np.int64)
+        rows.append(build_a_to_b_arm(
+            split, dataset=threshold_opt.DATASET_FULL_CAL, tau=tau_full_b, art_a=art_a,
+            record_a=record_a, index_a=slice(None), art_b=art_b, record_b=record_b,
+            index_b=threshold_opt.restrict_to_ids(art_b, ids_full),
+            n_resamples=n_resamples, seed=seed))
+        rows.append(build_a_to_b_arm(
+            split, dataset=threshold_opt.DATASET_PAIRED, tau=tau_paired_b, art_a=art_a,
+            record_a=record_a, index_a=index_a, art_b=art_b, record_b=record_b,
+            index_b=threshold_opt.restrict_to_ids(art_b, keep),
+            n_resamples=n_resamples, seed=seed))
 
         for tier in TERMINAL_MODELS:
             art_c = artifacts[(tier, split)]
@@ -641,12 +794,33 @@ def escalation_series(records: dict, artifacts: dict, thresholds: dict, *,
 # Summary assembly
 # ---------------------------------------------------------------------------
 
-def threshold_block(thresholds: dict) -> dict:
+def _tier_b_cal_rung(cal, thresholds_dir) -> dict | None:
+    """Which Tier B CAL run the a_to_b tau was fit against, read back off its own file.
+
+    A cascade constant is only interpretable with BOTH rungs named: the tau escalates to a
+    specific Tier B checkpoint's CAL confidences, and the arm then applies it to that
+    checkpoint's TEST predictions. The identity is read from the (already validated,
+    already sha256'd) threshold file rather than transcribed here, for the reason
+    ``router_sim.load_cal_thresholds`` gives: a number typed into a module is a second
+    source of truth that no gate compares against the file it came from. ``None`` for the
+    families that have no Tier B rung — an explicit null, not a missing key.
+    """
+    obj = json.loads((Path(thresholds_dir) / cal.source_file).read_text())
+    tier_b = (obj.get("inputs") or {}).get("tier_b")
+    if tier_b is None:
+        return None
+    return {k: tier_b[k] for k in ("config_name", "run_id", "split", "n_examples",
+                                   "per_example_usd", "evidence_class") if k in tier_b}
+
+
+def threshold_block(thresholds: dict,
+                    thresholds_dir=router_sim.DEFAULT_THRESHOLDS_DIR) -> dict:
     """The frozen tau constants, each with the file it was loaded from and its CAL point."""
     out: dict[str, dict] = {}
     for arm in ARM_ORDER:
         cal = thresholds[ARM_THRESHOLD_KEYS[arm]]
         out[arm] = {
+            "tier_b_cal_rung": _tier_b_cal_rung(cal, thresholds_dir),
             "policy_family": cal.policy_family,
             "cal_dataset": cal.dataset,
             "tau_star": cal.tau_star,
@@ -664,6 +838,7 @@ def threshold_block(thresholds: dict) -> dict:
 
 def build_summary(*, records: dict, artifacts: dict, thresholds: dict,
                   cost_config, split_sizes: dict[str, int],
+                  thresholds_dir=router_sim.DEFAULT_THRESHOLDS_DIR,
                   n_resamples: int = harness.N_RESAMPLES,
                   seed: int = harness.BOOTSTRAP_SEED,
                   generated_at: str | None = None,
@@ -684,7 +859,7 @@ def build_summary(*, records: dict, artifacts: dict, thresholds: dict,
         "arm_order": list(ARM_ORDER),
         "taxonomy_change": TAXONOMY_CHANGE,
         "tier_b": TIER_B_PENDING,
-        "thresholds": threshold_block(thresholds),
+        "thresholds": threshold_block(thresholds, thresholds_dir),
         "cost_model": cost_model.config_block(cost_config),
         "series": {
             "logged": logged_series(records, artifacts, split_sizes),
@@ -719,8 +894,13 @@ def build_summary(*, records: dict, artifacts: dict, thresholds: dict,
             "tau_per_family": (
                 "Each arm uses the tau its OWN policy family's CAL sweep produced. The "
                 "a_to_c cascade's tau is NOT the a_to_human tau: at CAL prices the cascade's "
-                "argmin escalates 4.0% where the human arm escalates 10.7% on the same rows."
+                "argmin escalates 4.0% where the human arm escalates 10.7% on the same rows. "
+                "The a_to_b cascade's tau is a third constant again, and the furthest from "
+                "the others — its CAL argmin escalates MORE than either, because Tier B2 "
+                "(unlike the LLM) is more accurate than Tier A on the rows Tier A is unsure "
+                "about while costing amortized compute rather than per-call spend."
             ),
+            "tier_b_terminal": TIER_B_TERMINAL_NOTE,
         },
         "evidence_class": dict(EVIDENCE_CLASS),
     }
@@ -737,14 +917,25 @@ FIG_DPI = 100
 HASH_SALT = "triage-lab-drift-charts-v1"
 SERIES_STYLE: dict[str, dict] = {
     "tier_a": {"color": "#1f4e79", "marker": "o", "linestyle": "-"},
+    "tier_b2": {"color": "#6a3d9a", "marker": "D", "linestyle": "-"},
     "tier_c_haiku": {"color": "#b8531a", "marker": "s", "linestyle": "--"},
     "tier_c_sonnet": {"color": "#2f6b3a", "marker": "^", "linestyle": "-."},
 }
 ARM_STYLE: dict[str, dict] = {
     ARM_A_TO_HUMAN_FULL: {"color": "#1f4e79", "marker": "o", "linestyle": "-"},
     ARM_A_TO_HUMAN_PAIRED: {"color": "#5b8db8", "marker": "o", "linestyle": ":"},
+    ARM_A_TO_B_FULL: {"color": "#6a3d9a", "marker": "D", "linestyle": "-"},
+    ARM_A_TO_B_PAIRED: {"color": "#9d7bbf", "marker": "D", "linestyle": ":"},
     "a_to_c__tier_c_haiku": {"color": "#b8531a", "marker": "s", "linestyle": "--"},
     "a_to_c__tier_c_sonnet": {"color": "#2f6b3a", "marker": "^", "linestyle": "-."},
+}
+# Dash pattern of each arm's CAL operating-point rule on the escalation chart, in ARM_ORDER.
+ARM_HLINE_STYLE: dict[str, str] = {
+    ARM_A_TO_HUMAN_FULL: "-",
+    ARM_A_TO_HUMAN_PAIRED: ":",
+    ARM_A_TO_C: "--",
+    ARM_A_TO_B_FULL: "-",
+    ARM_A_TO_B_PAIRED: ":",
 }
 TAXONOMY_LINE_X = 0.5   # the test_iid | 2023 boundary
 TAXONOMY_BAND = (0.5, 1.5)  # the 2023 slice, which straddles the observed change
@@ -758,29 +949,33 @@ FOOTNOTE_MACRO_F1: list[str] = [
     ("Evidence class: MEASURED — every point and CI is copied from its run record in "
      "results/runs.jsonl (n=1,000 percentile bootstrap, seed 20260805); nothing here is "
      "recomputed."),
-    ("SUPPORTS DIFFER: Tier A = full slice (104,443 rows at 2022-H2, 20,000 per drift "
-     "year); Tier C = uniform-random subsample (5,000 at 2022-H2 for Haiku, 1,500 "
+    ("SUPPORTS DIFFER: Tier A and Tier B2 = full slice (104,443 rows at 2022-H2, 20,000 per "
+     "drift year); Tier C = uniform-random subsample (5,000 at 2022-H2 for Haiku, 1,500 "
      "elsewhere). Not the same population."),
-    ("Tier B (ModernBERT / DistilBERT): PENDING — no yearly drift runs exist, so it has no "
-     "series here."),
+    ("Tier B1 (ModernBERT): PENDING — no yearly drift runs exist, so it has no series here. "
+     "B2 was run first as the certified top Tier B point and the shipped cascade rung."),
 ]
 FOOTNOTE_ECE: list[str] = [
     "Evidence class: MEASURED — copied from results/runs.jsonl run records.",
     ("TIER C EXCLUDED BY CONSTRUCTION: structured output returns one label, so its p_max is "
      "a degenerate one-hot 1.0 on every row and ECE collapses to the error rate instead of "
      "measuring calibration (Phase 4 finding)."),
-    ("Tier B: PENDING. Calibration drift matters here because the router's gate is a "
-     "threshold on exactly this p_max."),
+    ("Tier A is isotonic-calibrated, Tier B2 temperature-scaled — both fit on CAL, both "
+     "gate-relevant: the router thresholds exactly this p_max. Tier B1: PENDING."),
 ]
 FOOTNOTE_ESCALATION: list[str] = [
     ("Evidence class: MEASURED (derived from frozen prediction artifacts under frozen τ; "
      "95% percentile bootstrap over rows, n=1,000, seed 20260805). τ itself is DERIVED on "
-     "CAL under ESTIMATED cost-model parameters (c_misroute = 6.00 USD, c_human = 2.50 USD)."),
-    ("Each arm uses the τ its OWN policy family's CAL sweep produced — the cascade's argmin "
-     "escalates far less than the human arm's because Tier C is not more accurate than "
-     "Tier A on the rows Tier A is unsure about."),
-    ("SUPPORTS DIFFER: the full-slice arm is 104,443 / 20,000 rows; the paired arms are the "
-     "same 1,500 ids per slice. Tier B: PENDING."),
+     "CAL under ESTIMATED cost-model parameters (c_misroute = 6.00 USD, c_human = 2.50 USD; "
+     "cost model v2, which prices Tier B compute as an ESTIMATE)."),
+    ("Each arm uses the τ its OWN policy family's CAL sweep produced — the a_to_c argmin "
+     "escalates far LESS than the human arm's (Tier C is not more accurate than Tier A on "
+     "the rows Tier A is unsure about) and the a_to_b argmin far MORE (Tier B2 is)."),
+    ("a_to_b has ONE gate: Tier B2 answers every escalated row, so its human rate is "
+     "structurally 0.0 and its escalation rate is the escalate-to-B2 rate. No frozen τ_B "
+     "for an A→B→human policy exists; see notes.tier_b_terminal in summary.json."),
+    ("SUPPORTS DIFFER: the full-slice arms are 104,443 / 20,000 rows; the paired arms are "
+     "the same 1,500 ids per slice. Tier B1: PENDING."),
 ]
 
 
@@ -878,10 +1073,14 @@ def render_macro_f1_chart(summary: dict, out_path: Path) -> Path:
     for tier in TIER_ORDER:
         rows = [r for r in logged if r["tier"] == tier]
         point, lo, hi = _series_points(rows, "macro_f1")
-        n_by_slice = {r["slice"]: r["n"] for r in rows}
-        support = "full slice" if tier == GATE_TIER else "paired subsample"
-        label = (f"{TIER_DISPLAY[tier]} — {support} "
-                 f"(n={n_by_slice['test_drift_2023']:,} yearly)")
+        by_slice = {r["slice"]: r for r in rows}
+        # Read the support off the row rather than assuming it from the tier: Tier B2 is a
+        # full-slice tier that is not the gate, and a mislabeled support turns a
+        # different-population comparison into an unqualified one.
+        yearly = by_slice["test_drift_2023"]
+        support = ("full slice" if yearly["support"] == "full_slice"
+                   else "uniform-random subsample")
+        label = f"{TIER_DISPLAY[tier]} — {support} (n={yearly['n']:,} yearly)"
         style = SERIES_STYLE[tier]
         ax.fill_between(x, lo, hi, color=style["color"], alpha=0.12, linewidth=0)
         ax.errorbar(x, point, yerr=[np.array(point) - np.array(lo),
@@ -900,21 +1099,23 @@ def render_macro_f1_chart(summary: dict, out_path: Path) -> Path:
 
 def render_ece_chart(summary: dict, out_path: Path) -> Path:
     plt = _require_matplotlib()
-    rows = [r for r in summary["series"]["logged"] if r["tier"] == GATE_TIER]
+    logged = summary["series"]["logged"]
     fig, ax = plt.subplots(figsize=FIG_SIZE, dpi=FIG_DPI)
     _annotate_taxonomy(ax, summary)
     x = np.arange(len(SLICE_ORDER), dtype=float)
-    point, lo, hi = _series_points(rows, "ece")
-    style = SERIES_STYLE[GATE_TIER]
-    ax.fill_between(x, lo, hi, color=style["color"], alpha=0.12, linewidth=0)
-    ax.errorbar(x, point, yerr=[np.array(point) - np.array(lo),
-                                np.array(hi) - np.array(point)],
-                capsize=3, elinewidth=0.9, markersize=5,
-                label=f"{TIER_DISPLAY[GATE_TIER]} — full slice", **style)
+    for tier in ECE_TIERS:
+        rows = [r for r in logged if r["tier"] == tier]
+        point, lo, hi = _series_points(rows, "ece")
+        style = SERIES_STYLE[tier]
+        ax.fill_between(x, lo, hi, color=style["color"], alpha=0.12, linewidth=0)
+        ax.errorbar(x, point, yerr=[np.array(point) - np.array(lo),
+                                    np.array(hi) - np.array(point)],
+                    capsize=3, elinewidth=0.9, markersize=5,
+                    label=f"{TIER_DISPLAY[tier]} — full slice", **style)
     ax.set_ylim(bottom=0.0)
     _finish(
         fig, ax, out_path,
-        title="Expected calibration error over time — Tier A only, 95% bootstrap CI",
+        title="Expected calibration error over time — gate-relevant tiers, 95% bootstrap CI",
         ylabel="ECE (15-bin, confidence = p_max)",
         legend_loc="upper right",
         footnote=FOOTNOTE_ECE,
@@ -938,6 +1139,12 @@ def render_escalation_chart(summary: dict, out_path: Path) -> Path:
         (ARM_A_TO_HUMAN_PAIRED, "a_to_human, paired n=1,500 (τ={tau:.4f})",
          [r for r in esc if r["policy"] == "a_to_human"
           and r["dataset"] == threshold_opt.DATASET_PAIRED]),
+        (ARM_A_TO_B_FULL, "a_to_b→B2 terminal, full slice (τ={tau:.4f})",
+         [r for r in esc if r["policy"] == threshold_opt.FAMILY_A_TO_B
+          and r["dataset"] == threshold_opt.DATASET_FULL_CAL]),
+        (ARM_A_TO_B_PAIRED, "a_to_b→B2 terminal, paired n=1,500 (τ={tau:.4f})",
+         [r for r in esc if r["policy"] == threshold_opt.FAMILY_A_TO_B
+          and r["dataset"] == threshold_opt.DATASET_PAIRED]),
     ]
     for tier in TERMINAL_MODELS:
         series.append((
@@ -956,10 +1163,10 @@ def render_escalation_chart(summary: dict, out_path: Path) -> Path:
                     capsize=3, elinewidth=0.9, markersize=5,
                     label=label_fmt.format(tau=rows[0]["tau"]), **style)
 
-    for arm, hline_style in ((ARM_A_TO_HUMAN_FULL, "-"), (ARM_A_TO_HUMAN_PAIRED, ":"),
-                             (ARM_A_TO_C, "--")):
+    for arm in ARM_ORDER:
         rate = thresholds[arm]["cal_escalation_rate"]
-        ax.axhline(rate, color="#777777", linestyle=hline_style, linewidth=0.9, zorder=0)
+        ax.axhline(rate, color="#777777", linestyle=ARM_HLINE_STYLE[arm], linewidth=0.9,
+                   zorder=0)
         ax.annotate(f"CAL operating point {rate:.4f} ({thresholds[arm]['policy_family']}, "
                     f"{thresholds[arm]['cal_dataset']})",
                     xy=(len(SLICE_ORDER) - 1, rate), xytext=(-4, 3),
@@ -974,7 +1181,7 @@ def render_escalation_chart(summary: dict, out_path: Path) -> Path:
         fig, ax, out_path,
         title="Escalation rate over time under the frozen Phase 4 thresholds (v2-isocal)",
         ylabel="escalation rate (share of rows Tier A does not answer)",
-        legend_loc="upper center", headroom=0.10,
+        legend_loc="upper center", headroom=0.20,
         footnote=FOOTNOTE_ESCALATION,
     )
     plt.close(fig)
@@ -1063,7 +1270,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--results", type=Path, default=DEFAULT_RESULTS_PATH)
     parser.add_argument("--thresholds-dir", type=Path,
                         default=router_sim.DEFAULT_THRESHOLDS_DIR)
-    parser.add_argument("--cost-config", type=Path, default=cost_model.DEFAULT_COST_CONFIG)
+    parser.add_argument("--cost-config", type=Path, default=DEFAULT_COST_CONFIG,
+                        help="cost generation the tau constants are loaded from; defaults "
+                             "to v2, the only one that prices Tier B (see module docstring)")
     parser.add_argument("--splits-stats", type=Path, default=DEFAULT_SPLITS_STATS_PATH)
     args = parser.parse_args(argv)
 
@@ -1082,7 +1291,8 @@ def main(argv: list[str] | None = None) -> int:
 
     summary = build_summary(
         records=records, artifacts=artifacts, thresholds=thresholds, cost_config=cfg,
-        split_sizes=sizes, generated_at=args.generated_at,
+        split_sizes=sizes, thresholds_dir=args.thresholds_dir,
+        generated_at=args.generated_at,
     )
     summary_path = write_json(summary, args.out_dir / "summary.json")
 

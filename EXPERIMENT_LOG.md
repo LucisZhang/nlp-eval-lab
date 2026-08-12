@@ -1830,3 +1830,89 @@ reported runs. Every portfolio-bound number carries its reproduction command
   # uv run python -m triage_lab.router_sim    --op-version v2-isocal --cost-config configs/cost_model_v2.yaml
   # uv run python -m triage_lab.frontier      --op-version v2-isocal --cost-config configs/cost_model_v2.yaml
   ```
+
+## 2026-08-12 — Phase 5: Tier B drift rows — B2 yearly evals + drift charts (eval backfill task 4)
+
+- **Context / scope decision:** per STATUS §b the next backfill item is the Phase 5
+  Tier B drift rows. Every Tier B drift run refits temperature on the full CAL split
+  (86,972 rows, no caching — `tier_b.py:268`), so one yearly slice costs ~107k rows of
+  MPS inference: ~40 min for B2 DistilBERT but ~2 h for B1 ModernBERT (~8 h for its
+  4-slice series). B2 was run first — it is the certified top Tier B point on TEST-IID
+  (B1−B2 negative all seeds, Phase 2 backfill) and the cascade rung the router and demo
+  actually ship. **B1's yearly series is an explicit OPEN OWNER DECISION slot** (reported
+  as pending, not omitted), as are the remaining Phase 5 Tier B sub-rows (prior-shift
+  decomposition, perturbation, OOV dense-centroid variant).
+- **Hypothesis (pre-registered in the session brief):** the drift question Tier B answers
+  is where B2 sits on the Tier A-vs-LLM axis — does the fine-tune inherit Tier A's
+  2026-H1 cliff (it shares the training distribution) or the LLMs' flatness?
+- **Configs:** four clones of the frozen `tier_b2_distilbert_s0.yaml`
+  (`tier_b2_distilbert_s0_test_drift_{2023,2024,2025,2026h1}.yaml`); diff-verified delta
+  per config = {`data.split`, `model.name`} only. Four appends to runs.jsonl
+  (`git diff --numstat`: 4 insertions, 0 deletions). Fitted T identical across all four
+  runs and the TEST-IID final (1.3192 — deterministic CAL fit, protocol consistency ✓).
+  Wall-clock 2,116–2,470 s/run (9,173 s total, MPS); $0 API.
+- **Result (evidence class: measured, frozen protocol; 95% bootstrap CI n=1,000):**
+
+  | split | run | macro-F1 | accuracy | ECE | AURC | f1::credit_reporting |
+  |---|---|---|---|---|---|---|
+  | test_iid (2022-H2, ref) | `5517ebf1…` | 0.7950 [0.7909, 0.7988] | 0.8571 | 0.0083 | 0.0369 | 0.9036 |
+  | test_drift_2023 | `7224d2c1…` | 0.7901 [0.7818, 0.7979] | 0.8498 | 0.0097 | 0.0444 | 0.9082 |
+  | test_drift_2024 | `eed4b95c…` | 0.7738 [0.7650, 0.7825] | 0.8422 | 0.0161 | 0.0507 | 0.9038 |
+  | test_drift_2025 | `87a5305b…` | 0.7599 [0.7514, 0.7689] | 0.8296 | 0.0247 | 0.0561 | 0.8993 |
+  | test_drift_2026h1 | `59a81153…` | 0.7262 [0.7193, 0.7326] | 0.7584 | 0.0465 | 0.1151 | **0.2853** |
+
+- **Findings:**
+  1. **The answer is "both", split by level.** Aggregate: B2's 2025→2026-H1 drop is
+     −0.0337 macro-F1 — half of Tier A's cliff (−0.0639) and indistinguishable from
+     Haiku's −0.0361. At 2026-H1 B2 sits with the LLMs, not with its training-
+     distribution sibling: **A 0.6656 / B2 0.7262 / Haiku 0.7278 [0.7048, 0.7508] /
+     Sonnet 0.7821** (Tier C = n=1,500 subsamples, unpaired with the full-slice B2 rows —
+     directional comparison only). Class level: B2 **does** inherit the prior-shift
+     signature — credit_reporting F1 collapses 0.8993 → 0.2853 (Tier A: 0.887 → 0.215).
+     The fine-tune carries Tier A's class-prior wound but the contextual-encoder margin
+     on the other eight classes absorbs most of the aggregate damage.
+  2. **Calibration holds under drift.** Temperature-scaled ECE stays ≤0.047 across all
+     slices (0.0083 → 0.0465), below Tier A everywhere; AURC degrades 0.0369 → 0.1151
+     (3.1× — vs Tier A's 3.8×), so the confidence signal the router gates on remains
+     usable at the cliff.
+  3. **a_to_b escalation self-adjusts, same shape as a_to_human** (frozen CAL τ_A =
+     0.6449, full_cal support; B2-terminal, human rate structurally 0): escalate-to-B2
+     rate 0.2962 [0.2935, 0.2989] (2022-H2) → 0.3161 / 0.3034 / 0.3292 (2023–25, quasi-
+     flat) → **0.4849 [0.4780, 0.4921]** at 2026-H1 (+47% rel.; a_to_human was +68%).
+     System accuracy 0.8645 → 0.7550.
+  4. **Honest wrinkle:** at 2026-H1 the frozen-τ cascade (acc 0.7550, mF1 0.7240)
+     slightly trails b2_only (0.7584 / 0.7262) — the 2022-fit gate keeps Tier A
+     answering 51.5% of rows exactly where A is weakest. The cascade's win at the cliff
+     is cost, not accuracy; τ-staleness under drift is a real finding for the case study
+     (no new cost sim run here — directional note only).
+- **Chart/module changes (`drift_charts.py`, derivation-only, no new runs.jsonl writes):**
+  tier_b2 series added to the macro-F1 **and** ECE charts (B2 is temperature-scaled on
+  CAL, so its p_max is the exact quantity the router thresholds); two a_to_b escalation
+  arms (full_cal + paired_subset, mirroring the a_to_human pair) at frozen τ loaded via
+  `router_sim.load_cal_thresholds` replay-verification from
+  `results/thresholds/a_to_b__{full_cal,paired_subset}__40513354__cost-2c969255.json`
+  (τ = 0.6448830480864552 / 0.7980792354453352); **no B→human arm invented** — the frozen
+  a_to_b family is `tier_b_terminal` by construction, and re-terminating a_to_b_to_c's
+  τ_B on a human queue would be a cross-family constant transplant (rejected, documented
+  in `notes.tier_b_terminal`). Module default cost config moved v1→v2 (the only
+  generation pricing Tier B); the three pre-existing arms' τ verified byte-identical
+  across generations, so no existing number moved. Correctness anchor: the new arm
+  rebuilt on the existing TEST-IID artifacts reproduces the frozen Phase 4 frontier
+  a_to_b point bit-for-bit (acc 0.8645289775, mF1 0.797575017). Tier B1 kept as an
+  explicit pending slot; evidence classes labeled throughout (`series.logged.tier_b2` =
+  measured, `series.*.tier_b1` = pending). New `tests/test_drift_charts.py` (9 tests,
+  green); full suite 586 passed / 1 pre-existing unrelated failure (stale
+  `demo/data/runs_index.json`, 46 of now-55 records — regen belongs to the Phase 6
+  panels task).
+- **Verdict:** hypothesis resolved — B2 inherits the class-level prior-shift collapse
+  but not the aggregate cliff; on the yearly axis it tracks the LLMs at 1/200th the
+  serving cost, while its credit_reporting collapse and the a_to_b gate's late, abrupt
+  self-adjustment carry Tier A's fingerprints. Phase 5 acceptance (charts from results
+  log, escalation-over-time, evidence classes) now met for A, B2, C; B1 yearly series +
+  Tier B prior-shift/perturbation/OOV-centroid rows remain explicit pending slots.
+- **Repro:**
+  ```
+  uv run python -m triage_lab.harness configs/tier_b2_distilbert_s0_test_drift_2023.yaml
+  # (and _2024, _2025, _2026h1) — ~35–41 min each on MPS, seed 20260805
+  make drift-charts   # = uv run --extra charts python -m triage_lab.drift_charts --all
+  ```

@@ -13,7 +13,12 @@ _what's next_.
   is DONE and the block is lifted.** Checkpoints sit at the canonical `data/checkpoints/tier_b*`
   paths; next sessions run the Tier B **eval backfill** (harness TEST-IID finals + temperature
   scaling, then the pending Phase 4/5/6 Tier B slots), one task per session per §c.
-- Last updated: 2026-08-11.
+- **Owner decision (2026-08-12, execute in the Phase 6 panels task — not before):**
+  `headline_router` repoints from `a_to_c_parsefail_human` to **`a_to_b`** — the only certified
+  two-axis win (cost CI excl. 0 AND F1 CI excl. 0), dominating 3 baselines. The Haiku cascade
+  stays as the LLM-cascade **contrast exhibit**; the drift-chapter Sonnet-terminal variant is
+  unchanged. The panels session picks this up alongside the pending `make demo-data` regen.
+- Last updated: 2026-08-12.
 
 ---
 
@@ -80,12 +85,12 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 ### Phase 5 — Drift protocol  ✅ **core COMPLETE for available tiers 2026-08-10** (novel-class probe = unstarted stretch; Tier B rows pending Tier B)
 | Task | Status | Evidence |
 |---|---|---|
-| Rolling yearly evals (2023–2026) | **Tier A done** (2026-08-08); **Tier C done** (2026-08-09, owner-approved; 8 runs, $30.48 actual vs $30.94 projected, cumulative $67.38 of ≈$75); Tier B rows **pending Tier B** | EXPERIMENT_LOG 2026-08-08 Phase 5 task 1 (Tier A: macro-F1 0.758→0.748→0.730→0.666, 2026-H1 cliff = credit_reporting prior shift) + 2026-08-09 tasks 2a/2b (Tier C: Haiku/Sonnet tied 2023–25 paired CIs ∋ 0; 2026-H1 Sonnet +0.054 F1 paired CI excl. 0, p≈1e-15; Tier C degrades slower than Tier A — 2026-H1: A 0.666 / Haiku 0.728 / Sonnet 0.782) |
+| Rolling yearly evals (2023–2026) | **Tier A done** (2026-08-08); **Tier C done** (2026-08-09, owner-approved; 8 runs, $30.48 actual vs $30.94 projected, cumulative $67.38 of ≈$75); **Tier B2 done** (2026-08-12; runs `7224d2c1…`/`eed4b95c…`/`87a5305b…`/`59a81153…`, $0 MPS; macro-F1 0.790→0.774→0.760→**0.726** — tracks the LLMs on aggregate (2026-H1: A 0.666 / B2 0.726 / Haiku 0.728 / Sonnet 0.782) but inherits Tier A's class-level collapse, credit_reporting F1 0.899→0.285; T=1.3192 identical all slices); **B1 yearly series = explicit pending slot, open owner decision** (~8 h MPS; B2 dominates B1 on every TEST-IID metric) | EXPERIMENT_LOG 2026-08-08 Phase 5 task 1 (Tier A: macro-F1 0.758→0.748→0.730→0.666, 2026-H1 cliff = credit_reporting prior shift) + 2026-08-09 tasks 2a/2b (Tier C: Haiku/Sonnet tied 2023–25 paired CIs ∋ 0; 2026-H1 Sonnet +0.054 F1 paired CI excl. 0, p≈1e-15; Tier C degrades slower than Tier A — 2026-H1: A 0.666 / Haiku 0.728 / Sonnet 0.782) |
 | Prior-shift decomposition | **done for available tiers** (2026-08-09; Tier B rows pending Tier B) | EXPERIMENT_LOG 2026-08-09 Phase 5 task 3; `results/prior_shift/` (12 decompositions + summary.json); Tier A 2026-H1: 4.2 of 9.2 pts prior-shift alone [3.9, 4.5], credit_reporting = 7.6 pts; LLMs pay the prior penalty (Haiku +3.0 [1.4, 4.4]) but within-class holds (≈0/negative) |
 | OOV tracking | **done** (2026-08-09; model-free, $0; dense-encoder centroid variant pending Tier B) | EXPERIMENT_LOG 2026-08-09 Phase 5 task 4; `results/oov/` (6 slices + summary.json); OOV hypothesis **refuted**: model-vocab token OOV 0.545%→0.773% TRAIN→2026-H1 (+0.23 pp), 99.2% of 2026-H1 token mass still in-vocab; TF-IDF centroid distance peaks at 2025 and *falls* at 2026-H1 (CIs disjoint) — lexical drift ruled out as cause of Tier A cliff, prior shift stands; types-vs-tokens gap (53.4% types vs 0.77% tokens OOV at 2026-H1) = grown-up CoNLL finding |
 | Perturbation robustness | **done for available tiers** (Tier A 2026-08-09, 16 runs, $0; Tier C 2026-08-10 owner-approved option A, 4,500 calls, $6.287 actual vs $5.92 nominal / ≈$6.8 ceiling — cumulative ≈$73.67 of ≈$75). Tier A: typo −4.4 F1 pts @ 0.10, ocr ~−1, case = exact structural zero; char-n-gram shield directional (word-only −6.6). Tier C Haiku @ 0.10: typo −3.1 pts (CI excl. 0, smallest of any tier), ocr and case ∅ (CIs ∋ 0) despite case's largest token inflation (+8.8%); perturbation = +3–9% Tier C serving-cost tax. Cross-tier: LLM ≳ word+char > word-only. Tier B rows **pending Tier B** | EXPERIMENT_LOG 2026-08-09 task 5 + 2026-08-10 task 5b; `results/perturbation/summary.json` (18 rows); Tier A runs `4bbd26c4…`–`3f5eff59…`, Tier C runs `182774b6…`/`237bffae…`/`c7e53e2a…` |
 | Novel-class probe (stretch) | pending | — |
-| Drift charts from results log; escalation-rate-over-time; evidence classes labeled | **done for available tiers** (2026-08-10; $0, derivation-only — no new runs.jsonl records; Tier B series pending Tier B). Escalation self-adjusts late and abruptly: a_to_human flat at CAL op point 2022→2025 (0.095–0.103 vs 0.0994) then **0.1674 [0.1623, 0.1724]** at 2026-H1 (+68% rel.); selective gate worth ~5 acc pts at the cliff (answered 0.7436 vs full 0.6918); a_to_c parse-fail→human ≤0.27% everywhere (Haiku exactly 0) | EXPERIMENT_LOG 2026-08-10 Phase 5 task 6; `results/drift/summary.json` + `results/drift/charts/` (3 SVGs, evidence-class footnotes); `make drift-charts` |
+| Drift charts from results log; escalation-rate-over-time; evidence classes labeled | **done for A + B2 + C** (2026-08-10 available tiers; **Tier B2 series + a_to_b escalation arms added 2026-08-12**, $0 derivation-only: tier_b2 on macro-F1 + ECE charts; a_to_b at frozen τ_A 0.6449/0.7981 (full_cal/paired, replay-verified, B2-terminal — no B→human arm exists in the frozen family, none invented); escalate-to-B2 rate quasi-flat 0.296–0.329 2022→2025 then **0.4849 [0.4780, 0.4921]** at 2026-H1 (+47% rel.); frozen-τ cascade slightly trails b2_only at the cliff (acc 0.7550 vs 0.7584) — τ-staleness finding; module cost config v1→v2, pre-existing τ byte-identical; TEST-IID arm reproduces frozen frontier point bit-for-bit; B1 series = explicit pending slot). Escalation self-adjusts late and abruptly: a_to_human flat at CAL op point 2022→2025 (0.095–0.103 vs 0.0994) then **0.1674 [0.1623, 0.1724]** at 2026-H1 (+68% rel.); selective gate worth ~5 acc pts at the cliff (answered 0.7436 vs full 0.6918); a_to_c parse-fail→human ≤0.27% everywhere (Haiku exactly 0) | EXPERIMENT_LOG 2026-08-10 Phase 5 task 6; `results/drift/summary.json` + `results/drift/charts/` (3 SVGs, evidence-class footnotes); `make drift-charts` |
 
 ### Phase 6 — Demo + case study  ▶ **IN PROGRESS (scaffold done 2026-08-10; Tier B panels pending Tier B)**
 | Task | Status | Evidence |
@@ -137,9 +142,13 @@ B1 seeds, paired CIs excl. 0 — the pre-registered surprise held under the froz
 (EXPERIMENT_LOG 2026-08-11; agreement 0.9944 ✓ with per-channel QInt8 — Phase 2 fully closed);
 **(3)** every item marked **pending Tier B** above — ~~Phase 4 frontier points~~ **done
 2026-08-11** (EXPERIMENT_LOG Phase 4 backfill; dominance table shifted — a_to_b is the new
-best full-slice row, `headline_router` repoint left as an owner decision); Phase 5 drift rows —
-**next**; then Phase 6 panels (`make demo-data` regen belongs there; demo/data stale at 46 of 51
-runs, one known failing demo test until then).
+best full-slice row); ~~Phase 5 drift rows~~ — **B2 yearly evals + drift charts done
+2026-08-12** (EXPERIMENT_LOG 2026-08-12; remaining Phase 5 Tier B sub-slots stay explicitly
+pending as owner decisions: B1 yearly series ~8 h MPS, Tier B prior-shift decomposition,
+Tier B perturbation rows, OOV dense-encoder centroid variant); then Phase 6 panels — **next**
+(`make demo-data` regen belongs there — demo/data stale at 46 of now-55 runs, one known failing
+demo test until then — plus the 2026-08-12 owner decision: `headline_router` repoint to
+`a_to_b`, Haiku cascade kept as the LLM-cascade contrast exhibit).
 
 ---
 

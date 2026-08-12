@@ -1,0 +1,39 @@
+# Tier B2 — DistilBERT fine-tune, the DEPLOYMENT point (int8 ONNX runs in-browser).
+#
+# Single seed (s0 = 20260805, the Phase-0 base seed) per the plan (B2 is 1 seed; the
+# 3-seed variance exhibit is B1's job). Hyperparameters: standard DistilBERT recipe —
+# lr 5e-5, 3 epochs, effective batch 32, warmup 6%, weight_decay 0.01, max_seq_length
+# 256 (same length as B1 so the B1-vs-B2 comparison is clean; also the seq length the
+# int8 ONNX export traces). Realized truncation rate is measured on TRAIN and stored in
+# training_meta.json.
+#
+# ONE config = ONE run record. Eval side is the FINAL reported B2 point: data.split=
+# test_iid, temperature scaling fit on CAL. The int8 ONNX + parity check is a separate
+# artifact off this same checkpoint (scripts/export_onnx_distilbert.py).
+model:
+  runner: tier_b
+  name: tier_b2_distilbert_s0_test_drift_2026h1
+  base: distilbert-base-uncased           # 66M (training)
+  checkpoint: data/checkpoints/tier_b2_s0 # download target for the trained dir (eval)
+training:
+  epochs: 3
+  learning_rate: 5.0e-5
+  per_device_batch_size: 32   # 66M model, T4-comfortable at seq 256
+  grad_accum: 1               # effective batch 32
+  max_seq_length: 256
+  warmup_ratio: 0.06
+  weight_decay: 0.01
+  logging_steps: 50
+  save_steps: 500         # periodic resumable checkpoints (A6000 ~9.4k steps/epoch)
+  train_rows_cap: null        # full ~300k TRAIN
+data:
+  split: test_drift_2026h1
+  train_split: train
+  cal_split: cal              # temperature scaling is fit here, disjoint from test_iid
+  text_column: narrative
+  label_column: class
+  order_column: complaint_id
+inference:
+  batch_size: 64
+calibration: temperature      # temperature | none
+seed: 20260805

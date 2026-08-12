@@ -2,7 +2,9 @@
   "arm_order": [
     "a_to_human__full_slice",
     "a_to_human__paired_subset",
-    "a_to_c_parsefail_human__paired_subset"
+    "a_to_c_parsefail_human__paired_subset",
+    "a_to_b__full_slice",
+    "a_to_b__paired_subset"
   ],
   "bootstrap": {
     "applies_to": "escalation series ONLY; the logged series carries the CIs the harness recorded at run time and is not re-bootstrapped here",
@@ -19,6 +21,8 @@
   "cost_model": {
     "evidence_class": {
       "api_cost.tier_a": "estimated",
+      "api_cost.tier_b1": "estimated",
+      "api_cost.tier_b2": "estimated",
       "api_cost.tier_c": "measured",
       "params.c_human_usd": "estimated",
       "params.c_misroute_usd": "estimated"
@@ -27,12 +31,14 @@
       "c_human_usd": 2.5,
       "c_misroute_usd": 6.0
     },
-    "path": "configs/cost_model_v1.yaml",
-    "sha256": "f76ad15a87457db64f50392d3a7bdd9ea65a581fa06478b6759538d16b5143d0",
-    "version": "v1"
+    "path": "configs/cost_model_v2.yaml",
+    "sha256": "2c969255c03b315d9755078f77693e308a9864e40e3ebb4a1d31f9ffe5bcb417",
+    "version": "v2"
   },
   "evidence_class": {
     "cost_model.api_cost.tier_a": "estimated",
+    "cost_model.api_cost.tier_b1": "estimated",
+    "cost_model.api_cost.tier_b2": "estimated",
     "cost_model.api_cost.tier_c": "measured",
     "cost_model.params.c_human_usd": "estimated",
     "cost_model.params.c_misroute_usd": "estimated",
@@ -45,25 +51,28 @@
     "series.escalation.*.macro_f1_answered": "measured (derived from frozen artifacts under frozen tau)",
     "series.escalation.*.macro_f1_system": "measured (derived from frozen artifacts under frozen tau); credits human-routed rows as correct per the cost model's P(error|human)=0 ASSUMPTION",
     "series.escalation.*.n_parse_failed": "measured (per-call receipts, committed under results/tier_c_raw/)",
-    "series.escalation.tier_b": "pending",
+    "series.escalation.a_to_b": "measured (derived from frozen artifacts under frozen tau)",
+    "series.escalation.tier_b1": "pending",
     "series.logged.*.accuracy": "measured",
     "series.logged.*.ece": "measured",
     "series.logged.*.macro_f1": "measured",
     "series.logged.*.n": "measured",
-    "series.logged.tier_b": "pending",
+    "series.logged.tier_b1": "pending",
+    "series.logged.tier_b2": "measured",
     "taxonomy_change": "documented",
     "thresholds.*.cal_escalation_rate": "derived on CAL",
     "thresholds.*.tau_star": "derived on CAL (cost argmin) under cost-model parameters that are ESTIMATED"
   },
-  "generated_at": "2026-08-10T01:57:40.175160Z",
-  "git_sha": "c08d740f876aaa0e7e8d5127e5ce9a5fe7e4a23c",
+  "generated_at": "2026-08-12T12:21:24.484273Z",
+  "git_sha": "8e3ad4ba9cf3f36decb9c6ba37c2769d21a5817d",
   "notes": {
     "calibration_space": "Only the v2-isocal derivation is used. The yearly Tier A runs are isotonic-calibrated in the same p_max space as the CAL rung the tau was fit on (tier_a_logreg_wordchar_isocal_cal), so the constants transfer without crossing a probability-space boundary. The v1 raw-CAL derivation is the documented calibration-mismatch lesson and is not reachable from this module.",
     "ece_tier_c_excluded": "Tier C is excluded from the ECE chart. Its p_max is degenerate: structured output returns one label, the artifact's probability vector is one-hot, so every prediction carries confidence 1.0 and ECE collapses to the error rate rather than measuring calibration (Phase 4 finding). Plotting it beside Tier A's isotonic-calibrated ECE would invite a comparison that is not defined.",
     "human_credit": "accuracy_system and macro_f1_system credit every human-routed row as correct (y_pred := y_true), matching the cost model's P(error|human)=0 assumption. That flatters any policy with a human arm, so accuracy_machine and macro_f1_answered are reported alongside over machine-answered rows only, where no assumption applies. Compare policies with different human rates using both.",
     "parse_failures": "Per-row parse failure is read from the run's committed per-call receipts via cost_model.join_parse_failed (joined ON complaint_id, missing/non-boolean flag = hard failure), NOT from the predictions parquet: a parse-failed row's y_pred there is the frozen fallback label ('card') and is indistinguishable from a real prediction. Scoring follows router_sim.a_to_c_policy: an escalated parse-failed row routes to a human and its fallback label is discarded, never scored.",
-    "supports": "Supports differ by tier and are NOT comparable as populations: Tier A is the full slice (104,443 rows at 2022-H2, 20,000 per drift year); Tier C is a uniform-random subsample (5,000 at 2022-H2 for Haiku, 1,500 elsewhere). Paired arms are pinned to the 1,500 ids of that slice's Sonnet artifact, verified identical to Haiku's on the drift years and a verified subset of Haiku's 5,000 at 2022-H2.",
-    "tau_per_family": "Each arm uses the tau its OWN policy family's CAL sweep produced. The a_to_c cascade's tau is NOT the a_to_human tau: at CAL prices the cascade's argmin escalates 4.0% where the human arm escalates 10.7% on the same rows."
+    "supports": "Supports differ by tier and are NOT comparable as populations: Tier A and Tier B2 are the full slice (104,443 rows at 2022-H2, 20,000 per drift year); Tier C is a uniform-random subsample (5,000 at 2022-H2 for Haiku, 1,500 elsewhere). Paired arms are pinned to the 1,500 ids of that slice's Sonnet artifact, verified identical to Haiku's on the drift years and a verified subset of Haiku's 5,000 at 2022-H2.",
+    "tau_per_family": "Each arm uses the tau its OWN policy family's CAL sweep produced. The a_to_c cascade's tau is NOT the a_to_human tau: at CAL prices the cascade's argmin escalates 4.0% where the human arm escalates 10.7% on the same rows. The a_to_b cascade's tau is a third constant again, and the furthest from the others \u2014 its CAL argmin escalates MORE than either, because Tier B2 (unlike the LLM) is more accurate than Tier A on the rows Tier A is unsure about while costing amortized compute rather than per-call spend.",
+    "tier_b_terminal": "The a_to_b arm has ONE gate by construction: the frozen Phase 4 family is `escalation_arm: tier_b_terminal` -- per router_sim.a_to_b_policy, a local classifier always emits a label, so there is no analogue of Tier C's parse failure. Tier B2 answers every escalated row and the residual human rate is structurally 0.0 (reported with its degenerate CI, not hidden). `escalation_rate` is therefore the escalate-to-B2 rate and `human_rate` is the B2->human rate. The only frozen tau_B in the repo is a_to_b_to_c's (0.5769749672571918, paired subset), where rows below it go to Tier C at Tier C's measured prices rather than to a human at c_human; re-terminating that constant on a human queue would be the cross-family transplant this module refuses everywhere else, so no a_to_b_to_human series is produced. Consequences for the accuracy views: with an empty human arm accuracy_machine == accuracy_system and macro_f1_answered == macro_f1_system on this arm, and no P(error|human)=0 assumption is load-bearing for it -- unlike the a_to_human arms, whose *_system views assume it on a tenth of the traffic."
   },
   "op_version": "v2-isocal",
   "repro_command": "uv run --extra charts python -m triage_lab.drift_charts --all",
@@ -185,6 +194,122 @@
         "tau": 0.49680671423332523,
         "terminal_model": "human",
         "terminal_run_id": null
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8665109198,
+          "ci_lo": 0.8625175933,
+          "point": 0.8645289775
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8665109198,
+          "ci_lo": 0.8625175933,
+          "point": 0.8645289775
+        },
+        "coverage_a": {
+          "ci_hi": 0.7064810471,
+          "ci_lo": 0.7011381806,
+          "point": 0.7037714351
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "full_cal",
+        "escalation_rate": {
+          "ci_hi": 0.2988618194,
+          "ci_lo": 0.2935189529,
+          "point": 0.2962285649
+        },
+        "gate_config": "tier_a_logreg_test_iid",
+        "gate_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.8012443373,
+          "ci_lo": 0.7935275673,
+          "point": 0.797575017
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.8012443373,
+          "ci_lo": 0.7935275673,
+          "point": 0.797575017
+        },
+        "n": 104443,
+        "n_answered_a": 73504,
+        "n_artifact": 104443,
+        "n_escalated": 30939,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 0,
+        "policy": "a_to_b",
+        "slice": "test_iid",
+        "slice_label": "2022-H2",
+        "tau": 0.6448830480864552,
+        "terminal_model": "tier_b2",
+        "terminal_run_id": "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687"
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8840166667,
+          "ci_lo": 0.8513333333,
+          "point": 0.8673333333
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8840166667,
+          "ci_lo": 0.8513333333,
+          "point": 0.8673333333
+        },
+        "coverage_a": {
+          "ci_hi": 0.4813333333,
+          "ci_lo": 0.4326666667,
+          "point": 0.4566666667
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.5673333333,
+          "ci_lo": 0.5186666667,
+          "point": 0.5433333333
+        },
+        "gate_config": "tier_a_logreg_test_iid",
+        "gate_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.8234272404,
+          "ci_lo": 0.7518748695,
+          "point": 0.7893134422
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.8234272404,
+          "ci_lo": 0.7518748695,
+          "point": 0.7893134422
+        },
+        "n": 1500,
+        "n_answered_a": 685,
+        "n_artifact": 104443,
+        "n_escalated": 815,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 0,
+        "policy": "a_to_b",
+        "slice": "test_iid",
+        "slice_label": "2022-H2",
+        "tau": 0.7980792354453352,
+        "terminal_model": "tier_b2",
+        "terminal_run_id": "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687"
       },
       {
         "accuracy_machine": {
@@ -420,6 +545,122 @@
       },
       {
         "accuracy_machine": {
+          "ci_hi": 0.8579,
+          "ci_lo": 0.84875,
+          "point": 0.85335
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8579,
+          "ci_lo": 0.84875,
+          "point": 0.85335
+        },
+        "coverage_a": {
+          "ci_hi": 0.69,
+          "ci_lo": 0.67769875,
+          "point": 0.6839
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "full_cal",
+        "escalation_rate": {
+          "ci_hi": 0.32230125,
+          "ci_lo": 0.31,
+          "point": 0.3161
+        },
+        "gate_config": "tier_a_logreg_test_drift_2023",
+        "gate_run_id": "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.8003218232,
+          "ci_lo": 0.7841226724,
+          "point": 0.7920970546
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.8003218232,
+          "ci_lo": 0.7841226724,
+          "point": 0.7920970546
+        },
+        "n": 20000,
+        "n_answered_a": 13678,
+        "n_artifact": 20000,
+        "n_escalated": 6322,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 0,
+        "policy": "a_to_b",
+        "slice": "test_drift_2023",
+        "slice_label": "2023",
+        "tau": 0.6448830480864552,
+        "terminal_model": "tier_b2",
+        "terminal_run_id": "7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d"
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8606666667,
+          "ci_lo": 0.8253333333,
+          "point": 0.842
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8606666667,
+          "ci_lo": 0.8253333333,
+          "point": 0.842
+        },
+        "coverage_a": {
+          "ci_hi": 0.45,
+          "ci_lo": 0.396,
+          "point": 0.4213333333
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.604,
+          "ci_lo": 0.55,
+          "point": 0.5786666667
+        },
+        "gate_config": "tier_a_logreg_test_drift_2023",
+        "gate_run_id": "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.805052497,
+          "ci_lo": 0.7375181106,
+          "point": 0.773029381
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.805052497,
+          "ci_lo": 0.7375181106,
+          "point": 0.773029381
+        },
+        "n": 1500,
+        "n_answered_a": 632,
+        "n_artifact": 20000,
+        "n_escalated": 868,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 0,
+        "policy": "a_to_b",
+        "slice": "test_drift_2023",
+        "slice_label": "2023",
+        "tau": 0.7980792354453352,
+        "terminal_model": "tier_b2",
+        "terminal_run_id": "7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d"
+      },
+      {
+        "accuracy_machine": {
           "ci_hi": 0.8506666667,
           "ci_lo": 0.8126666667,
           "point": 0.8313333333
@@ -649,6 +890,122 @@
         "tau": 0.49680671423332523,
         "terminal_model": "human",
         "terminal_run_id": null
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8528,
+          "ci_lo": 0.84299625,
+          "point": 0.84785
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8528,
+          "ci_lo": 0.84299625,
+          "point": 0.84785
+        },
+        "coverage_a": {
+          "ci_hi": 0.70265125,
+          "ci_lo": 0.69015,
+          "point": 0.69655
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "full_cal",
+        "escalation_rate": {
+          "ci_hi": 0.30985,
+          "ci_lo": 0.29734875,
+          "point": 0.30345
+        },
+        "gate_config": "tier_a_logreg_test_drift_2024",
+        "gate_run_id": "c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7910858361,
+          "ci_lo": 0.7725515171,
+          "point": 0.7820777897
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7910858361,
+          "ci_lo": 0.7725515171,
+          "point": 0.7820777897
+        },
+        "n": 20000,
+        "n_answered_a": 13931,
+        "n_artifact": 20000,
+        "n_escalated": 6069,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 0,
+        "policy": "a_to_b",
+        "slice": "test_drift_2024",
+        "slice_label": "2024",
+        "tau": 0.6448830480864552,
+        "terminal_model": "tier_b2",
+        "terminal_run_id": "eed4b95c7b30e5aa9bb4262f05ebfed0d0692e8f234d13abd2ae49884eb3cfb8"
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.8513333333,
+          "ci_lo": 0.8133333333,
+          "point": 0.8326666667
+        },
+        "accuracy_system": {
+          "ci_hi": 0.8513333333,
+          "ci_lo": 0.8133333333,
+          "point": 0.8326666667
+        },
+        "coverage_a": {
+          "ci_hi": 0.446,
+          "ci_lo": 0.3953333333,
+          "point": 0.422
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.6046666667,
+          "ci_lo": 0.554,
+          "point": 0.578
+        },
+        "gate_config": "tier_a_logreg_test_drift_2024",
+        "gate_run_id": "c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7980925538,
+          "ci_lo": 0.7331404611,
+          "point": 0.7692557045
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7980925538,
+          "ci_lo": 0.7331404611,
+          "point": 0.7692557045
+        },
+        "n": 1500,
+        "n_answered_a": 633,
+        "n_artifact": 20000,
+        "n_escalated": 867,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 0,
+        "policy": "a_to_b",
+        "slice": "test_drift_2024",
+        "slice_label": "2024",
+        "tau": 0.7980792354453352,
+        "terminal_model": "tier_b2",
+        "terminal_run_id": "eed4b95c7b30e5aa9bb4262f05ebfed0d0692e8f234d13abd2ae49884eb3cfb8"
       },
       {
         "accuracy_machine": {
@@ -884,6 +1241,122 @@
       },
       {
         "accuracy_machine": {
+          "ci_hi": 0.83615,
+          "ci_lo": 0.82635,
+          "point": 0.831
+        },
+        "accuracy_system": {
+          "ci_hi": 0.83615,
+          "ci_lo": 0.82635,
+          "point": 0.831
+        },
+        "coverage_a": {
+          "ci_hi": 0.67755125,
+          "ci_lo": 0.66419875,
+          "point": 0.67075
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "full_cal",
+        "escalation_rate": {
+          "ci_hi": 0.33580125,
+          "ci_lo": 0.32244875,
+          "point": 0.32925
+        },
+        "gate_config": "tier_a_logreg_test_drift_2025",
+        "gate_run_id": "cef3a58caf5261da12e083e33712480a10dee3d09667985646bb484e5fadcf47",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7706941692,
+          "ci_lo": 0.7534896736,
+          "point": 0.7621806443
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7706941692,
+          "ci_lo": 0.7534896736,
+          "point": 0.7621806443
+        },
+        "n": 20000,
+        "n_answered_a": 13415,
+        "n_artifact": 20000,
+        "n_escalated": 6585,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 0,
+        "policy": "a_to_b",
+        "slice": "test_drift_2025",
+        "slice_label": "2025",
+        "tau": 0.6448830480864552,
+        "terminal_model": "tier_b2",
+        "terminal_run_id": "87a5305be1c291815e47c9be1425385a153fdeb281a94a5adc130d5b006425aa"
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.83735,
+          "ci_lo": 0.7973333333,
+          "point": 0.8166666667
+        },
+        "accuracy_system": {
+          "ci_hi": 0.83735,
+          "ci_lo": 0.7973333333,
+          "point": 0.8166666667
+        },
+        "coverage_a": {
+          "ci_hi": 0.42335,
+          "ci_lo": 0.3766666667,
+          "point": 0.4006666667
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.6233333333,
+          "ci_lo": 0.57665,
+          "point": 0.5993333333
+        },
+        "gate_config": "tier_a_logreg_test_drift_2025",
+        "gate_run_id": "cef3a58caf5261da12e083e33712480a10dee3d09667985646bb484e5fadcf47",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7781984099,
+          "ci_lo": 0.7039818828,
+          "point": 0.7455407267
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7781984099,
+          "ci_lo": 0.7039818828,
+          "point": 0.7455407267
+        },
+        "n": 1500,
+        "n_answered_a": 601,
+        "n_artifact": 20000,
+        "n_escalated": 899,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 0,
+        "policy": "a_to_b",
+        "slice": "test_drift_2025",
+        "slice_label": "2025",
+        "tau": 0.7980792354453352,
+        "terminal_model": "tier_b2",
+        "terminal_run_id": "87a5305be1c291815e47c9be1425385a153fdeb281a94a5adc130d5b006425aa"
+      },
+      {
+        "accuracy_machine": {
           "ci_hi": 0.8046666667,
           "ci_lo": 0.7633166667,
           "point": 0.784
@@ -1113,6 +1586,122 @@
         "tau": 0.49680671423332523,
         "terminal_model": "human",
         "terminal_run_id": null
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.76100125,
+          "ci_lo": 0.74884875,
+          "point": 0.75495
+        },
+        "accuracy_system": {
+          "ci_hi": 0.76100125,
+          "ci_lo": 0.74884875,
+          "point": 0.75495
+        },
+        "coverage_a": {
+          "ci_hi": 0.52195125,
+          "ci_lo": 0.50794875,
+          "point": 0.51515
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "full_cal",
+        "escalation_rate": {
+          "ci_hi": 0.49205125,
+          "ci_lo": 0.47804875,
+          "point": 0.48485
+        },
+        "gate_config": "tier_a_logreg_test_drift_2026h1",
+        "gate_run_id": "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7305920579,
+          "ci_lo": 0.716714638,
+          "point": 0.7239921759
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7305920579,
+          "ci_lo": 0.716714638,
+          "point": 0.7239921759
+        },
+        "n": 20000,
+        "n_answered_a": 10303,
+        "n_artifact": 20000,
+        "n_escalated": 9697,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 0,
+        "policy": "a_to_b",
+        "slice": "test_drift_2026h1",
+        "slice_label": "2026-H1",
+        "tau": 0.6448830480864552,
+        "terminal_model": "tier_b2",
+        "terminal_run_id": "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+      },
+      {
+        "accuracy_machine": {
+          "ci_hi": 0.7766666667,
+          "ci_lo": 0.7333333333,
+          "point": 0.7553333333
+        },
+        "accuracy_system": {
+          "ci_hi": 0.7766666667,
+          "ci_lo": 0.7333333333,
+          "point": 0.7553333333
+        },
+        "coverage_a": {
+          "ci_hi": 0.2473333333,
+          "ci_lo": 0.2066666667,
+          "point": 0.226
+        },
+        "coverage_machine": {
+          "ci_hi": 1.0,
+          "ci_lo": 1.0,
+          "point": 1.0
+        },
+        "dataset": "paired_subset",
+        "escalation_rate": {
+          "ci_hi": 0.7933333333,
+          "ci_lo": 0.7526666667,
+          "point": 0.774
+        },
+        "gate_config": "tier_a_logreg_test_drift_2026h1",
+        "gate_run_id": "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb",
+        "human_rate": {
+          "ci_hi": 0.0,
+          "ci_lo": 0.0,
+          "point": 0.0
+        },
+        "macro_f1_answered": {
+          "ci_hi": 0.7496856232,
+          "ci_lo": 0.7008190595,
+          "point": 0.7257336743
+        },
+        "macro_f1_system": {
+          "ci_hi": 0.7496856232,
+          "ci_lo": 0.7008190595,
+          "point": 0.7257336743
+        },
+        "n": 1500,
+        "n_answered_a": 339,
+        "n_artifact": 20000,
+        "n_escalated": 1161,
+        "n_parse_failed_escalated": null,
+        "n_parse_failed_slice": null,
+        "n_to_human": 0,
+        "policy": "a_to_b",
+        "slice": "test_drift_2026h1",
+        "slice_label": "2026-H1",
+        "tau": 0.7980792354453352,
+        "terminal_model": "tier_b2",
+        "terminal_run_id": "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
       },
       {
         "accuracy_machine": {
@@ -1426,6 +2015,201 @@
         "support": "full_slice",
         "tier": "tier_a",
         "tier_display": "Tier A (LogReg word+char, isotonic)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.8629781316,
+          "ci_lo": 0.8588881016,
+          "point": 0.8609480769
+        },
+        "config_name": "tier_b2_distilbert_s0",
+        "config_sha256": "c7fda31fd88ae6eb90dae3bbf522a86cf2ba56445cd5b450814e3b666efe5ab8",
+        "ece": {
+          "ci_hi": 0.0112816007,
+          "ci_lo": 0.007895051,
+          "point": 0.0091797914
+        },
+        "evidence_class": "measured",
+        "git_sha": "25c3b0b1e063e50e9e8e5056ca1ce8e7d29ec750",
+        "macro_f1": {
+          "ci_hi": 0.7987971027,
+          "ci_lo": 0.7909116484,
+          "point": 0.7950390988
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.8609480769,
+          "logged": 0.8609480769,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 104443,
+        "n_split_full": 104443,
+        "run_id": "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687",
+        "slice": "test_iid",
+        "slice_label": "2022-H2",
+        "split": "test_iid",
+        "split_sha256": "1e02e1e544f1def7a037f8cad94a545a3596dba941101ed73d7a3063a30435a2",
+        "support": "full_slice",
+        "tier": "tier_b2",
+        "tier_display": "Tier B2 DistilBERT (temperature-scaled)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.8548,
+          "ci_lo": 0.8451975,
+          "point": 0.8498
+        },
+        "config_name": "tier_b2_distilbert_s0_test_drift_2023",
+        "config_sha256": "e61906881b8a88d282d4c63d723bc0da0547ff9cb466794c7c7e3a886bdcacd4",
+        "ece": {
+          "ci_hi": 0.0146735536,
+          "ci_lo": 0.0070099179,
+          "point": 0.0096629185
+        },
+        "evidence_class": "measured",
+        "git_sha": "8e3ad4ba9cf3f36decb9c6ba37c2769d21a5817d",
+        "macro_f1": {
+          "ci_hi": 0.7978774185,
+          "ci_lo": 0.7818439853,
+          "point": 0.7900635653
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.8498,
+          "logged": 0.8498,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 20000,
+        "n_split_full": 20000,
+        "run_id": "7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d",
+        "slice": "test_drift_2023",
+        "slice_label": "2023",
+        "split": "test_drift_2023",
+        "split_sha256": "debbd70416a816faa04b51cac994697b07bc70914e1f3e9d49b27b443a5a5475",
+        "support": "full_slice",
+        "tier": "tier_b2",
+        "tier_display": "Tier B2 DistilBERT (temperature-scaled)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.84725,
+          "ci_lo": 0.83735,
+          "point": 0.8422
+        },
+        "config_name": "tier_b2_distilbert_s0_test_drift_2024",
+        "config_sha256": "843114bc56b1b18890bb9bff3986d18ab024c3ff8e81327c05c635f9bd14e0b2",
+        "ece": {
+          "ci_hi": 0.0211697859,
+          "ci_lo": 0.0129603782,
+          "point": 0.0160935964
+        },
+        "evidence_class": "measured",
+        "git_sha": "8e3ad4ba9cf3f36decb9c6ba37c2769d21a5817d",
+        "macro_f1": {
+          "ci_hi": 0.7824586446,
+          "ci_lo": 0.764961183,
+          "point": 0.7737566329
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.8422,
+          "logged": 0.8422,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 20000,
+        "n_split_full": 20000,
+        "run_id": "eed4b95c7b30e5aa9bb4262f05ebfed0d0692e8f234d13abd2ae49884eb3cfb8",
+        "slice": "test_drift_2024",
+        "slice_label": "2024",
+        "split": "test_drift_2024",
+        "split_sha256": "b61db6317217e664d69df19aaa7d84737f0e6d8b3169729795bf18616375c6ec",
+        "support": "full_slice",
+        "tier": "tier_b2",
+        "tier_display": "Tier B2 DistilBERT (temperature-scaled)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.83485125,
+          "ci_lo": 0.8248,
+          "point": 0.82965
+        },
+        "config_name": "tier_b2_distilbert_s0_test_drift_2025",
+        "config_sha256": "695a6f8269d5e5a2b18afa123f146a8db936a472bc7e9649b4352d6e945a5fdd",
+        "ece": {
+          "ci_hi": 0.0301435558,
+          "ci_lo": 0.0217013721,
+          "point": 0.0246533897
+        },
+        "evidence_class": "measured",
+        "git_sha": "8e3ad4ba9cf3f36decb9c6ba37c2769d21a5817d",
+        "macro_f1": {
+          "ci_hi": 0.7688669589,
+          "ci_lo": 0.7514416357,
+          "point": 0.7598637519
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.82965,
+          "logged": 0.82965,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 20000,
+        "n_split_full": 20000,
+        "run_id": "87a5305be1c291815e47c9be1425385a153fdeb281a94a5adc130d5b006425aa",
+        "slice": "test_drift_2025",
+        "slice_label": "2025",
+        "split": "test_drift_2025",
+        "split_sha256": "3c4ea70e7d489ba37963cca3512ea09d952b3c85a587752c96a1a13d5760f56f",
+        "support": "full_slice",
+        "tier": "tier_b2",
+        "tier_display": "Tier B2 DistilBERT (temperature-scaled)"
+      },
+      {
+        "accuracy": {
+          "ci_hi": 0.76465125,
+          "ci_lo": 0.75255,
+          "point": 0.75845
+        },
+        "config_name": "tier_b2_distilbert_s0_test_drift_2026h1",
+        "config_sha256": "0e1d05ca27ad1746fe84ddc901f28c20341f4a237b2c191a36432b93b5d9e907",
+        "ece": {
+          "ci_hi": 0.0521560027,
+          "ci_lo": 0.0418805656,
+          "point": 0.0464658533
+        },
+        "evidence_class": "measured",
+        "git_sha": "8e3ad4ba9cf3f36decb9c6ba37c2769d21a5817d",
+        "macro_f1": {
+          "ci_hi": 0.7325549287,
+          "ci_lo": 0.7192911016,
+          "point": 0.7261938397
+        },
+        "metric_agreement": {
+          "abs_delta": 0.0,
+          "check": "accuracy_recomputed_vs_logged",
+          "computed": 0.75845,
+          "logged": 0.75845,
+          "ok": true,
+          "tol": 1e-09
+        },
+        "n": 20000,
+        "n_split_full": 20000,
+        "run_id": "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323",
+        "slice": "test_drift_2026h1",
+        "slice_label": "2026-H1",
+        "split": "test_drift_2026h1",
+        "split_sha256": "c0cecbdb41aa24b29dba171f42ad593441af9fe355d358e4367596468901a264",
+        "support": "full_slice",
+        "tier": "tier_b2",
+        "tier_display": "Tier B2 DistilBERT (temperature-scaled)"
       },
       {
         "accuracy": {
@@ -1853,6 +2637,48 @@
     "source": "taxonomy_map.yaml (frozen with the snapshot); UPGRADE_PLAN.md \u00a75"
   },
   "thresholds": {
+    "a_to_b__full_slice": {
+      "cal_coverage_a": 0.6834728418,
+      "cal_dataset": "full_cal",
+      "cal_escalation_rate": 0.3165271582,
+      "cal_n_answered_at_tau_star": 59443,
+      "evidence_class": "derived on CAL (cost argmin) under cost-model parameters that are ESTIMATED",
+      "policy_family": "a_to_b",
+      "source_file": "results/thresholds/a_to_b__full_cal__40513354__cost-2c969255.json",
+      "source_sha256": "75165389a9afe26181745f1033e9d1bd332f71707a22f95bdf321423eb47ed51",
+      "tau_star": 0.6448830480864552,
+      "tier_a_cal_config": "tier_a_logreg_wordchar_isocal_cal",
+      "tier_a_cal_run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc",
+      "tier_b_cal_rung": {
+        "config_name": "tier_b2_distilbert_s0_cal",
+        "evidence_class": "estimated (amortized compute; see the cost config note)",
+        "n_examples": 86972,
+        "per_example_usd": 5.6254e-06,
+        "run_id": "aa89db578614fa15d42ae5dc04df540fcb760bb3eee3258336eb1137e1799148",
+        "split": "cal"
+      }
+    },
+    "a_to_b__paired_subset": {
+      "cal_coverage_a": 0.45,
+      "cal_dataset": "paired_subset",
+      "cal_escalation_rate": 0.55,
+      "cal_n_answered_at_tau_star": 675,
+      "evidence_class": "derived on CAL (cost argmin) under cost-model parameters that are ESTIMATED",
+      "policy_family": "a_to_b",
+      "source_file": "results/thresholds/a_to_b__paired_subset__40513354__cost-2c969255.json",
+      "source_sha256": "ecc30fa53f44f7c79d7961b37e9e72870b8c21074a8717aaf36dbd5e253ec2dd",
+      "tau_star": 0.7980792354453352,
+      "tier_a_cal_config": "tier_a_logreg_wordchar_isocal_cal",
+      "tier_a_cal_run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc",
+      "tier_b_cal_rung": {
+        "config_name": "tier_b2_distilbert_s0_cal",
+        "evidence_class": "estimated (amortized compute; see the cost config note)",
+        "n_examples": 86972,
+        "per_example_usd": 5.6254e-06,
+        "run_id": "aa89db578614fa15d42ae5dc04df540fcb760bb3eee3258336eb1137e1799148",
+        "split": "cal"
+      }
+    },
     "a_to_c_parsefail_human__paired_subset": {
       "cal_coverage_a": 0.96,
       "cal_dataset": "paired_subset",
@@ -1860,11 +2686,12 @@
       "cal_n_answered_at_tau_star": 1440,
       "evidence_class": "derived on CAL (cost argmin) under cost-model parameters that are ESTIMATED",
       "policy_family": "a_to_c_parsefail_human",
-      "source_file": "results/thresholds/a_to_c_parsefail_human__paired_subset__40513354__cost-f76ad15a.json",
-      "source_sha256": "90c75af2ac723b05d9ef19903dd6059e834b85060c8bc1484c77d72f8f599f73",
+      "source_file": "results/thresholds/a_to_c_parsefail_human__paired_subset__40513354__cost-2c969255.json",
+      "source_sha256": "1e537fa3c288ea7dcf6ac7d4e9059b9bac9b9ea767d1bbd5717ec69606babe05",
       "tau_star": 0.4217123129176118,
       "tier_a_cal_config": "tier_a_logreg_wordchar_isocal_cal",
-      "tier_a_cal_run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc"
+      "tier_a_cal_run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc",
+      "tier_b_cal_rung": null
     },
     "a_to_human__full_slice": {
       "cal_coverage_a": 0.900634687,
@@ -1873,11 +2700,12 @@
       "cal_n_answered_at_tau_star": 78330,
       "evidence_class": "derived on CAL (cost argmin) under cost-model parameters that are ESTIMATED",
       "policy_family": "a_to_human",
-      "source_file": "results/thresholds/a_to_human__full_cal__40513354__cost-f76ad15a.json",
-      "source_sha256": "726cf6e2dd9740cb606bcb23aca462561adcd925c700e73a21fbd2cc5eb57107",
+      "source_file": "results/thresholds/a_to_human__full_cal__40513354__cost-2c969255.json",
+      "source_sha256": "517b210d4b7d427db1855829bef14a0ecd92a52d5befa59b423dac0dfbe67dfa",
       "tau_star": 0.500518783264516,
       "tier_a_cal_config": "tier_a_logreg_wordchar_isocal_cal",
-      "tier_a_cal_run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc"
+      "tier_a_cal_run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc",
+      "tier_b_cal_rung": null
     },
     "a_to_human__paired_subset": {
       "cal_coverage_a": 0.8933333333,
@@ -1886,24 +2714,28 @@
       "cal_n_answered_at_tau_star": 1340,
       "evidence_class": "derived on CAL (cost argmin) under cost-model parameters that are ESTIMATED",
       "policy_family": "a_to_human",
-      "source_file": "results/thresholds/a_to_human__paired_subset__40513354__cost-f76ad15a.json",
-      "source_sha256": "12c95b66e3b41d5dd9ca9859711154743b59d582bbf1abb61fa9e8915c6aac2e",
+      "source_file": "results/thresholds/a_to_human__paired_subset__40513354__cost-2c969255.json",
+      "source_sha256": "bd6dd54e156292a638a0003170b1d8a39c4fcd6e12a8e288e91e2e12f90c076a",
       "tau_star": 0.49680671423332523,
       "tier_a_cal_config": "tier_a_logreg_wordchar_isocal_cal",
-      "tier_a_cal_run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc"
+      "tier_a_cal_run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc",
+      "tier_b_cal_rung": null
     }
   },
   "tier_b": {
     "evidence_class": "pending",
-    "note": "Tier B has no yearly drift runs, so it has no series on any chart. Reported as an explicit pending slot rather than omitted: 'not measured' and 'measured to be absent' are different claims. When Tier B lands, one entry in TIER_CONFIGS adds its series with no other change.",
+    "landed": [
+      "tier_b2_distilbert"
+    ],
+    "note": "Tier B2 (DistilBERT) HAS landed: it carries a yearly macro-F1 and ECE series and is the Tier B rung of the a_to_b escalation arm. It was run first, ahead of B1, because it is the certified top Tier B point on TEST-IID (Phase 4 backfill) and the cascade rung the router and the demo actually ship. Tier B1 (ModernBERT) has no yearly drift runs and stays an explicit PENDING slot: its series costs roughly 8h on MPS (4 yearly slices x ~107k rows of CAL + slice inference) and whether to spend that is an OPEN OWNER DECISION, not a measurement that was attempted and failed. Reported as a slot rather than omitted: 'not measured' and 'measured to be absent' are different claims. When B1 lands, one entry in TIER_CONFIGS adds its series with no other change.",
     "status": "pending",
     "tiers": [
-      "tier_b1_modernbert",
-      "tier_b2_distilbert"
+      "tier_b1_modernbert"
     ]
   },
   "tier_order": [
     "tier_a",
+    "tier_b2",
     "tier_c_haiku",
     "tier_c_sonnet"
   ]
