@@ -294,8 +294,8 @@
       "point": -0.0090007068
     }
   },
-  "generated_at": "2026-08-09T04:06:12.203819Z",
-  "git_sha": "3fac5e25988d1856632a17e9301ccb9ce61a3c49",
+  "generated_at": "2026-08-12T12:34:50.548873Z",
+  "git_sha": "ab440ea0e4dce0851b5196b34af0712dd973a1d4",
   "model_id": "anthropic/claude-sonnet-5",
   "model_name": {
     "ref": "tier_c_sonnet_zeroshot_test_drift_2023",

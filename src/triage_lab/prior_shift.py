@@ -137,10 +137,11 @@ ADDITIVITY_TOL = 1e-12
 # Values are the config-file stem template whose run record names the artifact.
 TIER_CONFIGS: dict[str, str] = {
     "tier_a": "tier_a_logreg_test_drift_{year}",
+    "tier_b2": "tier_b2_distilbert_s0_test_drift_{year}",
     "tier_c_haiku": "tier_c_haiku_zeroshot_test_drift_{year}",
     "tier_c_sonnet": "tier_c_sonnet_zeroshot_test_drift_{year}",
 }
-TIER_ORDER: tuple[str, ...] = ("tier_a", "tier_c_haiku", "tier_c_sonnet")
+TIER_ORDER: tuple[str, ...] = ("tier_a", "tier_b2", "tier_c_haiku", "tier_c_sonnet")
 # Which tiers can be restricted to another tier's rows, and whose id set defines them.
 # The listed id-source tiers must agree exactly (asserted) -- that agreement IS the
 # pairing claim, so it is verified rather than trusted.
@@ -1113,7 +1114,7 @@ def output_name(tier: str, year: str, scope: str) -> str:
 # ---------------------------------------------------------------------------
 
 def default_jobs() -> list[tuple[str, str, str]]:
-    """9 native decompositions (3 tiers x 3 years) + Tier A paired_subsample x 3 years."""
+    """12 native decompositions (4 tiers x 3 years) + Tier A paired_subsample x 3 years."""
     jobs = [(tier, year, SCOPE_NATIVE) for tier in TIER_ORDER for year in DEFAULT_YEARS]
     jobs += [(tier, year, SCOPE_PAIRED)
              for tier in PAIRED_SUBSAMPLE_ID_SOURCES for year in DEFAULT_YEARS]
@@ -1134,7 +1135,7 @@ def select_jobs(tiers, years, scopes) -> list[tuple[str, str, str]]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m triage_lab.prior_shift")
     parser.add_argument("--all", action="store_true",
-                        help="the full default set (9 native + 3 tier_a paired_subsample)")
+                        help="the full default set (12 native + 3 tier_a paired_subsample)")
     parser.add_argument("--tier", action="append", choices=sorted(TIER_CONFIGS),
                         help="restrict to this tier (repeatable)")
     parser.add_argument("--year", action="append", choices=list(DEFAULT_YEARS),

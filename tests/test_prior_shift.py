@@ -491,11 +491,13 @@ def test_round_tree_makes_non_finite_values_json_safe():
     json.dumps(out)  # must not raise
 
 
-def test_default_job_set_is_the_documented_twelve():
+def test_default_job_set_is_the_documented_fifteen():
     jobs = prior_shift.default_jobs()
-    assert len(jobs) == 12
-    assert sum(1 for j in jobs if j[2] == prior_shift.SCOPE_NATIVE) == 9
+    assert len(jobs) == 15
+    assert sum(1 for j in jobs if j[2] == prior_shift.SCOPE_NATIVE) == 12
     assert sum(1 for j in jobs if j[2] == prior_shift.SCOPE_PAIRED) == 3
+    # paired_subsample is a Tier A vs Tier C exhibit only; Tier B2 is native-scope only
+    assert {j[0] for j in jobs if j[2] == prior_shift.SCOPE_PAIRED} == {"tier_a"}
     assert all(j[1] in prior_shift.DEFAULT_YEARS for j in jobs)
     assert prior_shift.REF_YEAR not in {j[1] for j in jobs}  # the reference is not a job
 

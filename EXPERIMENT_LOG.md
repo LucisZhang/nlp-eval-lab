@@ -1916,3 +1916,84 @@ reported runs. Every portfolio-bound number carries its reproduction command
   # (and _2024, _2025, _2026h1) — ~35–41 min each on MPS, seed 20260805
   make drift-charts   # = uv run --extra charts python -m triage_lab.drift_charts --all
   ```
+
+## 2026-08-12 — Phase 5: Tier B prior-shift decomposition, B2 yearly slices (eval backfill task 5)
+
+- **Owner decisions recorded this session (2026-08-12), before the task:** three of the four
+  remaining Phase 5 Tier B sub-slots are **descoped by owner** (slots stay in STATUS.md, labeled,
+  not deleted): **(1) B1 yearly drift series** — ~8 h of MPS for a model B2 dominates on every
+  TEST-IID metric (B1−B2 negative all seeds, CIs excl. 0, McNemar p≤6e-8); a second Tier B drift
+  curve adds no narrative value. **(2) Tier B perturbation grid** — the cross-tier robustness
+  ranking is already measured and bracketed (LLM ≳ word+char > word-only); a B2 subword point
+  would refine ordering, not change any claim. **(3) OOV dense-encoder centroid variant** — the
+  OOV hypothesis was already refuted model-free (token OOV +0.23 pp, TF-IDF centroid distance
+  *falls* at 2026-H1, CIs disjoint); a dense-encoder re-probe of a closed question is not worth
+  the run. The fourth sub-slot — **this task** — was approved as the session's single task.
+- **Context:** UPGRADE_PLAN §6.3 item 2 (reweighted-F1 counterfactual: class-mix change alone vs
+  within-class drift), extended to Tier B2 on the 2026-08-12 yearly harness runs
+  (`7224d2c1…`/`eed4b95c…`/`87a5305b…`/`59a81153…`, macro-F1 0.790→0.774→0.760→0.726). $0,
+  derivation-only: existing `prior_shift.py` machinery over frozen `data/preds/` artifacts.
+- **Hypothesis (pre-registered):** B2's 2026-H1 drop is the same prior-shift wound as Tier A's,
+  with a near-zero within-class term like the LLMs (B2 tracks the LLMs on aggregate but inherits
+  Tier A's credit_reporting collapse 0.899→0.285 — genuinely open which signature dominates).
+- **Method:** minimal registry extension of `src/triage_lab/prior_shift.py` — register
+  `tier_b2 → tier_b2_distilbert_s0_test_drift_{year}` in `TIER_CONFIGS`/`TIER_ORDER` (native
+  scope only; no paired_subsample scope added; zero changes to decomposition math, tolerances,
+  seeds, or frozen constants). `tests/test_prior_shift.py` default-set pin moved 12→15 jobs
+  (12 native + 3 tier_a paired) and now also pins paired scope = {tier_a} explicitly. Then
+  `make prior-shift` regenerates all 15 decompositions + summary.
+- **Result (primary path P_prior_first, native, pi=artifact, n_ref=n_year=20,000, seed 20260805,
+  1,000 resamples; ref 2023 macro-F1 0.7901; identity gates pass to 1e-12):**
+  - 2024: total **+0.0163** [+0.0031, +0.0288]; prior +0.0054 [+0.0032, +0.0077]; within
+    +0.0109 [−0.0023, +0.0226]; share_prior suppressed (|total| < 0.02 floor).
+  - 2025: total **+0.0302** [+0.0180, +0.0420]; prior +0.0052 [+0.0029, +0.0077]; within
+    +0.0250 [+0.0126, +0.0370]; share_prior 0.1717 [0.0899, 0.3285].
+  - 2026-H1: total **+0.0639** [+0.0536, +0.0751]; prior **+0.0303** [+0.0266, +0.0337];
+    within **+0.0336** [+0.0234, +0.0451]; share_prior **0.4744** [0.3876, 0.5689].
+  - Sensitivity (2026-H1, labeled — frozen-protocol path-P numbers above stay primary): path Q
+    prior −0.0038 [−0.0149, +0.0086] → **prior_bracket [−0.0038, +0.0303]**; Shapley prior
+    +0.0132 [+0.0070, +0.0200]; interaction **−0.0341** [−0.0455, −0.0225] (53% of |total| —
+    sub-additive because both effects hit credit_reporting; single-path prior quotes need the
+    bracket caveat, more so than Tier A whose interaction is 41%). pi=full_slice and ref-fixed
+    bootstrap variants agree with path P to the 4th decimal. Balanced-accuracy anchor
+    (counterfactual-free): 0.7909→0.7423, delta **+0.0486** [+0.0369, +0.0609].
+  - Per-class @2026-H1: credit_reporting contributes **+0.0692 of the +0.0639 total** ("6.9 pts",
+    vs Tier A's 7.6) = prior_contrib +0.0578 + within_contrib +0.0114; per-class F1
+    0.9082→0.2853 (A: 0.9000→0.2147); three classes net negative (vehicle_loan −0.0072,
+    debt_collection −0.0054, card −0.0006).
+- **Findings:**
+  1. **Hypothesis REFUTED on the within-class half: B2 is Tier-A-shaped, not LLM-shaped.** Its
+     within term is positive, CI excludes zero, and it is the *larger* component — the LLM
+     signature is prior-penalty-paid with within ≈0/negative (Haiku within −0.0227 CI ∋ 0,
+     Sonnet −0.0287 CI ∋ 0), and B2 does not match it. Balanced accuracy confirms independently
+     (+0.0486 excl. 0 vs LLM bal-acc deltas spanning zero).
+  2. The **prior/within split is statistically indistinguishable from Tier A's**: share_prior
+     0.4744 [0.3876, 0.5689] vs A's 0.4549 [0.3950, 0.5237]. Same wound, smaller: B2 loses
+     6.4 pts total where A loses 9.2.
+  3. Fine-tuning bought **loss magnitude, not loss shape**: B2's advantage over A at the cliff is
+     proportional shrinkage of both components, while the LLMs escape the within-class term
+     entirely. Escalating past B2 to an LLM at the cliff buys within-class robustness, not just
+     prior robustness — consistent with the drift-chart finding that frozen-τ a_to_b trails
+     b2_only at 2026-H1.
+  4. Regeneration identity: all 13 pre-existing Tier A/C decomposition files reproduce
+     **bit-identical modulo `generated_at` + top-level `git_sha`** (0 non-volatile diffs;
+     summary.json's 228 pre-existing rows element-wise identical, 57 tier_b2 rows appended).
+     No existing claim moved.
+  5. Noted for any future Tier B1 registration (now descoped, so dormant): tier_b configs carry
+     no `model.slug`, so `model_id` falls back to runner `"tier_b"` — fine while one Tier B
+     system is registered, ambiguous if a second ever is.
+  6. Available $0 follow-up, not queued: A and B2 share identical rows/seed, so their bootstrap
+     index vectors pair for free — a paired CI on within_A − within_B2 (+0.0503 vs +0.0336)
+     would certify whether B2's within-class damage is genuinely smaller than A's.
+- **Verdict:** question closed — B2's 2026-H1 drop is **half prior shift, half real within-class
+  degradation** (both CIs excl. 0), the same decomposition shape as Tier A at ~70% of the
+  magnitude, and *not* the LLMs' pure-prior wound. Phase 5 prior-shift row now **done for all
+  evaluated tiers**; remaining Tier B sub-slots descoped by owner (rationale above). Tests:
+  `tests/test_prior_shift.py` 43 passed; full suite 590 passed / 1 skipped / 2 pre-existing
+  demo-staleness failures (`test_demo_build.py`, stale `demo/data` at 46 of now-55 runs —
+  regen belongs to the Phase 6 panels task). Wall-clock 7.6 s.
+- **Repro:**
+  ```
+  make prior-shift   # = uv run python -m triage_lab.prior_shift --all  (~8 s, seed 20260805)
+  uv run pytest tests/test_prior_shift.py -q
+  ```
