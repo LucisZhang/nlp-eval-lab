@@ -2081,3 +2081,73 @@ reported runs. Every portfolio-bound number carries its reproduction command
   uv run pytest -q      # 593 passed, 1 skipped
   python3 -m http.server -d demo   # browser check
   ```
+
+## 2026-08-13 — Phase 6: live in-browser inference (Tier A + Tier B2 int8)
+
+- **Scope:** The demo's triage playground gains real in-browser inference: Tier A
+  (TF-IDF word 1–2 + char_wb 3–5 → LogReg → isotonic, reimplemented in vanilla JS from
+  exported weights) and Tier B2 (the shipped per-channel-QInt8 DistilBERT ONNX via
+  vendored onnxruntime-web 1.27.0, wasm EP). $0, no API calls, `results/runs.jsonl`
+  untouched at 55 records; `demo/data/` contract files untouched.
+- **Owner-flagged pre-check (ran FIRST, before any wiring):** minimal load-and-infer
+  probe of `data/onnx/tier_b2_s0/model.int8.onnx` in onnxruntime-web wasm. **PASS** —
+  session create 753 ms, inference 220 ms @ seq=16, sane logits. Follow-up on a
+  0.59-max logit delta vs Python ORT: Python with graph fusions disabled lands within
+  0.18 of the browser, and unfused-vs-fp32 deltas (≤0.74 on the OOD dummy input) exceed
+  browser-vs-fp32 (0.57) — browser execution ≡ unfused int8 semantics; difference is
+  int8 kernel-order noise, not missing op support. No fallback option needed.
+- **Hypotheses:** (1) per-channel MatMulInteger runs in ORT-web — CONFIRMED;
+  (2) a JS reimplementation of the calibrated Tier A pipeline can match the frozen
+  harness records ~exactly — CONFIRMED (stronger than expected); (3) browser int8 B2
+  agrees with the official fp32 records at roughly the measured int8 parity rate
+  (0.9944) — CONFIRMED (0.99 on the curated 200).
+- **Tier A export** (`scripts/export_tier_a_browser.py`, `make demo-live`): refits the
+  harness's own code path (TRAIN fit + CAL isotonic, seed 20260805) and hard-fails
+  unless it reproduces frozen run `8e4d6345…` — measured **bit-identical**: 200/200
+  labels, max|Δp_max| = max|Δprob| = **0.0** on the curated 200. JSON-only re-scoring
+  (weights + documented semantics) matches `predict_proba` to 8.2e-07 (float32 coef
+  export floor). **Semantics finding:** the isotonic calibrators consume raw
+  `decision_function` margins, NOT softmax probabilities (`_get_response_values`
+  preference order; knot ranges span ±margins) — a softmax-fed port would silently
+  corrupt exactly the `p_max` the router τ-gate reads. Export = 19.26 MB
+  (`demo/live/tier_a/tier_a_live.json`, 300k features, per-branch L2 documented).
+- **Browser engines** (`demo/assets/live.js`): sklearn-exact analyzers (0 mismatches
+  vs `build_analyzer()` over 78,872 word / 452,832 char n-grams incl. unicode edge
+  cases); BERT WordPiece in JS (0 id/mask mismatches vs HF `tokenizers` over 227 docs
+  incl. truncation@256); B2 applies the frozen temperature **1.3191720008827763**
+  (sourced from run `5517ebf1…` `extra.temperature`, never transcribed); shipped model
+  sha256-verified equal to the parity-tested artifact (`da931ec8…`).
+- **Browser-vs-Python agreement, curated 200** (harness `demo/live/agreement.html`,
+  report frozen at `demo/live/agreement_report.json`, run in-app Chromium 148, ort
+  1.27.0 wasm): **Tier A 200/200 = 100%**, max|Δp_max| 1.7e-6, 2.5 ms/doc. **Tier B2
+  198/200 = 99.0% vs official fp32** (mean|Δp_max| 0.013) and **196/200 = 98.0% vs
+  python-int8 batch-1 reference**; all mismatches are near-tie flips (mortgage↔
+  credit_reporting ×2, card↔deposit_account ×2). **Batching finding (exporter):**
+  DynamicQuantizeLinear makes int8 outputs batch/padding-dependent — batch-32 padding
+  alone flips 2/200 and moves mean|Δprob| by 1.15e-03 (same order as the int8-vs-fp32
+  gap itself), so the python-int8 reference is batch-1/no-padding to match browser
+  execution; sensitivity grid recorded in `python_int8_curated.json` provenance.
+- **UI (demo/index.html, app.js, styles.css):** live section in the playground; Tier A
+  lazy-loads on first run; B2 gated behind an explicit "~64 MB download" consent button
+  with progress bar; run button hidden until loaded; results render label/p_max/top-3/
+  latency next to the precomputed official card (comparison suppressed for pasted
+  text); **required disclosure rendered where predictions appear**: approximate
+  in-browser implementation, official numbers = frozen harness records, with the
+  measured agreement rates fetched from the frozen report. Everything vendored
+  (`demo/vendor/ort/`), zero external URLs, offline-capable.
+- **Verification:** suite **610 passed / 1 skipped / 0 failed** (+17 new
+  `tests/test_demo_live.py`: schema, base64 payload sizes, model sha256 vs parity
+  record, vendored files, agreement-report bounds); ruff clean; browser-verified
+  (light + dark computed styles, all assets 200/no external requests, Tier A live run
+  agrees with official card, B2 live run agrees, paste-your-own-text path, error
+  paths inline). Screenshot compositing in the embedded pane was unreliable
+  (0×0-viewport throttling); visual checks were done via DOM/computed-style assertions.
+- **Verdict:** ACCEPTED — pre-check green, both engines live, agreement measured and
+  disclosed, official numbers untouched. Browser B2 can flip labels on low-confidence
+  inputs (by construction of int8 dynamic quantization); the demo says so.
+- **Reproduce:**
+  ```
+  make demo-live        # refit + export Tier A weights, B2 live_config + python-int8 reference (~35 min)
+  uv run pytest tests/test_demo_live.py -q
+  python3 -m http.server 8642 -d demo   # then open /live/agreement.html?autorun=all → freezes report shown at /index.html
+  ```

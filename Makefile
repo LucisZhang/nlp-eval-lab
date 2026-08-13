@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier tier-b-frontier prior-shift oov perturb perturb-tier-c perturb-report drift-charts demo-data
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier tier-b-frontier prior-shift oov perturb perturb-tier-c perturb-report drift-charts demo-data demo-live
 
 setup:
 	uv sync --frozen
@@ -241,3 +241,13 @@ drift-charts:
 # demo/data/curated_ids.json (CLAUDE.md rule 2).
 demo-data:
 	uv run python -m triage_lab.demo_build --all
+
+# In-browser live inference exports (Phase 6): exports the calibrated Tier A model to
+# demo/live/tier_a/tier_a_live.json for in-browser inference (refit on TRAIN + isotonic on
+# CAL via the harness code path; hard-fails unless the refit reproduces the frozen run
+# 8e4d6345… predictions exactly on the curated 200), and writes
+# demo/live/tier_b2/live_config.json + python_int8_curated.json.
+#
+# ~35 min (SAGA refit dominates); needs data/ present.
+demo-live:
+	uv run python scripts/export_tier_a_browser.py

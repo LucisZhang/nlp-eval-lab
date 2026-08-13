@@ -1,0 +1,47 @@
+{
+  "class_labels": [
+    "card",
+    "credit_reporting",
+    "debt_collection",
+    "deposit_account",
+    "money_service",
+    "mortgage",
+    "payday_personal_loan",
+    "student_loan",
+    "vehicle_loan"
+  ],
+  "provenance": {
+    "checkpoint": "data/checkpoints/tier_b2_s0",
+    "onnx_int8": "model.int8.onnx",
+    "parity": {
+      "agreement": {
+        "int8_vs_onnx_fp32": 0.9944,
+        "int8_vs_pytorch_fp32": 0.9944,
+        "onnx_fp32_vs_pytorch": 1.0
+      },
+      "argmax_agreement": 0.9944,
+      "macro_f1": {
+        "int8_minus_onnx_fp32": 0.0016393391827446147,
+        "int8_minus_pytorch_fp32": 0.0016393391827446147,
+        "onnx_fp32": 0.7866311646860237,
+        "onnx_int8": 0.7882705038687683,
+        "pytorch_fp32": 0.7866311646860237
+      },
+      "max_seq_length": 256,
+      "mean_abs_prob_delta": 0.001412195970377389,
+      "mean_abs_prob_delta_pairs": {
+        "int8_vs_onnx_fp32": 0.0014121941174671923,
+        "int8_vs_pytorch_fp32": 0.001412195970377389,
+        "onnx_fp32_vs_pytorch": 4.303171622758364e-08
+      },
+      "model_int8_onnx_sha256": "da931ec8310cf1280747e22fc6ebfd30fd5f92e312ede6544042e1190764bb4a",
+      "n_samples": 5000,
+      "source": "results/onnx_parity/tier_b2_s0_parity.json",
+      "subsample_split": "cal"
+    },
+    "temperature_source": "results/runs.jsonl -> the tier_b2_distilbert_s0.yaml TEST-IID record's extra.temperature (fit by NLL on CAL, tier_b.fit_temperature)",
+    "temperature_source_run_id": "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687"
+  },
+  "schema_version": "live-v1",
+  "temperature": 1.3191720008827763
+}

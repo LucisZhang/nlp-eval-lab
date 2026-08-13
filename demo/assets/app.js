@@ -366,6 +366,12 @@ async function initPlayground() {
   filterSel.addEventListener("change", applyPlaygroundFilters);
 
   renderSampleList();
+
+  const liveSlot = document.getElementById("live-inference-slot");
+  if (liveSlot) {
+    liveSlot.innerHTML = "";
+    liveSlot.appendChild(await buildLiveInferenceSection());
+  }
 }
 
 function applyPlaygroundFilters() {
@@ -477,6 +483,266 @@ function renderSampleDetail(s) {
       wrap.appendChild(el("div", "panel-desc", `policy: ${s.router.policy}${s.router.tau !== undefined ? ", tau=" + fmtNum(s.router.tau, 3) : ""}${s.router.note ? " — " + s.router.note : ""}`));
     }
   }
+}
+
+// ----------------------------------------------------------------------------
+// Live in-browser inference (Tier A / Tier B2) — lazy-loaded engine module.
+// demo/assets/live.js is written by a concurrent task; it is imported lazily
+// via dynamic import() so the rest of the demo works even if it is missing.
+// ----------------------------------------------------------------------------
+
+const liveState = {
+  tierA: { engine: null, loading: false, error: null },
+  tierB2: { engine: null, loading: false, progress: null, consent: false, error: null },
+  agreementReport: undefined, // undefined = not fetched yet, null = missing
+};
+
+const LIVE_DISCLOSURE_TEXT = "Approximate in-browser implementation (int8 / re-implemented pipeline). " +
+  "Official numbers are the frozen harness records in results/runs.jsonl — see the receipts drawer. " +
+  "Browser-vs-Python agreement on the curated 200: see agreement report.";
+
+async function fetchAgreementReport() {
+  if (liveState.agreementReport !== undefined) return liveState.agreementReport;
+  try {
+    const res = await fetch("./live/agreement_report.json", { cache: "no-store" });
+    if (!res.ok) {
+      liveState.agreementReport = null;
+      return null;
+    }
+    liveState.agreementReport = await res.json();
+    return liveState.agreementReport;
+  } catch (err) {
+    liveState.agreementReport = null;
+    return null;
+  }
+}
+
+function agreementSummaryText(report) {
+  if (!report) return "agreement report pending";
+  const parts = [];
+  const a = report.tier_a;
+  if (a && a.label_agreement_vs_official !== undefined) {
+    parts.push(`Tier A ${fmtPct(a.label_agreement_vs_official, 1)}`);
+  }
+  const b2 = report.tier_b2 && report.tier_b2.vs_official_fp32;
+  if (b2 && b2.label_agreement_vs_official !== undefined) {
+    parts.push(`Tier B2 ${fmtPct(b2.label_agreement_vs_official, 1)} vs official fp32`);
+  }
+  return parts.length ? parts.join(", ") : "agreement report pending";
+}
+
+async function buildLiveDisclosure() {
+  const wrap = el("div", "live-disclosure");
+  wrap.appendChild(el("span", null, LIVE_DISCLOSURE_TEXT + " "));
+  const rateSpan = el("span", "live-disclosure-rates", "loading agreement report…");
+  wrap.appendChild(rateSpan);
+  fetchAgreementReport().then((report) => {
+    rateSpan.textContent = "(" + agreementSummaryText(report) + ")";
+  });
+  return wrap;
+}
+
+function liveResultCard(title, result, official) {
+  const card = el("div", "tier-card live-result-card");
+  card.appendChild(el("h4", null, title));
+  if (!result) return card;
+  card.appendChild(el("div", "kv", [el("span", "k", "label"), el("span", null, result.label || "—")]));
+  card.appendChild(el("div", "kv", [el("span", "k", "p_max"), el("span", null, fmtNum(result.p_max, 3))]));
+  card.appendChild(el("div", "kv", [el("span", "k", "latency"), el("span", null, fmtNum(result.latency_ms, 0) + " ms")]));
+  if (result.probs) {
+    const top3 = Object.entries(result.probs).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const bars = el("div", "prob-bars");
+    top3.forEach(([cls, p]) => {
+      const row = el("div", "prob-bar-row");
+      row.appendChild(el("span", "prob-bar-label", cls));
+      const track = el("div", "prob-bar-track");
+      const fill = el("div", "prob-bar-fill");
+      fill.style.width = fmtPct(p, 0);
+      track.appendChild(fill);
+      row.appendChild(track);
+      row.appendChild(el("span", "prob-bar-pct", fmtPct(p, 1)));
+      bars.appendChild(row);
+    });
+    card.appendChild(bars);
+  }
+  if (official && official.label !== undefined) {
+    const agree = official.label === result.label;
+    card.appendChild(el("div", "kv", [
+      el("span", "k", "vs precomputed card"),
+      el("span", agree ? null : "live-disagree", `official: ${official.label}${agree ? " (agrees)" : " (disagrees)"}`),
+    ]));
+  }
+  return card;
+}
+
+function liveErrorBox(msg) {
+  return el("div", "data-missing-banner live-error", "Live inference error: " + msg);
+}
+
+async function runLiveInference(tierKey, text, resultSlot, official) {
+  resultSlot.innerHTML = "";
+  if (!text || !text.trim()) {
+    resultSlot.appendChild(el("div", "panel-desc", "No text to run — select a sample or paste text."));
+    return;
+  }
+  const state = tierKey === "tier_a" ? liveState.tierA : liveState.tierB2;
+  if (!state.engine) {
+    resultSlot.appendChild(el("div", "panel-desc", "Engine not loaded yet."));
+    return;
+  }
+  try {
+    resultSlot.appendChild(el("div", "panel-desc", "running…"));
+    const result = await state.engine.predict(text);
+    resultSlot.innerHTML = "";
+    resultSlot.appendChild(liveResultCard(tierKey === "tier_a" ? "Tier A (live)" : "Tier B2 (live)", result, official));
+  } catch (err) {
+    resultSlot.innerHTML = "";
+    resultSlot.appendChild(liveErrorBox(String(err && err.message ? err.message : err)));
+  }
+}
+
+function currentLiveText() {
+  const pasted = document.getElementById("live-paste-text");
+  const pastedVal = pasted ? pasted.value.trim() : "";
+  if (pastedVal) return pastedVal;
+  const s = samplesState.samples.find((x) => x.complaint_id === samplesState.selectedId);
+  return s ? (s.narrative || "") : "";
+}
+
+function currentOfficialTierData(tierKey) {
+  // Pasted text has no precomputed record — comparing it against the selected
+  // sample's official card would be misleading, so suppress the comparison.
+  const pasted = document.getElementById("live-paste-text");
+  if (pasted && pasted.value.trim()) return null;
+  const s = samplesState.samples.find((x) => x.complaint_id === samplesState.selectedId);
+  if (!s || !s.tiers) return null;
+  const key = tierKey === "tier_a" ? "tier_a_logreg" : "tier_b2";
+  return s.tiers[key] || null;
+}
+
+async function buildLiveInferenceSection() {
+  const section = el("div", "live-inference-section card");
+  section.appendChild(el("h3", null, "Live in-browser inference"));
+
+  section.appendChild(await buildLiveDisclosure());
+
+  const pasteWrap = el("div", "live-paste-wrap");
+  pasteWrap.appendChild(el("label", "live-paste-label", "…or paste your own complaint text"));
+  const textarea = document.createElement("textarea");
+  textarea.id = "live-paste-text";
+  textarea.rows = 3;
+  textarea.placeholder = "Paste a complaint narrative to run live inference on custom text…";
+  pasteWrap.appendChild(textarea);
+  section.appendChild(pasteWrap);
+
+  // ---- Tier A ----
+  const tierAWrap = el("div", "live-tier-block");
+  tierAWrap.appendChild(el("h4", null, "Tier A live"));
+  const tierAStatus = el("div", "panel-desc live-status");
+  const tierARunBtn = el("button", null, "Run Tier A live");
+  tierARunBtn.type = "button";
+  const tierAResultSlot = el("div", "live-result-slot");
+  tierAWrap.appendChild(tierAStatus);
+  tierAWrap.appendChild(tierARunBtn);
+  tierAWrap.appendChild(tierAResultSlot);
+  section.appendChild(tierAWrap);
+
+  tierARunBtn.addEventListener("click", async () => {
+    if (!liveState.tierA.engine && !liveState.tierA.loading) {
+      liveState.tierA.loading = true;
+      tierAStatus.textContent = "loading weights…";
+      try {
+        // best-effort size probe (HEAD) purely for the loading-status label
+        try {
+          const head = await fetch("./live/tier_a/tier_a_live.json", { method: "HEAD", cache: "no-store" });
+          const len = head.headers.get("content-length");
+          if (len) tierAStatus.textContent = `loading weights (~${(Number(len) / 1e6).toFixed(2)} MB)…`;
+        } catch (probeErr) {
+          // ignore — size label is best-effort only
+        }
+        const mod = await import("./live.js");
+        const engine = await mod.loadTierA("./live/tier_a/tier_a_live.json");
+        liveState.tierA.engine = engine;
+        const sizeMb = engine.meta && engine.meta.size_bytes ? (engine.meta.size_bytes / 1e6).toFixed(2) + " MB" : "size unknown";
+        tierAStatus.textContent = `Tier A engine loaded (${sizeMb}).`;
+      } catch (err) {
+        liveState.tierA.loading = false;
+        tierAStatus.textContent = "";
+        tierAResultSlot.innerHTML = "";
+        tierAResultSlot.appendChild(liveErrorBox(String(err && err.message ? err.message : err)));
+        return;
+      }
+      liveState.tierA.loading = false;
+    }
+    await runLiveInference("tier_a", currentLiveText(), tierAResultSlot, currentOfficialTierData("tier_a"));
+  });
+
+  // ---- Tier B2 ----
+  const tierBWrap = el("div", "live-tier-block");
+  tierBWrap.appendChild(el("h4", null, "Tier B2 live"));
+  tierBWrap.appendChild(el("div", "panel-desc", "Runs DistilBERT (int8, ONNX) locally via WebAssembly. This downloads a large file."));
+  const consentBtn = el("button", null, "Load DistilBERT int8 model (~64 MB download)");
+  consentBtn.type = "button";
+  const progressWrap = el("div", "live-progress-wrap", null);
+  const progressBar = el("div", "live-progress-bar");
+  const progressFill = el("div", "live-progress-fill");
+  progressBar.appendChild(progressFill);
+  progressWrap.appendChild(progressBar);
+  progressWrap.style.display = "none";
+  const tierBStatus = el("div", "panel-desc live-status");
+  const tierBRunBtn = el("button", null, "Run Tier B2 live");
+  tierBRunBtn.type = "button";
+  tierBRunBtn.style.display = "none";
+  const tierBResultSlot = el("div", "live-result-slot");
+
+  tierBWrap.appendChild(consentBtn);
+  tierBWrap.appendChild(progressWrap);
+  tierBWrap.appendChild(tierBStatus);
+  tierBWrap.appendChild(tierBRunBtn);
+  tierBWrap.appendChild(tierBResultSlot);
+  section.appendChild(tierBWrap);
+
+  consentBtn.addEventListener("click", async () => {
+    if (liveState.tierB2.engine || liveState.tierB2.loading) return;
+    liveState.tierB2.loading = true;
+    liveState.tierB2.consent = true;
+    consentBtn.disabled = true;
+    progressWrap.style.display = "";
+    tierBStatus.textContent = "downloading model…";
+    try {
+      const mod = await import("./live.js");
+      const engine = await mod.loadTierB2("./live/tier_b2/", {
+        onProgress: (fraction) => {
+          if (fraction === null || fraction === undefined) {
+            progressFill.style.width = "100%";
+            tierBStatus.textContent = "downloading model (progress unknown)…";
+          } else {
+            progressFill.style.width = Math.round(fraction * 100) + "%";
+            tierBStatus.textContent = `downloading model… ${Math.round(fraction * 100)}%`;
+          }
+        },
+      });
+      liveState.tierB2.engine = engine;
+      liveState.tierB2.loading = false;
+      const sizeMb = engine.meta && engine.meta.size_bytes ? (engine.meta.size_bytes / 1e6).toFixed(1) : "?";
+      tierBStatus.textContent = `Tier B2 engine loaded (${sizeMb} MB).`;
+      progressWrap.style.display = "none";
+      tierBRunBtn.style.display = "";
+    } catch (err) {
+      liveState.tierB2.loading = false;
+      consentBtn.disabled = false;
+      progressWrap.style.display = "none";
+      tierBStatus.textContent = "";
+      tierBResultSlot.innerHTML = "";
+      tierBResultSlot.appendChild(liveErrorBox(String(err && err.message ? err.message : err)));
+    }
+  });
+
+  tierBRunBtn.addEventListener("click", async () => {
+    await runLiveInference("tier_b2", currentLiveText(), tierBResultSlot, currentOfficialTierData("tier_b2"));
+  });
+
+  return section;
 }
 
 // ----------------------------------------------------------------------------

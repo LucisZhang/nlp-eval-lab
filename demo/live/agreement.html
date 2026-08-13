@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live-inference agreement harness — Triage Router Lab</title>
+<!--
+  Standalone verification page for demo/assets/live.js.
+
+  It re-runs the two in-browser engines over the same 200 curated narratives the
+  frozen demo records cover, and reports how far the browser's predictions drift
+  from those records. Dependency-free; serve demo/ over any static server:
+
+      cd demo && python3 -m http.server 8000
+      open http://localhost:8000/live/agreement.html
+
+  Machine-readable output: window.__agreementReport, mirrored into <pre id="report">.
+  "AGREEMENT_DONE" is logged to the console after each completed run.
+
+  Headless driving without CDP evaluation is supported via query params:
+      ?autorun=a      run Tier A on load
+      ?autorun=b2     load + run Tier B2 on load
+      ?autorun=all    both, Tier A first
+      &limit=25       score only the first N narratives (default: all 200)
+  e.g. chrome --headless --dump-dom --virtual-time-budget=120000 \
+         'http://localhost:8000/live/agreement.html?autorun=a'
+  then read the JSON out of <pre id="report">.
+
+  CAVEAT for headless runs: under --virtual-time-budget, performance.now() is
+  driven by virtual time, so every *_latency_ms field collapses to 0 and the
+  virtual clock can also race past a large model download. Drive the page over
+  CDP (Runtime.evaluate / console "AGREEMENT_DONE") if you need real latency
+  numbers or a reliable Tier B2 run.
+-->
+<style>
+  :root { color-scheme: light; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0; padding: 24px 28px; color: #23262b; background: #fbfbfc; line-height: 1.5;
+  }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  h2 { font-size: 14px; margin: 22px 0 8px; text-transform: uppercase; letter-spacing: .04em; color: #666; }
+  .sub { color: #666; font-size: 13px; margin: 0 0 18px; max-width: 760px; }
+  button {
+    font: inherit; padding: 7px 14px; margin-right: 8px; border: 1px solid #b7bcc4;
+    border-radius: 5px; background: #fff; cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: #f0f2f5; }
+  button:disabled { opacity: .5; cursor: default; }
+  .status { font-size: 13px; color: #444; margin: 10px 0; min-height: 20px; }
+  .banner {
+    border-left: 4px solid #d55e00; background: #fff5ef; padding: 8px 12px;
+    font-size: 13px; margin: 10px 0; border-radius: 0 4px 4px 0;
+  }
+  .ok { border-left-color: #009e73; background: #eff9f5; }
+  table.kv { border-collapse: collapse; font-size: 13px; margin: 6px 0 14px; }
+  table.kv td { padding: 3px 14px 3px 0; vertical-align: top; border-bottom: 1px solid #ececf0; }
+  table.kv td.k { color: #666; white-space: nowrap; }
+  pre#report {
+    background: #1e2127; color: #e6e6e6; padding: 14px; border-radius: 6px;
+    font-size: 12px; line-height: 1.45; overflow-x: auto; max-height: 640px;
+  }
+  code { background: #eef0f3; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+  progress { width: 320px; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<h1>Live-inference agreement harness</h1>
+<p class="sub">
+  Runs the in-browser Tier A and Tier B2 engines over the 200 curated narratives in
+  <code>demo/data/samples.json</code> and diffs them against the frozen prediction records.
+  Tier A should agree with the official record up to float32 export quantisation.
+  Tier B2 is <em>expected</em> to differ from the official fp32 record (the browser runs the
+  int8 quantised graph) — the meaningful comparison there is against
+  <code>python_int8_curated.json</code>, the same int8 graph scored under Python.
+</p>
+
+<div>
+  <button id="btn-a">Run Tier A (200)</button>
+  <button id="btn-b2">Load B2 + Run (200)</button>
+</div>
+<div class="status" id="status">idle</div>
+<div id="banners"></div>
+
+<h2>Summary</h2>
+<div id="summary"></div>
+
+<h2>Machine-readable report</h2>
+<pre id="report">{}</pre>
+
+<script type="module">
+import { loadTierA, loadTierB2 } from "../assets/live.js";
+
+const SAMPLES_URL = "../data/samples.json";
+const TIER_A_URL = "../live/tier_a/tier_a_live.json";
+const TIER_B2_DIR = "../live/tier_b2/";
+const PY_INT8_URL = "../live/tier_b2/python_int8_curated.json";
+
+// ---------------------------------------------------------------------------
+// tiny DOM helpers (same idioms as demo/assets/app.js)
+// ---------------------------------------------------------------------------
+
+function el(tag, className, children) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (children !== undefined) {
+    (Array.isArray(children) ? children : [children]).forEach((c) => {
+      if (c === null || c === undefined) return;
+      if (typeof c === "string") node.appendChild(document.createTextNode(c));
+      else node.appendChild(c);
+    });
+  }
+  return node;
+}
+
+function fmtNum(x, digits = 6) {
+  if (x === null || x === undefined || Number.isNaN(x)) return "—";
+  return Number(x).toFixed(digits);
+}
+
+function setStatus(text) {
+  document.getElementById("status").textContent = text;
+}
+
+function banner(text, ok) {
+  document.getElementById("banners").appendChild(el("div", ok ? "banner ok" : "banner", text));
+}
+
+function kvTable(rows) {
+  const t = el("table", "kv");
+  rows.forEach(([k, v]) => {
+    if (v === undefined || v === null) return;
+    t.appendChild(el("tr", null, [el("td", "k", k), el("td", null, String(v))]));
+  });
+  return t;
+}
+
+// yield to the event loop so the status line repaints during long runs
+function yieldToUI() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+// ---------------------------------------------------------------------------
+// report state
+// ---------------------------------------------------------------------------
+
+const report = {
+  tier_a: null,
+  tier_b2: null,
+  env: {
+    ort_version: null,
+    ua: navigator.userAgent,
+    page: location.href,
+    started_utc: new Date().toISOString(),
+  },
+};
+window.__agreementReport = report;
+
+function renderReport() {
+  window.__agreementReport = report;
+  document.getElementById("report").textContent = JSON.stringify(report, null, 2);
+}
+
+// Called only when a run COMPLETES — the headless driver waits on this line, so
+// it must never fire at page init or on a failed run.
+function publish() {
+  renderReport();
+  console.log("AGREEMENT_DONE");
+}
+
+// ---------------------------------------------------------------------------
+// comparison core
+// ---------------------------------------------------------------------------
+
+// Compare a list of browser predictions against a list of official records.
+// Records may be null (no official value for that sample) and are skipped;
+// `n` therefore counts the samples that were actually comparable.
+function compare(rows) {
+  let n = 0;
+  let labelAgree = 0;
+  let sumAbs = 0;
+  let maxAbs = 0;
+  const mismatches = [];
+  rows.forEach((r) => {
+    if (!r.official || !r.official.label) return;
+    n += 1;
+    if (r.official.label === r.browser.label) {
+      labelAgree += 1;
+    } else {
+      mismatches.push({
+        complaint_id: r.complaint_id,
+        browser_label: r.browser.label,
+        official_label: r.official.label,
+      });
+    }
+    if (typeof r.official.p_max === "number") {
+      const d = Math.abs(r.browser.p_max - r.official.p_max);
+      sumAbs += d;
+      if (d > maxAbs) maxAbs = d;
+    }
+  });
+  return {
+    n,
+    label_agreement_vs_official: n ? labelAgree / n : null,
+    mean_abs_delta_p_max: n ? sumAbs / n : null,
+    max_abs_delta_p_max: n ? maxAbs : null,
+    mismatches,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// data loading
+// ---------------------------------------------------------------------------
+
+let samples = null;
+let pythonInt8 = null; // Map<complaint_id, {label, p_max}> | null
+
+const params = new URLSearchParams(location.search);
+const LIMIT = params.has("limit") ? Math.max(1, parseInt(params.get("limit"), 10)) : null;
+
+// The subset actually scored: all 200 by default, the first N with ?limit=N.
+// `n` in the report always reflects what was scored, never the nominal 200.
+function scoredSamples() {
+  return LIMIT ? samples.slice(0, LIMIT) : samples;
+}
+
+async function fetchJSON(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) return { __missing: true, __status: res.status };
+  return res.json();
+}
+
+// python_int8_curated.json is produced by a separate task and its exact shape is
+// not frozen yet, so accept the three plausible encodings: a bare array of
+// per-sample records, {predictions|records|samples: [...]}, or an object keyed by
+// complaint_id. Anything else is reported as an unreadable file rather than
+// silently compared against nothing.
+function indexPythonInt8(raw) {
+  if (!raw || raw.__missing) return null;
+  let list = null;
+  if (Array.isArray(raw)) list = raw;
+  else if (Array.isArray(raw.predictions)) list = raw.predictions;
+  else if (Array.isArray(raw.records)) list = raw.records;
+  else if (Array.isArray(raw.samples)) list = raw.samples;
+
+  const map = new Map();
+  if (list) {
+    list.forEach((r) => {
+      const id = r.complaint_id ?? r.id;
+      if (id === undefined) return;
+      const rec = r.tiers && r.tiers.tier_b2 ? r.tiers.tier_b2 : r;
+      map.set(String(id), { label: rec.label, p_max: rec.p_max });
+    });
+  } else if (typeof raw === "object") {
+    Object.entries(raw).forEach(([id, rec]) => {
+      if (!rec || typeof rec !== "object" || !rec.label) return;
+      map.set(String(id), { label: rec.label, p_max: rec.p_max });
+    });
+  }
+  return map.size ? map : null;
+}
+
+async function ensureData() {
+  if (samples) return;
+  const raw = await fetchJSON(SAMPLES_URL);
+  if (raw.__missing) throw new Error(`samples.json missing (HTTP ${raw.__status})`);
+  // samples.json ships as {samples: [...]} in this repo; a bare array is also accepted.
+  samples = Array.isArray(raw) ? raw : raw.samples;
+  if (!Array.isArray(samples)) throw new Error("samples.json has no `samples` array");
+
+  const py = await fetchJSON(PY_INT8_URL);
+  if (py.__missing) {
+    banner(
+      `python_int8_curated.json not found (HTTP ${py.__status}) — the browser-vs-Python-int8 ` +
+      "comparison will be reported as null. Everything else still runs.",
+    );
+    pythonInt8 = null;
+  } else {
+    pythonInt8 = indexPythonInt8(py);
+    if (!pythonInt8) banner("python_int8_curated.json loaded but no {complaint_id, label} records were recognised.");
+  }
+}
+
+function officialTier(sample, key) {
+  const t = sample.tiers && sample.tiers[key];
+  if (!t || t.pending || !t.label) return null;
+  return { label: t.label, p_max: t.p_max };
+}
+
+// ---------------------------------------------------------------------------
+// Tier A run
+// ---------------------------------------------------------------------------
+
+async function runTierA() {
+  const btn = document.getElementById("btn-a");
+  btn.disabled = true;
+  try {
+    await ensureData();
+    setStatus("loading tier_a_live.json …");
+    const t0 = performance.now();
+    const engine = await loadTierA(TIER_A_URL);
+    const loadMs = performance.now() - t0;
+
+    const subset = scoredSamples();
+    const rows = [];
+    let sumLatency = 0;
+    for (let i = 0; i < subset.length; i++) {
+      const s = subset[i];
+      const out = await engine.predict(s.narrative || "");
+      sumLatency += out.latency_ms;
+      rows.push({ complaint_id: s.complaint_id, browser: out, official: officialTier(s, "tier_a_logreg") });
+      if (i % 25 === 0) {
+        setStatus(`Tier A: ${i + 1}/${subset.length}`);
+        await yieldToUI();
+      }
+    }
+
+    report.tier_a = compare(rows);
+    report.tier_a.mean_latency_ms = sumLatency / rows.length;
+    report.tier_a.load_ms = loadMs;
+    report.tier_a.engine_meta = {
+      schema_version: engine.meta.schema_version,
+      n_features: engine.meta.n_features,
+      n_features_word: engine.meta.n_features_word,
+      n_features_char: engine.meta.n_features_char,
+      calibration_method: engine.meta.calibration_method,
+      calibration_input: engine.meta.calibration_input,
+      calibration_input_source: engine.meta.calibration_input_source,
+      size_bytes: engine.meta.size_bytes,
+      provenance: engine.meta.provenance,
+    };
+
+    renderSummary();
+    publish();
+    setStatus(`Tier A done (${rows.length} narratives, ${(sumLatency / rows.length).toFixed(1)} ms/doc).`);
+  } catch (err) {
+    banner("Tier A run failed: " + String(err));
+    setStatus("Tier A failed.");
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tier B2 run
+// ---------------------------------------------------------------------------
+
+async function runTierB2() {
+  const btn = document.getElementById("btn-b2");
+  btn.disabled = true;
+  try {
+    await ensureData();
+    setStatus("fetching model.int8.onnx …");
+    const prog = el("progress");
+    prog.max = 1;
+    document.getElementById("status").appendChild(prog);
+
+    const t0 = performance.now();
+    const engine = await loadTierB2(TIER_B2_DIR, {
+      onProgress: (frac) => {
+        if (frac === null) { prog.removeAttribute("value"); return; }
+        prog.value = frac;
+        setStatus(`fetching model.int8.onnx … ${(frac * 100).toFixed(0)}%`);
+        document.getElementById("status").appendChild(prog);
+      },
+    });
+    const loadMs = performance.now() - t0;
+    report.env.ort_version = engine.meta.ort_version;
+
+    const subset = scoredSamples();
+    const rows = [];
+    let sumLatency = 0;
+    for (let i = 0; i < subset.length; i++) {
+      const s = subset[i];
+      const out = await engine.predict(s.narrative || "");
+      sumLatency += out.latency_ms;
+      rows.push({ complaint_id: s.complaint_id, browser: out, official: officialTier(s, "tier_b2") });
+      if (i % 5 === 0) {
+        setStatus(`Tier B2: ${i + 1}/${subset.length} (${(sumLatency / (i + 1)).toFixed(0)} ms/doc)`);
+        await yieldToUI();
+      }
+    }
+
+    const vsOfficial = compare(rows);
+    const vsPython = pythonInt8
+      ? compare(rows.map((r) => ({
+          complaint_id: r.complaint_id,
+          browser: r.browser,
+          official: pythonInt8.get(String(r.complaint_id)) || null,
+        })))
+      : null;
+
+    report.tier_b2 = {
+      n: rows.length,
+      vs_official_fp32: vsOfficial,
+      vs_python_int8: vsPython,
+      mean_latency_ms: sumLatency / rows.length,
+      load_ms: loadMs,
+      engine_meta: {
+        size_bytes: engine.meta.size_bytes,
+        temperature: engine.meta.temperature,
+        max_length: engine.meta.max_length,
+        vocab_size: engine.meta.vocab_size,
+        ort_version: engine.meta.ort_version,
+        input_names: engine.meta.input_names,
+        output_name: engine.meta.output_name,
+        provenance: engine.meta.provenance,
+      },
+    };
+
+    renderSummary();
+    publish();
+    setStatus(`Tier B2 done (${rows.length} narratives, ${(sumLatency / rows.length).toFixed(0)} ms/doc).`);
+  } catch (err) {
+    banner("Tier B2 run failed: " + String(err));
+    setStatus("Tier B2 failed.");
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// summary rendering
+// ---------------------------------------------------------------------------
+
+function agreementRows(label, cmp) {
+  if (!cmp) return [[label, "not available"]];
+  return [
+    [`${label} · n`, cmp.n],
+    [`${label} · label agreement`, cmp.label_agreement_vs_official === null
+      ? "—" : (cmp.label_agreement_vs_official * 100).toFixed(1) + "%"],
+    [`${label} · mean |Δp_max|`, fmtNum(cmp.mean_abs_delta_p_max)],
+    [`${label} · max |Δp_max|`, fmtNum(cmp.max_abs_delta_p_max)],
+    [`${label} · mismatches`, cmp.mismatches.length],
+  ];
+}
+
+function renderSummary() {
+  const wrap = document.getElementById("summary");
+  wrap.innerHTML = "";
+
+  if (report.tier_a) {
+    wrap.appendChild(el("h3", null, "Tier A (TF-IDF + LogReg + isotonic, pure JS)"));
+    wrap.appendChild(kvTable([
+      ...agreementRows("vs official record", report.tier_a),
+      ["mean latency", fmtNum(report.tier_a.mean_latency_ms, 2) + " ms"],
+      ["weights load", fmtNum(report.tier_a.load_ms, 0) + " ms"],
+      ["calibration input space", report.tier_a.engine_meta.calibration_input +
+        "  (" + report.tier_a.engine_meta.calibration_input_source + ")"],
+      ["features", `${report.tier_a.engine_meta.n_features} (${report.tier_a.engine_meta.n_features_word} word + ${report.tier_a.engine_meta.n_features_char} char)`],
+      ["weights size", (report.tier_a.engine_meta.size_bytes / 1e6).toFixed(1) + " MB"],
+    ]));
+  }
+
+  if (report.tier_b2) {
+    wrap.appendChild(el("h3", null, "Tier B2 (DistilBERT int8 ONNX, onnxruntime-web)"));
+    wrap.appendChild(kvTable([
+      ...agreementRows("vs official fp32", report.tier_b2.vs_official_fp32),
+      ...agreementRows("vs python int8", report.tier_b2.vs_python_int8),
+      ["mean latency", fmtNum(report.tier_b2.mean_latency_ms, 0) + " ms"],
+      ["model load", fmtNum(report.tier_b2.load_ms, 0) + " ms"],
+      ["model size", (report.tier_b2.engine_meta.size_bytes / 1e6).toFixed(1) + " MB"],
+      ["temperature", fmtNum(report.tier_b2.engine_meta.temperature, 4)],
+      ["ort version", report.tier_b2.engine_meta.ort_version],
+    ]));
+  }
+
+  if (!report.tier_a && !report.tier_b2) {
+    wrap.appendChild(el("div", null, "No run yet."));
+  }
+}
+
+document.getElementById("btn-a").addEventListener("click", runTierA);
+document.getElementById("btn-b2").addEventListener("click", runTierB2);
+renderSummary();
+renderReport();
+
+// Pre-load samples.json so a missing-file banner shows before any button press,
+// then honour ?autorun= for headless driving.
+ensureData()
+  .then(async () => {
+    const autorun = params.get("autorun");
+    if (autorun === "a" || autorun === "all") await runTierA();
+    if (autorun === "b2" || autorun === "all") await runTierB2();
+  })
+  .catch((err) => banner("Data load failed: " + String(err)));
+</script>
+</body>
+</html>

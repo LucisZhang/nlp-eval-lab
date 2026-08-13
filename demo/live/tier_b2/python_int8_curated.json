@@ -1,0 +1,1053 @@
+{
+  "class_labels": [
+    "card",
+    "credit_reporting",
+    "debt_collection",
+    "deposit_account",
+    "money_service",
+    "mortgage",
+    "payday_personal_loan",
+    "student_loan",
+    "vehicle_loan"
+  ],
+  "predictions": [
+    {
+      "complaint_id": 5729765,
+      "label": "debt_collection",
+      "p_max": 0.9770293911017328
+    },
+    {
+      "complaint_id": 5729934,
+      "label": "credit_reporting",
+      "p_max": 0.9325811654101058
+    },
+    {
+      "complaint_id": 5733467,
+      "label": "credit_reporting",
+      "p_max": 0.6648706305291631
+    },
+    {
+      "complaint_id": 5738062,
+      "label": "credit_reporting",
+      "p_max": 0.9543252805163791
+    },
+    {
+      "complaint_id": 5742788,
+      "label": "credit_reporting",
+      "p_max": 0.8075807912884014
+    },
+    {
+      "complaint_id": 5744473,
+      "label": "card",
+      "p_max": 0.8222972394323008
+    },
+    {
+      "complaint_id": 5751797,
+      "label": "credit_reporting",
+      "p_max": 0.9906191672015328
+    },
+    {
+      "complaint_id": 5752801,
+      "label": "credit_reporting",
+      "p_max": 0.9856045419282051
+    },
+    {
+      "complaint_id": 5762222,
+      "label": "deposit_account",
+      "p_max": 0.9696158560628756
+    },
+    {
+      "complaint_id": 5769062,
+      "label": "debt_collection",
+      "p_max": 0.9361261887388528
+    },
+    {
+      "complaint_id": 5769732,
+      "label": "credit_reporting",
+      "p_max": 0.9112847165797118
+    },
+    {
+      "complaint_id": 5771366,
+      "label": "mortgage",
+      "p_max": 0.9338917526939805
+    },
+    {
+      "complaint_id": 5773141,
+      "label": "deposit_account",
+      "p_max": 0.38823718319507
+    },
+    {
+      "complaint_id": 5776694,
+      "label": "credit_reporting",
+      "p_max": 0.9930194846784477
+    },
+    {
+      "complaint_id": 5777561,
+      "label": "credit_reporting",
+      "p_max": 0.9427914193400293
+    },
+    {
+      "complaint_id": 5790121,
+      "label": "credit_reporting",
+      "p_max": 0.8631912365001174
+    },
+    {
+      "complaint_id": 5794375,
+      "label": "credit_reporting",
+      "p_max": 0.8909206337022225
+    },
+    {
+      "complaint_id": 5801215,
+      "label": "credit_reporting",
+      "p_max": 0.9327410478744947
+    },
+    {
+      "complaint_id": 5807019,
+      "label": "credit_reporting",
+      "p_max": 0.9940439596694286
+    },
+    {
+      "complaint_id": 5812525,
+      "label": "credit_reporting",
+      "p_max": 0.7433536820441167
+    },
+    {
+      "complaint_id": 5812774,
+      "label": "credit_reporting",
+      "p_max": 0.9211578272355336
+    },
+    {
+      "complaint_id": 5813044,
+      "label": "student_loan",
+      "p_max": 0.8015915685938916
+    },
+    {
+      "complaint_id": 5813670,
+      "label": "credit_reporting",
+      "p_max": 0.9884912565476784
+    },
+    {
+      "complaint_id": 5817612,
+      "label": "credit_reporting",
+      "p_max": 0.8813949985837607
+    },
+    {
+      "complaint_id": 5819417,
+      "label": "vehicle_loan",
+      "p_max": 0.6146388907192456
+    },
+    {
+      "complaint_id": 5819724,
+      "label": "debt_collection",
+      "p_max": 0.9643932251800189
+    },
+    {
+      "complaint_id": 5820251,
+      "label": "card",
+      "p_max": 0.677271509003626
+    },
+    {
+      "complaint_id": 5820646,
+      "label": "credit_reporting",
+      "p_max": 0.9856006167616798
+    },
+    {
+      "complaint_id": 5821885,
+      "label": "money_service",
+      "p_max": 0.9750391223850741
+    },
+    {
+      "complaint_id": 5825445,
+      "label": "credit_reporting",
+      "p_max": 0.9699690285388964
+    },
+    {
+      "complaint_id": 5829015,
+      "label": "credit_reporting",
+      "p_max": 0.9845791969255134
+    },
+    {
+      "complaint_id": 5829362,
+      "label": "credit_reporting",
+      "p_max": 0.9725695304994068
+    },
+    {
+      "complaint_id": 5834585,
+      "label": "credit_reporting",
+      "p_max": 0.7232232321789357
+    },
+    {
+      "complaint_id": 5836167,
+      "label": "credit_reporting",
+      "p_max": 0.9844846483460684
+    },
+    {
+      "complaint_id": 5838024,
+      "label": "card",
+      "p_max": 0.8877555748897135
+    },
+    {
+      "complaint_id": 5838416,
+      "label": "card",
+      "p_max": 0.6757158211527969
+    },
+    {
+      "complaint_id": 5838909,
+      "label": "debt_collection",
+      "p_max": 0.9232185811225806
+    },
+    {
+      "complaint_id": 5839568,
+      "label": "credit_reporting",
+      "p_max": 0.9588850996643826
+    },
+    {
+      "complaint_id": 5843934,
+      "label": "card",
+      "p_max": 0.8721126819552774
+    },
+    {
+      "complaint_id": 5845076,
+      "label": "credit_reporting",
+      "p_max": 0.9598581239449875
+    },
+    {
+      "complaint_id": 5845288,
+      "label": "deposit_account",
+      "p_max": 0.9834919181277458
+    },
+    {
+      "complaint_id": 5845301,
+      "label": "credit_reporting",
+      "p_max": 0.9806415537081705
+    },
+    {
+      "complaint_id": 5847291,
+      "label": "debt_collection",
+      "p_max": 0.8110753009907141
+    },
+    {
+      "complaint_id": 5850167,
+      "label": "deposit_account",
+      "p_max": 0.894670693187816
+    },
+    {
+      "complaint_id": 5850551,
+      "label": "deposit_account",
+      "p_max": 0.46946711457708473
+    },
+    {
+      "complaint_id": 5867001,
+      "label": "deposit_account",
+      "p_max": 0.9607696239878978
+    },
+    {
+      "complaint_id": 5867317,
+      "label": "card",
+      "p_max": 0.8834447815652873
+    },
+    {
+      "complaint_id": 5867332,
+      "label": "credit_reporting",
+      "p_max": 0.982652449035476
+    },
+    {
+      "complaint_id": 5867636,
+      "label": "card",
+      "p_max": 0.9104139804274136
+    },
+    {
+      "complaint_id": 5871933,
+      "label": "debt_collection",
+      "p_max": 0.9746686244994549
+    },
+    {
+      "complaint_id": 5872622,
+      "label": "vehicle_loan",
+      "p_max": 0.6554716176285875
+    },
+    {
+      "complaint_id": 5872894,
+      "label": "credit_reporting",
+      "p_max": 0.9450720730373542
+    },
+    {
+      "complaint_id": 5876545,
+      "label": "credit_reporting",
+      "p_max": 0.9778990619911094
+    },
+    {
+      "complaint_id": 5877181,
+      "label": "credit_reporting",
+      "p_max": 0.8014900121193359
+    },
+    {
+      "complaint_id": 5877860,
+      "label": "credit_reporting",
+      "p_max": 0.5728782779119702
+    },
+    {
+      "complaint_id": 5880690,
+      "label": "credit_reporting",
+      "p_max": 0.9290645186891981
+    },
+    {
+      "complaint_id": 5881578,
+      "label": "credit_reporting",
+      "p_max": 0.31968149026073767
+    },
+    {
+      "complaint_id": 5881795,
+      "label": "mortgage",
+      "p_max": 0.9805190681701438
+    },
+    {
+      "complaint_id": 5895103,
+      "label": "deposit_account",
+      "p_max": 0.9741452474055684
+    },
+    {
+      "complaint_id": 5896272,
+      "label": "credit_reporting",
+      "p_max": 0.9844619936420638
+    },
+    {
+      "complaint_id": 5896625,
+      "label": "credit_reporting",
+      "p_max": 0.7601329467206666
+    },
+    {
+      "complaint_id": 5901508,
+      "label": "credit_reporting",
+      "p_max": 0.7991208646939619
+    },
+    {
+      "complaint_id": 5903957,
+      "label": "deposit_account",
+      "p_max": 0.9258525350721956
+    },
+    {
+      "complaint_id": 5904082,
+      "label": "credit_reporting",
+      "p_max": 0.985468224722186
+    },
+    {
+      "complaint_id": 5905003,
+      "label": "credit_reporting",
+      "p_max": 0.710029172365907
+    },
+    {
+      "complaint_id": 5910042,
+      "label": "mortgage",
+      "p_max": 0.5696120165900846
+    },
+    {
+      "complaint_id": 5913890,
+      "label": "deposit_account",
+      "p_max": 0.765009143325272
+    },
+    {
+      "complaint_id": 5914388,
+      "label": "credit_reporting",
+      "p_max": 0.9706875988223681
+    },
+    {
+      "complaint_id": 5919466,
+      "label": "money_service",
+      "p_max": 0.9723074870951919
+    },
+    {
+      "complaint_id": 5923438,
+      "label": "credit_reporting",
+      "p_max": 0.9901415606740447
+    },
+    {
+      "complaint_id": 5925094,
+      "label": "mortgage",
+      "p_max": 0.9674429398525342
+    },
+    {
+      "complaint_id": 5927131,
+      "label": "credit_reporting",
+      "p_max": 0.9681023328693539
+    },
+    {
+      "complaint_id": 5932180,
+      "label": "card",
+      "p_max": 0.953113406256434
+    },
+    {
+      "complaint_id": 5932227,
+      "label": "credit_reporting",
+      "p_max": 0.9703735302863239
+    },
+    {
+      "complaint_id": 5932521,
+      "label": "card",
+      "p_max": 0.9627351756950313
+    },
+    {
+      "complaint_id": 5946734,
+      "label": "deposit_account",
+      "p_max": 0.9754988496461594
+    },
+    {
+      "complaint_id": 5950732,
+      "label": "credit_reporting",
+      "p_max": 0.9926902113975852
+    },
+    {
+      "complaint_id": 5951304,
+      "label": "card",
+      "p_max": 0.46630314965606207
+    },
+    {
+      "complaint_id": 5954577,
+      "label": "credit_reporting",
+      "p_max": 0.9903818780550745
+    },
+    {
+      "complaint_id": 5956905,
+      "label": "credit_reporting",
+      "p_max": 0.9938835439101157
+    },
+    {
+      "complaint_id": 5957273,
+      "label": "debt_collection",
+      "p_max": 0.9350539608309951
+    },
+    {
+      "complaint_id": 5957354,
+      "label": "credit_reporting",
+      "p_max": 0.9671711598112727
+    },
+    {
+      "complaint_id": 5957774,
+      "label": "credit_reporting",
+      "p_max": 0.812299059694667
+    },
+    {
+      "complaint_id": 5960051,
+      "label": "mortgage",
+      "p_max": 0.981230724724257
+    },
+    {
+      "complaint_id": 5961910,
+      "label": "credit_reporting",
+      "p_max": 0.6583378805513351
+    },
+    {
+      "complaint_id": 5963610,
+      "label": "credit_reporting",
+      "p_max": 0.9819437310655014
+    },
+    {
+      "complaint_id": 5963948,
+      "label": "credit_reporting",
+      "p_max": 0.979745774512713
+    },
+    {
+      "complaint_id": 5965606,
+      "label": "credit_reporting",
+      "p_max": 0.6319548914904131
+    },
+    {
+      "complaint_id": 5965866,
+      "label": "debt_collection",
+      "p_max": 0.9716947939130018
+    },
+    {
+      "complaint_id": 5966238,
+      "label": "deposit_account",
+      "p_max": 0.8901843359425607
+    },
+    {
+      "complaint_id": 5971575,
+      "label": "credit_reporting",
+      "p_max": 0.6319927645987015
+    },
+    {
+      "complaint_id": 5973048,
+      "label": "money_service",
+      "p_max": 0.6099511374643276
+    },
+    {
+      "complaint_id": 5976824,
+      "label": "credit_reporting",
+      "p_max": 0.954865978707097
+    },
+    {
+      "complaint_id": 5977263,
+      "label": "credit_reporting",
+      "p_max": 0.9846738125524854
+    },
+    {
+      "complaint_id": 5988856,
+      "label": "credit_reporting",
+      "p_max": 0.9565536863032849
+    },
+    {
+      "complaint_id": 5991620,
+      "label": "credit_reporting",
+      "p_max": 0.9908768194382958
+    },
+    {
+      "complaint_id": 5992569,
+      "label": "deposit_account",
+      "p_max": 0.9854430570973545
+    },
+    {
+      "complaint_id": 5996541,
+      "label": "student_loan",
+      "p_max": 0.9734267058992718
+    },
+    {
+      "complaint_id": 5996969,
+      "label": "debt_collection",
+      "p_max": 0.8926200930735195
+    },
+    {
+      "complaint_id": 5999401,
+      "label": "credit_reporting",
+      "p_max": 0.4996140446524804
+    },
+    {
+      "complaint_id": 6000208,
+      "label": "credit_reporting",
+      "p_max": 0.9704275025753638
+    },
+    {
+      "complaint_id": 6001033,
+      "label": "credit_reporting",
+      "p_max": 0.9842062116827369
+    },
+    {
+      "complaint_id": 6006150,
+      "label": "card",
+      "p_max": 0.811693682475928
+    },
+    {
+      "complaint_id": 6018073,
+      "label": "debt_collection",
+      "p_max": 0.9727536073762317
+    },
+    {
+      "complaint_id": 6023228,
+      "label": "credit_reporting",
+      "p_max": 0.9902719888437822
+    },
+    {
+      "complaint_id": 6024310,
+      "label": "card",
+      "p_max": 0.9504519942445703
+    },
+    {
+      "complaint_id": 6024958,
+      "label": "credit_reporting",
+      "p_max": 0.9840222313422387
+    },
+    {
+      "complaint_id": 6025236,
+      "label": "card",
+      "p_max": 0.9620908870256674
+    },
+    {
+      "complaint_id": 6038454,
+      "label": "credit_reporting",
+      "p_max": 0.9206202166697917
+    },
+    {
+      "complaint_id": 6044654,
+      "label": "money_service",
+      "p_max": 0.6319902942658816
+    },
+    {
+      "complaint_id": 6047011,
+      "label": "card",
+      "p_max": 0.764483075669781
+    },
+    {
+      "complaint_id": 6048544,
+      "label": "mortgage",
+      "p_max": 0.9009875119472726
+    },
+    {
+      "complaint_id": 6053531,
+      "label": "mortgage",
+      "p_max": 0.8978000005640671
+    },
+    {
+      "complaint_id": 6067427,
+      "label": "deposit_account",
+      "p_max": 0.6715342035154774
+    },
+    {
+      "complaint_id": 6070078,
+      "label": "debt_collection",
+      "p_max": 0.7202519249048038
+    },
+    {
+      "complaint_id": 6078189,
+      "label": "debt_collection",
+      "p_max": 0.9578697319336653
+    },
+    {
+      "complaint_id": 6080794,
+      "label": "student_loan",
+      "p_max": 0.9649002812663076
+    },
+    {
+      "complaint_id": 6092048,
+      "label": "credit_reporting",
+      "p_max": 0.9876800847915301
+    },
+    {
+      "complaint_id": 6096276,
+      "label": "card",
+      "p_max": 0.9065894147695978
+    },
+    {
+      "complaint_id": 6099779,
+      "label": "student_loan",
+      "p_max": 0.4662689215218641
+    },
+    {
+      "complaint_id": 6102943,
+      "label": "credit_reporting",
+      "p_max": 0.9735858580431893
+    },
+    {
+      "complaint_id": 6104220,
+      "label": "card",
+      "p_max": 0.9107101104654771
+    },
+    {
+      "complaint_id": 6118030,
+      "label": "credit_reporting",
+      "p_max": 0.8624944673835974
+    },
+    {
+      "complaint_id": 6120846,
+      "label": "credit_reporting",
+      "p_max": 0.8843722146979778
+    },
+    {
+      "complaint_id": 6120870,
+      "label": "credit_reporting",
+      "p_max": 0.9107677377524326
+    },
+    {
+      "complaint_id": 6126325,
+      "label": "credit_reporting",
+      "p_max": 0.5060615151617538
+    },
+    {
+      "complaint_id": 6128305,
+      "label": "card",
+      "p_max": 0.9425577047795567
+    },
+    {
+      "complaint_id": 6134500,
+      "label": "card",
+      "p_max": 0.6540590156679235
+    },
+    {
+      "complaint_id": 6142472,
+      "label": "debt_collection",
+      "p_max": 0.9735164948214846
+    },
+    {
+      "complaint_id": 6142512,
+      "label": "credit_reporting",
+      "p_max": 0.9698830897738915
+    },
+    {
+      "complaint_id": 6144392,
+      "label": "credit_reporting",
+      "p_max": 0.9731113320582745
+    },
+    {
+      "complaint_id": 6148519,
+      "label": "credit_reporting",
+      "p_max": 0.97378026096495
+    },
+    {
+      "complaint_id": 6152895,
+      "label": "card",
+      "p_max": 0.5234728662196972
+    },
+    {
+      "complaint_id": 6164022,
+      "label": "credit_reporting",
+      "p_max": 0.688744426409233
+    },
+    {
+      "complaint_id": 6167444,
+      "label": "credit_reporting",
+      "p_max": 0.9760286953282736
+    },
+    {
+      "complaint_id": 6167922,
+      "label": "credit_reporting",
+      "p_max": 0.9630687313894869
+    },
+    {
+      "complaint_id": 6172118,
+      "label": "money_service",
+      "p_max": 0.8690105056022275
+    },
+    {
+      "complaint_id": 6173511,
+      "label": "deposit_account",
+      "p_max": 0.7277640284416805
+    },
+    {
+      "complaint_id": 6173681,
+      "label": "deposit_account",
+      "p_max": 0.740553444587077
+    },
+    {
+      "complaint_id": 6179112,
+      "label": "credit_reporting",
+      "p_max": 0.942200280878417
+    },
+    {
+      "complaint_id": 6180550,
+      "label": "credit_reporting",
+      "p_max": 0.6585829459483218
+    },
+    {
+      "complaint_id": 6182374,
+      "label": "deposit_account",
+      "p_max": 0.9253071427750633
+    },
+    {
+      "complaint_id": 6183220,
+      "label": "debt_collection",
+      "p_max": 0.9235579914435457
+    },
+    {
+      "complaint_id": 6189492,
+      "label": "deposit_account",
+      "p_max": 0.9547678430164679
+    },
+    {
+      "complaint_id": 6190095,
+      "label": "credit_reporting",
+      "p_max": 0.9763968915554199
+    },
+    {
+      "complaint_id": 6191864,
+      "label": "card",
+      "p_max": 0.47600928840193135
+    },
+    {
+      "complaint_id": 6203972,
+      "label": "credit_reporting",
+      "p_max": 0.9769715860160536
+    },
+    {
+      "complaint_id": 6206415,
+      "label": "mortgage",
+      "p_max": 0.9835990483291052
+    },
+    {
+      "complaint_id": 6210723,
+      "label": "credit_reporting",
+      "p_max": 0.9832963878517589
+    },
+    {
+      "complaint_id": 6217154,
+      "label": "money_service",
+      "p_max": 0.7653632402894129
+    },
+    {
+      "complaint_id": 6217340,
+      "label": "deposit_account",
+      "p_max": 0.9688004983286779
+    },
+    {
+      "complaint_id": 6218164,
+      "label": "credit_reporting",
+      "p_max": 0.9195229169021221
+    },
+    {
+      "complaint_id": 6218361,
+      "label": "card",
+      "p_max": 0.8049691000277517
+    },
+    {
+      "complaint_id": 6219516,
+      "label": "debt_collection",
+      "p_max": 0.6804726543632151
+    },
+    {
+      "complaint_id": 6224546,
+      "label": "credit_reporting",
+      "p_max": 0.9285025500422225
+    },
+    {
+      "complaint_id": 6228585,
+      "label": "vehicle_loan",
+      "p_max": 0.4947739526243302
+    },
+    {
+      "complaint_id": 6235508,
+      "label": "credit_reporting",
+      "p_max": 0.9924547520385898
+    },
+    {
+      "complaint_id": 6239165,
+      "label": "credit_reporting",
+      "p_max": 0.6548644005127658
+    },
+    {
+      "complaint_id": 6243769,
+      "label": "payday_personal_loan",
+      "p_max": 0.7698899728937468
+    },
+    {
+      "complaint_id": 6247829,
+      "label": "credit_reporting",
+      "p_max": 0.9591153764303465
+    },
+    {
+      "complaint_id": 6252149,
+      "label": "credit_reporting",
+      "p_max": 0.9836318251061285
+    },
+    {
+      "complaint_id": 6255865,
+      "label": "credit_reporting",
+      "p_max": 0.9703069166084726
+    },
+    {
+      "complaint_id": 6257995,
+      "label": "mortgage",
+      "p_max": 0.9639711517371218
+    },
+    {
+      "complaint_id": 6261567,
+      "label": "credit_reporting",
+      "p_max": 0.9598926446099436
+    },
+    {
+      "complaint_id": 6262521,
+      "label": "credit_reporting",
+      "p_max": 0.5280803812336284
+    },
+    {
+      "complaint_id": 6266869,
+      "label": "deposit_account",
+      "p_max": 0.45834653123082747
+    },
+    {
+      "complaint_id": 6267253,
+      "label": "debt_collection",
+      "p_max": 0.9529931770901442
+    },
+    {
+      "complaint_id": 6273173,
+      "label": "credit_reporting",
+      "p_max": 0.9608688778753307
+    },
+    {
+      "complaint_id": 6281918,
+      "label": "credit_reporting",
+      "p_max": 0.9309335009721033
+    },
+    {
+      "complaint_id": 6287108,
+      "label": "mortgage",
+      "p_max": 0.9798854986636428
+    },
+    {
+      "complaint_id": 6292366,
+      "label": "debt_collection",
+      "p_max": 0.37492311520016414
+    },
+    {
+      "complaint_id": 6296175,
+      "label": "credit_reporting",
+      "p_max": 0.6515823642161549
+    },
+    {
+      "complaint_id": 6307696,
+      "label": "debt_collection",
+      "p_max": 0.9098749763718906
+    },
+    {
+      "complaint_id": 6313514,
+      "label": "card",
+      "p_max": 0.739678116444389
+    },
+    {
+      "complaint_id": 6313867,
+      "label": "money_service",
+      "p_max": 0.9755134834699107
+    },
+    {
+      "complaint_id": 6321740,
+      "label": "credit_reporting",
+      "p_max": 0.8496969823961892
+    },
+    {
+      "complaint_id": 6321932,
+      "label": "card",
+      "p_max": 0.8430344371668013
+    },
+    {
+      "complaint_id": 6324416,
+      "label": "credit_reporting",
+      "p_max": 0.9929293942301234
+    },
+    {
+      "complaint_id": 6332442,
+      "label": "credit_reporting",
+      "p_max": 0.9694021316946523
+    },
+    {
+      "complaint_id": 6336481,
+      "label": "credit_reporting",
+      "p_max": 0.8972102269422894
+    },
+    {
+      "complaint_id": 6338237,
+      "label": "card",
+      "p_max": 0.9706800828749891
+    },
+    {
+      "complaint_id": 6338516,
+      "label": "credit_reporting",
+      "p_max": 0.9130655613817377
+    },
+    {
+      "complaint_id": 6344162,
+      "label": "mortgage",
+      "p_max": 0.6339444036112869
+    },
+    {
+      "complaint_id": 6346001,
+      "label": "credit_reporting",
+      "p_max": 0.9930721951493491
+    },
+    {
+      "complaint_id": 6348413,
+      "label": "debt_collection",
+      "p_max": 0.7403741853214247
+    },
+    {
+      "complaint_id": 6348667,
+      "label": "credit_reporting",
+      "p_max": 0.5331490949025017
+    },
+    {
+      "complaint_id": 6349099,
+      "label": "credit_reporting",
+      "p_max": 0.832991751737211
+    },
+    {
+      "complaint_id": 6350997,
+      "label": "credit_reporting",
+      "p_max": 0.6271565947373232
+    },
+    {
+      "complaint_id": 6353808,
+      "label": "debt_collection",
+      "p_max": 0.97711683184377
+    },
+    {
+      "complaint_id": 6359059,
+      "label": "debt_collection",
+      "p_max": 0.45313607066150063
+    },
+    {
+      "complaint_id": 6360581,
+      "label": "card",
+      "p_max": 0.9214481546259073
+    },
+    {
+      "complaint_id": 6363020,
+      "label": "deposit_account",
+      "p_max": 0.7643370954224475
+    },
+    {
+      "complaint_id": 6363100,
+      "label": "vehicle_loan",
+      "p_max": 0.9309178186599311
+    },
+    {
+      "complaint_id": 6365930,
+      "label": "debt_collection",
+      "p_max": 0.9379551586776576
+    },
+    {
+      "complaint_id": 6368387,
+      "label": "card",
+      "p_max": 0.48709265757723125
+    },
+    {
+      "complaint_id": 6369791,
+      "label": "credit_reporting",
+      "p_max": 0.9460450344530051
+    },
+    {
+      "complaint_id": 6378212,
+      "label": "credit_reporting",
+      "p_max": 0.8104904702363485
+    },
+    {
+      "complaint_id": 6379346,
+      "label": "money_service",
+      "p_max": 0.9490924487273114
+    },
+    {
+      "complaint_id": 6379486,
+      "label": "credit_reporting",
+      "p_max": 0.9688004826981944
+    },
+    {
+      "complaint_id": 6381274,
+      "label": "money_service",
+      "p_max": 0.8027625541948321
+    }
+  ],
+  "provenance": {
+    "batching": "batch_size=1, no padding (matches a single-example browser call)",
+    "batching_sensitivity": {
+      "batch1_pad_to_max_length": {
+        "label_disagreements": 1,
+        "max_abs_prob_delta": 0.018102552874968758,
+        "mean_abs_prob_delta": 0.000331586577038997
+      },
+      "batch32_padded": {
+        "label_disagreements": 2,
+        "max_abs_prob_delta": 0.06891499481814234,
+        "mean_abs_prob_delta": 0.0011543968434914885
+      },
+      "note": "onnxruntime dynamic int8 derives activation scales from the actual input tensor, so the same row scores differently under a different batch composition or pad length; these are the same 200 rows re-scored against the emitted batch_size=1/no-padding reference"
+    },
+    "checkpoint": "data/checkpoints/tier_b2_s0",
+    "curated_ids_source": "demo/data/curated_ids.json",
+    "git_sha": "db08c0c634bc5fa1d0207c2871f516381111b963",
+    "kind": "tier_b2_python_int8_reference",
+    "max_length": 256,
+    "n": 200,
+    "narrative_source": "data/splits/test_iid.parquet (same frozen split demo_build.build_samples reads)",
+    "onnx_int8": "data/onnx/tier_b2_s0/model.int8.onnx",
+    "onnx_int8_sha256": "da931ec8310cf1280747e22fc6ebfd30fd5f92e312ede6544042e1190764bb4a",
+    "onnxruntime": "1.28.0",
+    "probs": "softmax(logits / temperature), fp64 max-shifted",
+    "providers": [
+      "CPUExecutionProvider"
+    ],
+    "purpose": "Python/onnxruntime int8 reference over the curated 200, so a browser disagreement decomposes into quantization (results/onnx_parity) vs runtime/kernel",
+    "session_options": "default",
+    "temperature": 1.3191720008827763,
+    "temperature_source_run_id": "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687",
+    "tokenizer": "data/checkpoints/tier_b2_s0",
+    "truncation": true,
+    "wall_clock_seconds": 8.341467142105103
+  },
+  "schema_version": "live-v1"
+}

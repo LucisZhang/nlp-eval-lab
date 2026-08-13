@@ -107,6 +107,7 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 |---|---|---|
 | Static demo **site scaffold** (triage playground, frontier plot, policy builder, drift timeline, calibration panel, receipts drawer) | **done** (2026-08-10, $0, no new API calls, runs.jsonl untouched). `demo/` static site (vanilla JS, no external deps) + `demo/data/` (9 committed JSONs) built deterministically by `make demo-data` (`src/triage_lab/demo_build.py`, contract in `demo/DATA_CONTRACT.md`); curated set n=200 FROZEN (seed 20260806, pool = 1,500 Haiku∩Sonnet TEST-IID receipt ids, narratives from frozen splits); traceability test-enforced (`tests/test_demo_build.py`, 43 passed; CI-safe subset without `data/`); browser-verified light+dark, zero console errors; all Tier B panels explicit **pending Tier B** slot placeholders. Live ONNX inference deferred to a later Phase 6 task | EXPERIMENT_LOG 2026-08-10 Phase 6 task 1 |
 | Tier B panels + `headline_router` repoint + demo-data regen | **done** (2026-08-13, $0, derivation-only, runs.jsonl untouched at 55). Owner decision 2026-08-12 executed: `headline_router` → **`a_to_b`** (evidence-conditional in `router_sim.build_summary`; v2 summary regenerated, full/paired artifacts + all v1-generation artifacts byte-identical, sha-verified); demo rebuilt under `cost_model_v2.yaml`. All former pending slots real data: frontier 12 points (B1 ×3, B2, a_to_b `headline: true`, a_to_b_to_c; Haiku cascade relabeled LLM-cascade contrast), policy builder 4 policies (incl. frozen τ_B block), samples with real tier_b1/tier_b2 cards + a_to_b router paths (134 A / 66 B2 of 200; y_pred-vector replay gate), calibration 7 exhibits (4 temperature-scaled Tier B, ECE replay 1e-9), drift with tier_b2 series + both a_to_b arms. Only pending slot left: B1 yearly series (descoped, labeled). Curated set byte-identical (freeze gate exercised). Drift-chart latent bug fixed (series now keyed by full arm identity, not policy). Suite **593 passed / 1 skipped / 0 failed** — both known staleness failures cleared; browser-verified light+dark, zero console errors | EXPERIMENT_LOG 2026-08-13; `make demo-data` |
+| Live in-browser inference (Tier A + B2 int8) | **done** (2026-08-13, $0, runs.jsonl untouched at 55). Owner pre-check ran first: per-channel MatMulInteger probe in onnxruntime-web **PASS** (no fallback needed; logit deltas = unfused int8 kernel-order noise, bounded by Python's own unfused execution). Tier A exported via harness-code-path refit — **bit-identical** to frozen run `8e4d6345…` (200/200, Δ=0.0) — and reimplemented in JS (analyzers + WordPiece 0-mismatch vs sklearn/HF); B2 = shipped int8 ONNX (sha-verified vs parity artifact) + frozen T=1.31917 via vendored ort-web 1.27 wasm. **Browser-vs-Python agreement, curated 200: Tier A 100% (max|Δp_max| 1.7e-6), B2 99.0% vs official fp32 / 98.0% vs python-int8 batch-1** (all flips near-ties; batching sensitivity of DynamicQuantizeLinear measured + recorded); report frozen at `demo/live/agreement_report.json`, disclosed in the UI where predictions render. B2 lazy-loaded behind ~64 MB consent + progress; fully offline/vendored (`demo/vendor/ort/`, `demo/live/`); suite 610/1/0 with +17 `tests/test_demo_live.py`; `make demo-live` | EXPERIMENT_LOG 2026-08-13 (live in-browser inference) |
 | Case study page (verification + "does not prove" sections) | pending | — |
 | Provenance links to coursework seeds | pending | — |
 | `make reproduce-headline` | pending | — |
@@ -141,8 +142,9 @@ Tier B is **BLOCKED-until-weekend**; do the GPU-free work first, in this exact o
    **pending Tier B**.
 4. ~~**Phase 6 — Site scaffold.** Build the static demo structure and wire in available exhibits.~~
    **Done 2026-08-10** (EXPERIMENT_LOG Phase 6 task 1). Any panel/number sourced from Tier B is
-   **pending Tier B**. Remaining Phase 6 tasks, in order: live in-browser Tier A inference +
-   case study page (verification + "does not prove"), provenance links, `make reproduce-headline`.
+   **pending Tier B**. Remaining Phase 6 tasks, in order: ~~live in-browser inference (Tier A +
+   B2 int8)~~ **done 2026-08-13** → case study page (verification + "does not prove"),
+   provenance links, `make reproduce-headline`.
 
 **Tier B training: DONE (ingested + validated 2026-08-10).** Backfill order for the coming
 sessions (one task per session): ~~**(1)** Tier B harness finals — the four configs on TEST-IID with
@@ -161,9 +163,12 @@ rows / OOV dense-encoder centroid variant all **descoped by owner** with rationa
 ~~then Phase 6 panels~~ — **done 2026-08-13** (EXPERIMENT_LOG 2026-08-13: `headline_router`
 repointed to `a_to_b`, Haiku cascade kept as the LLM-cascade contrast exhibit, demo/data
 regenerated at 55 runs, both staleness test failures cleared, suite fully green). The
-**pending Tier B** backfill list is now empty. Remaining Phase 6 tasks, in order (§b item 4):
-live in-browser Tier A inference + case study page (verification + "does not prove"),
-provenance links, `make reproduce-headline` — **next session starts there**.
+**pending Tier B** backfill list is now empty. ~~Live in-browser inference (Tier A + B2
+int8)~~ — **done 2026-08-13** (EXPERIMENT_LOG 2026-08-13: owner pre-check PASS, Tier A
+bit-identical export + 100% browser agreement, B2 99.0% vs official fp32, report frozen
++ disclosed in UI). Remaining Phase 6 tasks, in order (§b item 4): case study page
+(verification + "does not prove"), provenance links, `make reproduce-headline` —
+**next session starts there**.
 
 ---
 

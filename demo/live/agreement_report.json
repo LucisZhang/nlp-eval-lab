@@ -1,0 +1,135 @@
+{
+  "tier_a": {
+    "n": 200,
+    "label_agreement_vs_official": 1,
+    "mean_abs_delta_p_max": 8.829998624226843e-09,
+    "max_abs_delta_p_max": 1.7495115983701126e-06,
+    "mismatches": [],
+    "mean_latency_ms": 2.467500000298023,
+    "load_ms": 580.6000000238419,
+    "engine_meta": {
+      "schema_version": "live-v1",
+      "n_features": 300000,
+      "n_features_word": 150000,
+      "n_features_char": 150000,
+      "calibration_method": "isotonic",
+      "calibration_input": "decision_function",
+      "calibration_input_source": "calibration.semantics",
+      "size_bytes": 19255406,
+      "provenance": {
+        "kind": "tier_a_live_export",
+        "source_run_id": "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+        "source_config": "configs/tier_a_logreg_test_iid.yaml",
+        "refit_seed": 20260805,
+        "git_sha": "db08c0c634bc5fa1d0207c2871f516381111b963",
+        "verify": {
+          "curated_n": 200,
+          "label_exact": 200,
+          "max_abs_delta_p_max": 0,
+          "max_abs_delta_prob": 0
+        }
+      }
+    }
+  },
+  "tier_b2": {
+    "n": 200,
+    "vs_official_fp32": {
+      "n": 200,
+      "label_agreement_vs_official": 0.99,
+      "mean_abs_delta_p_max": 0.013042603790409063,
+      "max_abs_delta_p_max": 0.11211895201215938,
+      "mismatches": [
+        {
+          "complaint_id": 5881578,
+          "browser_label": "mortgage",
+          "official_label": "credit_reporting"
+        },
+        {
+          "complaint_id": 6262521,
+          "browser_label": "mortgage",
+          "official_label": "credit_reporting"
+        }
+      ]
+    },
+    "vs_python_int8": {
+      "n": 200,
+      "label_agreement_vs_official": 0.98,
+      "mean_abs_delta_p_max": 0.012474816476029464,
+      "max_abs_delta_p_max": 0.09752486354720125,
+      "mismatches": [
+        {
+          "complaint_id": 5881578,
+          "browser_label": "mortgage",
+          "official_label": "credit_reporting"
+        },
+        {
+          "complaint_id": 5951304,
+          "browser_label": "deposit_account",
+          "official_label": "card"
+        },
+        {
+          "complaint_id": 6262521,
+          "browser_label": "mortgage",
+          "official_label": "credit_reporting"
+        },
+        {
+          "complaint_id": 6266869,
+          "browser_label": "card",
+          "official_label": "deposit_account"
+        }
+      ]
+    },
+    "mean_latency_ms": 1225.722499998808,
+    "load_ms": 685.5999999642372,
+    "engine_meta": {
+      "size_bytes": 67575183,
+      "temperature": 1.3191720008827763,
+      "max_length": 256,
+      "vocab_size": 30522,
+      "ort_version": "1.27.0",
+      "input_names": [
+        "input_ids",
+        "attention_mask"
+      ],
+      "output_name": "logits",
+      "provenance": {
+        "checkpoint": "data/checkpoints/tier_b2_s0",
+        "onnx_int8": "model.int8.onnx",
+        "parity": {
+          "agreement": {
+            "int8_vs_onnx_fp32": 0.9944,
+            "int8_vs_pytorch_fp32": 0.9944,
+            "onnx_fp32_vs_pytorch": 1
+          },
+          "argmax_agreement": 0.9944,
+          "macro_f1": {
+            "int8_minus_onnx_fp32": 0.0016393391827446147,
+            "int8_minus_pytorch_fp32": 0.0016393391827446147,
+            "onnx_fp32": 0.7866311646860237,
+            "onnx_int8": 0.7882705038687683,
+            "pytorch_fp32": 0.7866311646860237
+          },
+          "max_seq_length": 256,
+          "mean_abs_prob_delta": 0.001412195970377389,
+          "mean_abs_prob_delta_pairs": {
+            "int8_vs_onnx_fp32": 0.0014121941174671923,
+            "int8_vs_pytorch_fp32": 0.001412195970377389,
+            "onnx_fp32_vs_pytorch": 4.303171622758364e-08
+          },
+          "model_int8_onnx_sha256": "da931ec8310cf1280747e22fc6ebfd30fd5f92e312ede6544042e1190764bb4a",
+          "n_samples": 5000,
+          "source": "results/onnx_parity/tier_b2_s0_parity.json",
+          "subsample_split": "cal"
+        },
+        "temperature_source": "results/runs.jsonl -> the tier_b2_distilbert_s0.yaml TEST-IID record's extra.temperature (fit by NLL on CAL, tier_b.fit_temperature)",
+        "temperature_source_run_id": "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687"
+      }
+    }
+  },
+  "env": {
+    "ort_version": "1.27.0",
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Claude/1.28929.0 Chrome/148.0.7778.280 Electron/42.7.0 Safari/537.36",
+    "page": "http://localhost:8802/live/agreement.html?autorun=all",
+    "started_utc": "2026-08-13T09:17:18.895Z"
+  }
+}

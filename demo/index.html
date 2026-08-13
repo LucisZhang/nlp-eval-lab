@@ -38,8 +38,9 @@
         available tier plus the router's cascade decision.
       </p>
       <div class="notice-banner">
-        All LLM responses are precomputed from committed receipts (no live API). Live
-        in-browser Tier A/B inference lands with a later Phase 6 task.
+        Tier A and Tier B2 (DistilBERT int8) run live in-browser via WebAssembly, approximate
+        and clearly labeled below. Tier B1 (no ONNX export) and Tier C (an API model) remain
+        precomputed; all LLM responses are precomputed from committed receipts (no live API).
       </div>
       <div id="playground-banner-slot"></div>
 
@@ -57,6 +58,8 @@
           <p class="panel-desc">Select a complaint from the list to see per-tier responses and the router path.</p>
         </div>
       </div>
+
+      <div id="live-inference-slot"></div>
 
       <div class="panel-footer">
         Every number traces to results/runs.jsonl — append-only, committed. Tier B panels
