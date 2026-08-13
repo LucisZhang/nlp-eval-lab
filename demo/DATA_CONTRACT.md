@@ -23,6 +23,9 @@ Global conventions:
 - The payload builds under `configs/cost_model_v2.yaml` (the generation that prices Tier B);
   the build hard-fails under a config that does not price Tier B.
 - `evidence_class` ∈ {"measured", "estimated", "projected", "derived"} on every exhibit.
+  A fifth class, **"provenance"**, is in the legend but is used ONLY by `case_study.json`'s
+  provenance section (self-reported coursework figures quoted out of the read-only archive
+  `docs/seed-evidence/`). No exhibit file may carry it — the tests enforce that.
 
 ## Files
 
@@ -148,11 +151,12 @@ artifact.
 
 ```
 {"schema_version": "case-study-v1", "title": "...", "source_note": "...",
+ "repo": {"url_base": "<'' until the GitHub push>", "default_branch": "main"},
  "evidence_classes": {...same legend as meta.json...},
- "pending": [{"pending": true, "slot": "reproduce_headline"|"provenance_seeds", "label": "..."}],
+ "pending": [{"pending": true, "slot": "reproduce_headline", "label": "..."}],
  "sections": [
    {"id": "intro|tiers|drift|thresholds|router|robustness|negatives|verification|limits|provenance",
-    "kind": "narrative|verification|limits|pending",
+    "kind": "narrative|verification|limits|provenance|pending",
     "title": "...",
     "paragraphs": ["..."],                      // [] for verification/limits
     "numbers": [{"label": "<unique within section>",
@@ -160,19 +164,34 @@ artifact.
                  "value": float|int|{point, ci_lo, ci_hi},
                  "unit": "raw|usd|pct|pctpoint|count|pvalue",
                  "basis": "copied|derived|declared",
-                 "evidence_class": "measured|estimated|projected|derived",
+                 "evidence_class": "measured|estimated|projected|derived|provenance",
                  "run_ids": ["..."], "source": "<repo-relative path>",
                  "repro": "<command>"?, "note": "<formula / caveat>"?}],
     "repro": ["<command>"...],                  // the section's receipts line
     "run_ids": ["..."],                         // ordered union of its numbers' ids -> chips
-    "items": [...],                             // verification / limits rows, else []
+    "items": [...],                             // verification / limits / provenance rows, else []
     "gaps": ["..."],                            // numbers deliberately NOT quoted, and why
+    "lineage": [{"lesson", "practice"}]?,       // kind: provenance only
+    "caveats": ["..."]?,                        // kind: provenance only
     "pending": {...}?}]}
 ```
 
 `items` shape by `kind`: **verification** rows are
 `{"n": int, "title", "text", "source", "run_ids": [...], "evidence_class", "pending": {...}?}`;
-**limits** rows are `{"text"}`.
+**limits** rows are `{"text"}`; **provenance** rows are
+`{"path": "docs/seed-evidence/<file>", "role", "text", "evidence_class": "provenance"}`.
+
+#### `repo` — the one constant the GitHub-push session fills
+
+`repo.url_base` is emitted from a single module-level constant, `REPO_URL_BASE` in
+`src/triage_lab/demo_build.py`, and ships **empty**. `demo/assets/app.js` builds every repo
+href from it — `repoUrl(repo, kind, ref)` returns `{url_base}/blob/{default_branch}/{path}`,
+`{url_base}/commit/{sha}` or `{url_base}/actions` — and while `url_base` is `""` it returns
+null, so `repoRef()` renders the path as non-link `<code>` with a chip reading "link
+resolves after GitHub push". **The push session sets that one constant (e.g.
+`"https://github.com/<user>/nlp-eval-lab"`) and reruns `make demo-data`; nothing else
+changes, and no other file hardcodes a repo URL.** The demo stays fully static either way:
+these are `href` attributes, never fetches.
 
 Rules the tests enforce (`tests/test_demo_build.py`):
 
@@ -185,7 +204,8 @@ Rules the tests enforce (`tests/test_demo_build.py`):
    display's own precision. `raw` = the value; `usd`/`count` = the value with separators;
    `pct` = value × 100; `pctpoint` = the value, already in percent; `pvalue` = one
    significant figure.
-4. Every numeric token in `paragraphs` and in `items[].text` matches a `display` string
+4. Every numeric token in the section's rendered prose — `paragraphs`, `items[].title`,
+   `items[].role`, `items[].text`, `gaps`, `caveats`, `lineage[].lesson|practice` — matches a `display` string
    declared by that same section. The only exempt tokens are IDENTIFIERS, never
    quantities: calendar years and half-year slice labels (`2015`, `2026-H1`), ISO dates,
    hex digests, letter-prefixed tokens (`A6000`, `bf16`, `int8`, `fp32`, `v2`), the unit
@@ -200,7 +220,29 @@ comparisons that were `gaps` on 2026-08-13 are now stated — `triage_lab.tier_c
 --out` writes `results/tier_c_compare/*.json`, so they have a source to be checked against.
 The surviving `gaps` entry is a figure that exists only under a superseded cost generation.)
 
-Two slots are pending and rendered as labeled pending objects, never omitted:
-`reproduce_headline` (the `make reproduce-headline` target, next Phase 6 task) and
-`provenance_seeds` (links to the coursework seeds under the read-only
-`docs/seed-evidence/`).
+One slot is still pending and is rendered as a labeled pending object, never omitted:
+`reproduce_headline` (the `make reproduce-headline` target, next Phase 6 task). The former
+`provenance_seeds` slot shipped 2026-08-13 as the real `provenance` section below.
+
+#### The `provenance` section (`kind: "provenance"`)
+
+The coursework-seed lineage, and the one section whose numbers are **not this lab's
+evidence**: they are self-reported class results copied out of `docs/seed-evidence/`, a
+**read-only** citation archive (the builder only ever reads it). Three additional rules,
+all test-gated, apply on top of the five above:
+
+6. Every `numbers[]` entry carries `evidence_class: "provenance"`, `basis: "copied"`,
+   `run_ids: []`, and a `repro` of the form `grep -n '<display>' <source>`. Its `display`
+   must be an **exact substring** of the file its `source` names — a quotation, not a
+   reformatting — and the *build* fails first if it is not (`_seed_number`). Sources are
+   the archived files themselves, plus `UPGRADE_PLAN.md` for the two figures that exist
+   only to be disclaimed in `gaps`.
+7. `items[]` describes **every** file in `docs/seed-evidence/`: the build lists the
+   directory and hard-fails if the described set differs, so the citation set is the whole
+   archive rather than the flattering part of it. `role` is one of "seed exhibit lineage"
+   (the from-scratch Naive Bayes report and its four sweep outputs), "methodology seed"
+   (the NER session summary, whose lesson list this lab adopted) or "archived context — not
+   a seed" (the scraping report; that project was discarded by the upgrade plan).
+8. `gaps` records what `UPGRADE_PLAN.md` Appendix A claims that this archive cannot
+   support — the Kaggle 0.83615 figure and the 0.8136 starter baseline both cite documents
+   that are not in the repo — and names the archive-backed figures quoted instead.

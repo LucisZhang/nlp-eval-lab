@@ -24,6 +24,13 @@ DERIVED from a frozen per-example artifact by arithmetic that carries no free pa
 via ``evidence_class`` and a ``run_id`` / ``source`` provenance field, because a demo is
 exactly where an unattributed number does the most damage.
 
+**The provenance section is the one exception, and it says so.** The case study's
+coursework-seed section quotes self-reported class results out of the READ-ONLY archive
+`docs/seed-evidence/` (this module only ever reads it). Those figures carry their own
+evidence class — `provenance` — and their display strings must be exact substrings of the
+archived file, or the build fails. They are lineage, not evidence, and nothing else on the
+page depends on them.
+
 **Run ids are resolved, never transcribed.** ``results/runs.jsonl`` is the only registry;
 runs are looked up by (config stem, split) and the id falls out. A hardcoded id in this
 file would be a second source of truth that no gate compares against the log.
@@ -67,6 +74,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from collections import Counter
 from pathlib import Path
 
@@ -113,6 +121,25 @@ DEFAULT_LIVE_AGREEMENT = REPO_ROOT / "demo" / "live" / "agreement_report.json"
 DEFAULT_SNAPSHOT_MANIFEST = REPO_ROOT / "SNAPSHOT_MANIFEST.yaml"
 
 SCHEMA_VERSION = "demo-v1"
+
+# --- repo URL base (ONE constant; the GitHub-push session fills it) ----------------------
+# Empty until this repo has a public URL. Every repo-relative path the demo renders
+# (seed-evidence files today; commit and Actions links later) goes through `repo_block()`
+# -> `demo/assets/app.js`'s repoRef(), which renders a non-link <code> chip labeled
+# "link resolves after GitHub push" while this is "" and a real <a href> once it is set.
+# Filling it is a one-line change plus `make demo-data`; nothing else moves.
+REPO_URL_BASE: str = ""
+REPO_DEFAULT_BRANCH: str = "main"
+
+
+def repo_block(url_base: str = REPO_URL_BASE,
+               default_branch: str = REPO_DEFAULT_BRANCH) -> dict:
+    """The `repo` object `case_study.json` carries: pure function of the two constants.
+
+    A trailing slash on the base would produce `…//blob/…` hrefs downstream, so it is
+    normalized away here rather than in three places in the renderer.
+    """
+    return {"url_base": url_base.rstrip("/"), "default_branch": default_branch}
 
 # The primary operating point for every reported router number (STATUS.md Phase 4 task 5).
 OP_VERSION = router_sim.OP_V2
@@ -206,6 +233,13 @@ EVIDENCE_LEGEND = {
     "derived": (
         "arithmetic over measured inputs with no free parameters (calibration bins, the "
         "CAL threshold sweep, per-sample router paths under a frozen tau)"
+    ),
+    # Used ONLY by the case study's provenance section. It exists so a coursework score can
+    # never wear the same badge as a run this lab actually made.
+    "provenance": (
+        "a self-reported coursework result, copied verbatim from the read-only seed "
+        "archive under docs/seed-evidence/ — NOT verified or reproduced by this lab; "
+        "provenance, not evidence"
     ),
 }
 
@@ -1373,7 +1407,7 @@ CASE_STUDY_SOURCE_NOTE = (
 # logged experiment. It is recorded here as an explicit constant, stamped with the command
 # that produced it, rather than written into the prose where nothing could check it.
 SUITE_RESULT = {
-    "passed": 644,
+    "passed": 652,
     "skipped": 1,
     "failed": 0,
     "command": "uv run pytest -q",
@@ -1382,17 +1416,13 @@ SUITE_RESULT = {
              "src/triage_lab/demo_build.py, not a copy from results/"),
 }
 
+# One slot left: the provenance section shipped 2026-08-13 and is no longer pending.
 CASE_STUDY_PENDING = (
     {
         "slot": "reproduce_headline",
         "label": ("`make reproduce-headline` — pending (next Phase 6 task): a single "
                   "target that re-derives every headline number on this page from the "
                   "committed artifacts"),
-    },
-    {
-        "slot": "provenance_seeds",
-        "label": ("Provenance links to coursework seeds — pending "
-                  "(docs/seed-evidence/, read-only)"),
     },
 )
 
@@ -1512,7 +1542,8 @@ def _cs_number(label: str, display: str, value, *, unit: str, source: str,
 
 
 def _cs_section(section_id: str, kind: str, title: str, *, paragraphs=(), numbers=(),
-                repro=(), items=(), gaps=(), pending=None) -> dict:
+                repro=(), items=(), gaps=(), pending=None, lineage=None,
+                caveats=None) -> dict:
     """A page section. `run_ids` is the ordered union of its numbers' ids (the chips)."""
     run_ids: list[str] = []
     for entry in numbers:
@@ -1532,6 +1563,12 @@ def _cs_section(section_id: str, kind: str, title: str, *, paragraphs=(), number
     }
     if pending is not None:
         section["pending"] = pending
+    # kind-specific keys, emitted only where they mean something (provenance today), so a
+    # consumer never sees an empty `lineage` on a section that could not have one.
+    if lineage is not None:
+        section["lineage"] = list(lineage)
+    if caveats is not None:
+        section["caveats"] = list(caveats)
     return section
 
 
@@ -2528,16 +2565,260 @@ def _cs_limits() -> dict:
     )
 
 
+# --- provenance: the coursework seeds (docs/seed-evidence/, READ-ONLY) -------------------
+#
+# The one section on the page whose numbers are NOT this lab's evidence. They are
+# self-reported class results, copied character-for-character out of a read-only archive of
+# the original write-ups, and they carry their own evidence class ("provenance") so a reader
+# can never mistake one for a run this lab made. Three rules keep that honest:
+#
+#   1. A display is an EXACT SUBSTRING of the file it cites. `_seed_number` re-reads the
+#      file at build time and refuses to emit anything it cannot find, so the digits on the
+#      page are the digits in the archive — including "5,787" with its comma and the
+#      Naive Bayes F1 at its full absurd precision (rounding it would be a new number).
+#   2. Every file in the archive is described. The build lists the directory and hard-fails
+#      if the set of described paths differs, so a file cannot be added or removed without
+#      the page saying what it is.
+#   3. What the plan claims but the archive does not contain goes in `gaps`, not in the
+#      prose (UPGRADE_PLAN Appendix A's Kaggle 0.83615 and the 0.8136 starter baseline both
+#      cite documents that are NOT in this repo).
+#
+# Nothing here is edited, executed or regenerated: this module only reads.
+
+SEED_EVIDENCE_DIR = REPO_ROOT / "docs" / "seed-evidence"
+
+SEED_NB_REPORT = "docs/seed-evidence/task2-naive-bayes-report.md"
+SEED_NER_SUMMARY = "docs/seed-evidence/task3-ner-memm-session-summary.md"
+SEED_SCRAPING_REPORT = "docs/seed-evidence/task1-scraping-report.md"
+SEED_NB_SWEEP = "docs/seed-evidence/classification_result_{n}.txt"
+UPGRADE_PLAN = "UPGRADE_PLAN.md"
+
+# role labels (rendered): deliberately digit-free, because every numeric token on this page
+# has to be a declared, sourced number and a role label is neither.
+ROLE_SEED = "seed exhibit lineage"
+ROLE_METHOD = "methodology seed"
+ROLE_ARCHIVE = "archived context — not a seed"
+
+
+def _seed_text(rel_path: str) -> str:
+    return (REPO_ROOT / rel_path).read_text(encoding="utf-8")
+
+
+# A whole numeric token, on the same rule the case study's prose gate uses: not preceded by
+# a letter or digit, and swallowing its own thousands separators and decimals. Substring
+# matching would let a short display like "15" pass on the "15" inside "1155".
+_SEED_TOKEN_RE = re.compile(r"(?<![0-9A-Za-z])\d[\d,]*(?:\.\d+)?(?:[eE][+-]?\d+)?")
+
+
+def _seed_number(label: str, display: str, *, source: str, unit: str = "raw",
+                 note: str | None = None) -> dict:
+    """One coursework figure, quoted exactly as its source file writes it.
+
+    Hard-fails the build when `display` is not a whole numeric token of the file — same
+    string, same thousands separators, same precision. A provenance number that has drifted
+    from the archive is worse than no provenance section at all.
+    """
+    text = _seed_text(source)
+    if display not in {m.group(0) for m in _SEED_TOKEN_RE.finditer(text)}:
+        raise ValueError(
+            f"provenance number {label!r}: {display!r} is not a number {source} writes "
+            f"(as that exact token); quote the archive, do not restate it")
+    numeric = float(display.replace(",", ""))
+    value = int(numeric) if unit == "count" else numeric
+    return _cs_number(label, display, value, unit=unit, source=source, run_ids=[],
+                      basis="copied", evidence_class="provenance",
+                      repro=f"grep -n '{display}' {source}", note=note)
+
+
+def _seed_items() -> list[dict]:
+    """One card per file in the read-only archive, in the order the story needs them."""
+    items = [
+        {"path": SEED_NB_REPORT, "role": ROLE_SEED,
+         "text": ("The from-scratch multinomial Naive Bayes report (Reuters, five news "
+                  "classes): tokenizing, Porter stemming, frequency-based feature "
+                  "selection, Laplace smoothing, log-space scoring and a macro-F1. This is "
+                  "the ancestor of this lab's classical tier — which is sklearn, not this "
+                  "code."),
+         "evidence_class": "provenance"},
+    ]
+    for n_features, kind in (("3000", "the smallest sweep setting"),
+                             ("5000", "a sweep setting"),
+                             ("10000", "the assignment's required setting"),
+                             ("15000", "the largest sweep setting")):
+        items.append(
+            {"path": SEED_NB_SWEEP.format(n=n_features), "role": ROLE_SEED,
+             "text": (f"Per-document Naive Bayes predictions at {n_features} selected "
+                      f"features — {kind}. The report's sweep row for this setting was "
+                      f"scored from this file; it is kept as the output artifact behind a "
+                      f"quoted number, not as a number itself."),
+             "evidence_class": "provenance"})
+    items.append(
+        {"path": SEED_NER_SUMMARY, "role": ROLE_METHOD,
+         "text": ("The dated iteration log of the CoNLL-2003 MEMM NER project (group work): "
+                  "four feature phases with dev scores, four Kaggle submissions each with a "
+                  "stated hypothesis and a stated verdict, harmful features identified and "
+                  "removed with reasons, an out-of-memory failure and its fix. Its lesson "
+                  "list is what this lab's method section was built from."),
+         "evidence_class": "provenance"})
+    items.append(
+        {"path": SEED_SCRAPING_REPORT, "role": ROLE_ARCHIVE,
+         "text": ("A crawl-and-preprocess pipeline over 200 scraped book descriptions, from "
+                  "the earliest coursework project. The upgrade plan's "
+                  "reuse-versus-discard audit discarded that project outright: nothing in "
+                  "it seeds this lab, and it is archived here only so the citation set is "
+                  "the whole archive rather than the flattering part of it."),
+         "evidence_class": "provenance"})
+    return items
+
+
+SEED_LINEAGE = (
+    {"lesson": ("Convergence is a hyperparameter, not a detail: raising the MEMM's "
+                "MAX_ITER from 15 to 25 was the single biggest gain in the NER project, "
+                "bigger than any feature it tried."),
+     "practice": ("Every training and optimization constant lives in a per-run YAML config "
+                  "whose hash is stamped into the run record, so no result depends on a "
+                  "value nobody wrote down.")},
+    {"lesson": ("Removing harmful features beat adding good ones — no_gaz and pl|s3 were "
+                "dropped with mechanistic explanations, and the score moved."),
+     "practice": ("Negative results are first-class: EXPERIMENT_LOG.md publishes the failed "
+                  "hypotheses, and this page's 'what this does not prove' section is as "
+                  "long as its results.")},
+    {"lesson": ("Each Kaggle submission changed exactly one thing against the previous one, "
+                "so every score delta had a candidate cause."),
+     "practice": ("Single-variable experiment discipline: one config delta per run, one "
+                  "appended record in results/runs.jsonl, one logged verdict.")},
+    {"lesson": ("The dev-to-test drop of about 0.04 F1 was diagnosed as a temporal "
+                "out-of-vocabulary gap between news periods, and reported as structural "
+                "rather than explained away as noise."),
+     "practice": ("The entire drift protocol: yearly evaluations, the prior-shift "
+                  "decomposition, and OOV tracking against the frozen training vocabulary.")},
+    {"lesson": ("The coursework could not afford bootstrap confidence intervals and said so "
+                "in its own presentation notes, which left every improvement claim resting "
+                "on a single point estimate."),
+     "practice": ("This lab puts a bootstrap interval on every headline number and a paired "
+                  "interval on every comparison claim; a delta whose interval contains zero "
+                  "is reported as a tie.")},
+)
+
+SEED_CAVEATS = (
+    ("The NER project was group work. Role attribution — that the owner led the modeling — "
+     "is biographical context, not a measured claim, and nothing in this archive verifies "
+     "it."),
+    ("The coursework datasets (Reuters, CoNLL-2003) are research-licensed and were "
+     "deliberately excluded from this repo. Only the write-ups are archived; no coursework "
+     "dataset, notebook or submission file is redistributed here."),
+)
+
+SEED_GAPS = (
+    ("The upgrade plan's appendix cites a best Kaggle public score of 0.83615, from a later "
+     "submission whose only record is a notebook docstring that is NOT in this archive. The "
+     "page quotes what the committed session summary states — the best of the four "
+     "submissions it documents — and treats the higher figure as uncited."),
+    ("The same appendix frames the NER progression from a starter-code baseline of 0.8136, "
+     "which comes from a document that is not in this archive either. The page therefore "
+     "starts the progression at the owner's own first phase, which the committed summary "
+     "does state."),
+    ("The 'coursework could not afford bootstrap CIs' line traces to the group's "
+     "presentation speaker notes, which are not in this archive. It is stated as narrative "
+     "lineage, not quoted as a source."),
+    ("The plan's general caveat says both coursework reports acknowledge AI assistance. In "
+     "the committed archive, the Naive Bayes report carries an explicit acknowledgement "
+     "section, while the NER summary instead documents a feature catalogue synthesized from "
+     "AI research sources. The page says what the files say."),
+)
+
+
 def _cs_provenance() -> dict:
-    slot = CASE_STUDY_PENDING[1]
+    items = _seed_items()
+    described = {item["path"] for item in items}
+    on_disk = {f"docs/seed-evidence/{p.name}" for p in sorted(SEED_EVIDENCE_DIR.iterdir())
+               if p.is_file() and not p.name.startswith(".")}
+    if described != on_disk:
+        raise ValueError(
+            "docs/seed-evidence/ and the provenance section disagree: "
+            f"undescribed on disk {sorted(on_disk - described)}, described but missing "
+            f"{sorted(described - on_disk)} — the archive is the citation set, so every "
+            "file in it must be named on the page")
+
+    numbers = [
+        _seed_number("nb_macro_f1", "0.9647679093041557", source=SEED_NB_REPORT,
+                     note="macro-F1 on the provided Reuters test set at the required "
+                          "feature count, as the report states it"),
+        _seed_number("nb_features_baseline", "10000", source=SEED_NB_REPORT, unit="count"),
+        _seed_number("nb_features_min", "3000", source=SEED_NB_REPORT, unit="count"),
+        _seed_number("nb_features_mid", "5000", source=SEED_NB_REPORT, unit="count"),
+        _seed_number("nb_features_max", "15000", source=SEED_NB_REPORT, unit="count"),
+        _seed_number("nb_sweep_low", "0.9636702838478547", source=SEED_NB_REPORT,
+                     note="lowest macro-F1 in the report's feature-count sweep"),
+        _seed_number("nb_sweep_high", "0.9658523189692165", source=SEED_NB_REPORT,
+                     note="highest macro-F1 in the report's feature-count sweep"),
+        _seed_number("nb_train_docs", "5,787", source=SEED_NB_REPORT, unit="count"),
+        _seed_number("nb_test_docs", "2,298", source=SEED_NB_REPORT, unit="count"),
+        _seed_number("ner_dev_first", "0.8322", source=SEED_NER_SUMMARY,
+                     note="dev macro-F1 of the owner's own first feature phase"),
+        _seed_number("ner_dev_best", "0.8733", source=SEED_NER_SUMMARY,
+                     note="dev macro-F1 after feature pruning and more iterations"),
+        _seed_number("ner_kaggle_low", "0.82335", source=SEED_NER_SUMMARY,
+                     note="weakest of the four public scores the summary documents"),
+        _seed_number("ner_kaggle_high", "0.83522", source=SEED_NER_SUMMARY,
+                     note="best of the four public scores the summary documents"),
+        _seed_number("ner_dev_test_gap", "0.04", source=SEED_NER_SUMMARY,
+                     note="the dev-to-test macro-F1 gap the summary calls structural"),
+        _seed_number("ner_max_iter_from", "15", source=SEED_NER_SUMMARY, unit="count"),
+        _seed_number("ner_max_iter_to", "25", source=SEED_NER_SUMMARY, unit="count"),
+        _seed_number("scrape_books", "200", source=SEED_SCRAPING_REPORT, unit="count",
+                     note="book descriptions crawled, cleaned, tokenized and stemmed"),
+        _seed_number("appendix_kaggle_uncited", "0.83615", source=UPGRADE_PLAN,
+                     note="quoted only to record the discrepancy in `gaps`; its source "
+                          "document is not in docs/seed-evidence/"),
+        _seed_number("appendix_starter_baseline", "0.8136", source=UPGRADE_PLAN,
+                     note="quoted only to record the discrepancy in `gaps`; its source "
+                          "document is not in docs/seed-evidence/"),
+    ]
+    d = {e["label"]: e["display"] for e in numbers}
     return _cs_section(
-        "provenance", "pending", "Provenance — coursework seeds",
-        paragraphs=[("The provenance section links this lab's exhibits back to the "
-                    "coursework artifacts that motivated them. It is a separate task and "
-                    "is shown as a labeled pending slot rather than omitted, because "
-                    "“not built yet” and “nothing to show” are "
-                    "different claims.")],
-        pending=pending_slot(slot["slot"], slot["label"]),
+        "provenance", "provenance",
+        "Provenance — the coursework seeds, and what they are not",
+        paragraphs=[
+            ("This lab began as the rewrite of three graduate NLP coursework projects, and "
+             "the figures in this section are here for lineage only: coursework seed "
+             "scores are self-reported class results — provenance, not evidence. No claim "
+             "anywhere else on this page rests on them. Everything this lab asserts rests "
+             "instead on artifacts a stranger can re-derive: a frozen CFPB snapshot, an "
+             "append-only run log, a bootstrap interval on every headline number, and a "
+             "reproduction command for each one."),
+            ("The numbers below were copied character-for-character out of "
+             "docs/seed-evidence/, a read-only citation archive of the original write-ups. "
+             "They were not recomputed and have not been verified here; the build simply "
+             "refuses to print a figure it cannot find in the archived file. The Naive "
+             "Bayes report also carries an explicit AI-assistance acknowledgement, and the "
+             "NER project's feature catalogue was synthesized from AI research sources — "
+             "which is one more reason the portfolio narrative rests on this lab's "
+             "evidence rather than on these."),
+            (f"Naive Bayes on the five-class Reuters set, implemented from scratch: "
+             f"macro-F1 {d['nb_macro_f1']} at the required "
+             f"{d['nb_features_baseline']}-feature setting, over {d['nb_train_docs']} "
+             f"training and {d['nb_test_docs']} test documents. Sweeping the feature count "
+             f"across {d['nb_features_min']} / {d['nb_features_mid']} / "
+             f"{d['nb_features_baseline']} / {d['nb_features_max']} moved the score only "
+             f"between {d['nb_sweep_low']} and {d['nb_sweep_high']} — a spread with no "
+             f"interval around it, which is exactly the habit this lab was built to break."),
+            (f"The MEMM NER project logged four documented feature phases, from a dev "
+             f"macro-F1 of {d['ner_dev_first']} to {d['ner_dev_best']}, and four Kaggle "
+             f"submissions between {d['ner_kaggle_low']} and {d['ner_kaggle_high']}, each "
+             f"with a stated hypothesis and a stated verdict — including one recorded, in "
+             f"the summary's own words, as HYPOTHESIS WRONG. That summary also calls its "
+             f"dev-to-test gap of about {d['ner_dev_test_gap']} F1 a structural property "
+             f"of the corpus: the test split comes from a later period of news with a "
+             f"higher out-of-vocabulary rate. A drift protocol grew out of that sentence."),
+        ],
+        numbers=numbers,
+        items=items,
+        lineage=SEED_LINEAGE,
+        caveats=list(SEED_CAVEATS),
+        gaps=list(SEED_GAPS),
+        repro=["shasum -a 256 docs/seed-evidence/*",
+               "uv run python -m triage_lab.demo_build --all"],
     )
 
 
@@ -2579,6 +2860,7 @@ def build_case_study(records: list[dict], resolved: dict, cfg: cost_model.CostCo
         "schema_version": CASE_STUDY_SCHEMA,
         "title": CASE_STUDY_TITLE,
         "source_note": CASE_STUDY_SOURCE_NOTE,
+        "repo": repo_block(),
         "sections": sections,
         "pending": [pending_slot(slot["slot"], slot["label"])
                     for slot in CASE_STUDY_PENDING],

@@ -3,20 +3,20 @@
     "derived": "arithmetic over measured inputs with no free parameters (calibration bins, the CAL threshold sweep, per-sample router paths under a frozen tau)",
     "estimated": "a modeling assumption the reader is invited to move (c_misroute, c_human, the Tier A amortized-zero compute charge) — never a measurement",
     "measured": "read off a real observation: a logged run metric, a per-call receipt, or a deterministic derivation from a frozen per-example artifact",
-    "projected": "an extrapolation to conditions not evaluated (e.g. cost at a volume no run reached); carries the assumption that produced it"
+    "projected": "an extrapolation to conditions not evaluated (e.g. cost at a volume no run reached); carries the assumption that produced it",
+    "provenance": "a self-reported coursework result, copied verbatim from the read-only seed archive under docs/seed-evidence/ — NOT verified or reproduced by this lab; provenance, not evidence"
   },
   "pending": [
     {
       "label": "`make reproduce-headline` — pending (next Phase 6 task): a single target that re-derives every headline number on this page from the committed artifacts",
       "pending": true,
       "slot": "reproduce_headline"
-    },
-    {
-      "label": "Provenance links to coursework seeds — pending (docs/seed-evidence/, read-only)",
-      "pending": true,
-      "slot": "provenance_seeds"
     }
   ],
+  "repo": {
+    "default_branch": "main",
+    "url_base": ""
+  },
   "schema_version": "case-study-v1",
   "sections": [
     {
@@ -1917,7 +1917,7 @@
           "n": 9,
           "run_ids": [],
           "source": "tests/test_demo_build.py",
-          "text": "A smoke eval runs in CI; the full suite is 644 passed / 1 skipped / 0 failed. The demo's traceability is test-enforced: every run id under demo/data must exist in the results log, every copied number must equal its source, and every numeric token in this page's prose must be a declared, sourced value.",
+          "text": "A smoke eval runs in CI; the full suite is 652 passed / 1 skipped / 0 failed. The demo's traceability is test-enforced: every run id under demo/data must exist in the results log, every copied number must equal its source, and every numeric token in this page's prose must be a declared, sourced value.",
           "title": "Tests, including the one that guards this page"
         },
         {
@@ -2098,7 +2098,7 @@
         },
         {
           "basis": "declared",
-          "display": "644",
+          "display": "652",
           "evidence_class": "measured",
           "label": "suite_passed",
           "note": "measured in this working tree at the git SHA meta.json records; a test run is not a logged experiment, so this is a declared constant in src/triage_lab/demo_build.py, not a copy from results/",
@@ -2106,7 +2106,7 @@
           "run_ids": [],
           "source": "src/triage_lab/demo_build.py",
           "unit": "count",
-          "value": 644
+          "value": 652
         },
         {
           "basis": "declared",
@@ -2181,22 +2181,318 @@
       "title": "What this does not prove"
     },
     {
-      "gaps": [],
-      "id": "provenance",
-      "items": [],
-      "kind": "pending",
-      "numbers": [],
-      "paragraphs": [
-        "The provenance section links this lab's exhibits back to the coursework artifacts that motivated them. It is a separate task and is shown as a labeled pending slot rather than omitted, because “not built yet” and “nothing to show” are different claims."
+      "caveats": [
+        "The NER project was group work. Role attribution — that the owner led the modeling — is biographical context, not a measured claim, and nothing in this archive verifies it.",
+        "The coursework datasets (Reuters, CoNLL-2003) are research-licensed and were deliberately excluded from this repo. Only the write-ups are archived; no coursework dataset, notebook or submission file is redistributed here."
       ],
-      "pending": {
-        "label": "Provenance links to coursework seeds — pending (docs/seed-evidence/, read-only)",
-        "pending": true,
-        "slot": "provenance_seeds"
-      },
-      "repro": [],
+      "gaps": [
+        "The upgrade plan's appendix cites a best Kaggle public score of 0.83615, from a later submission whose only record is a notebook docstring that is NOT in this archive. The page quotes what the committed session summary states — the best of the four submissions it documents — and treats the higher figure as uncited.",
+        "The same appendix frames the NER progression from a starter-code baseline of 0.8136, which comes from a document that is not in this archive either. The page therefore starts the progression at the owner's own first phase, which the committed summary does state.",
+        "The 'coursework could not afford bootstrap CIs' line traces to the group's presentation speaker notes, which are not in this archive. It is stated as narrative lineage, not quoted as a source.",
+        "The plan's general caveat says both coursework reports acknowledge AI assistance. In the committed archive, the Naive Bayes report carries an explicit acknowledgement section, while the NER summary instead documents a feature catalogue synthesized from AI research sources. The page says what the files say."
+      ],
+      "id": "provenance",
+      "items": [
+        {
+          "evidence_class": "provenance",
+          "path": "docs/seed-evidence/task2-naive-bayes-report.md",
+          "role": "seed exhibit lineage",
+          "text": "The from-scratch multinomial Naive Bayes report (Reuters, five news classes): tokenizing, Porter stemming, frequency-based feature selection, Laplace smoothing, log-space scoring and a macro-F1. This is the ancestor of this lab's classical tier — which is sklearn, not this code."
+        },
+        {
+          "evidence_class": "provenance",
+          "path": "docs/seed-evidence/classification_result_3000.txt",
+          "role": "seed exhibit lineage",
+          "text": "Per-document Naive Bayes predictions at 3000 selected features — the smallest sweep setting. The report's sweep row for this setting was scored from this file; it is kept as the output artifact behind a quoted number, not as a number itself."
+        },
+        {
+          "evidence_class": "provenance",
+          "path": "docs/seed-evidence/classification_result_5000.txt",
+          "role": "seed exhibit lineage",
+          "text": "Per-document Naive Bayes predictions at 5000 selected features — a sweep setting. The report's sweep row for this setting was scored from this file; it is kept as the output artifact behind a quoted number, not as a number itself."
+        },
+        {
+          "evidence_class": "provenance",
+          "path": "docs/seed-evidence/classification_result_10000.txt",
+          "role": "seed exhibit lineage",
+          "text": "Per-document Naive Bayes predictions at 10000 selected features — the assignment's required setting. The report's sweep row for this setting was scored from this file; it is kept as the output artifact behind a quoted number, not as a number itself."
+        },
+        {
+          "evidence_class": "provenance",
+          "path": "docs/seed-evidence/classification_result_15000.txt",
+          "role": "seed exhibit lineage",
+          "text": "Per-document Naive Bayes predictions at 15000 selected features — the largest sweep setting. The report's sweep row for this setting was scored from this file; it is kept as the output artifact behind a quoted number, not as a number itself."
+        },
+        {
+          "evidence_class": "provenance",
+          "path": "docs/seed-evidence/task3-ner-memm-session-summary.md",
+          "role": "methodology seed",
+          "text": "The dated iteration log of the CoNLL-2003 MEMM NER project (group work): four feature phases with dev scores, four Kaggle submissions each with a stated hypothesis and a stated verdict, harmful features identified and removed with reasons, an out-of-memory failure and its fix. Its lesson list is what this lab's method section was built from."
+        },
+        {
+          "evidence_class": "provenance",
+          "path": "docs/seed-evidence/task1-scraping-report.md",
+          "role": "archived context — not a seed",
+          "text": "A crawl-and-preprocess pipeline over 200 scraped book descriptions, from the earliest coursework project. The upgrade plan's reuse-versus-discard audit discarded that project outright: nothing in it seeds this lab, and it is archived here only so the citation set is the whole archive rather than the flattering part of it."
+        }
+      ],
+      "kind": "provenance",
+      "lineage": [
+        {
+          "lesson": "Convergence is a hyperparameter, not a detail: raising the MEMM's MAX_ITER from 15 to 25 was the single biggest gain in the NER project, bigger than any feature it tried.",
+          "practice": "Every training and optimization constant lives in a per-run YAML config whose hash is stamped into the run record, so no result depends on a value nobody wrote down."
+        },
+        {
+          "lesson": "Removing harmful features beat adding good ones — no_gaz and pl|s3 were dropped with mechanistic explanations, and the score moved.",
+          "practice": "Negative results are first-class: EXPERIMENT_LOG.md publishes the failed hypotheses, and this page's 'what this does not prove' section is as long as its results."
+        },
+        {
+          "lesson": "Each Kaggle submission changed exactly one thing against the previous one, so every score delta had a candidate cause.",
+          "practice": "Single-variable experiment discipline: one config delta per run, one appended record in results/runs.jsonl, one logged verdict."
+        },
+        {
+          "lesson": "The dev-to-test drop of about 0.04 F1 was diagnosed as a temporal out-of-vocabulary gap between news periods, and reported as structural rather than explained away as noise.",
+          "practice": "The entire drift protocol: yearly evaluations, the prior-shift decomposition, and OOV tracking against the frozen training vocabulary."
+        },
+        {
+          "lesson": "The coursework could not afford bootstrap confidence intervals and said so in its own presentation notes, which left every improvement claim resting on a single point estimate.",
+          "practice": "This lab puts a bootstrap interval on every headline number and a paired interval on every comparison claim; a delta whose interval contains zero is reported as a tie."
+        }
+      ],
+      "numbers": [
+        {
+          "basis": "copied",
+          "display": "0.9647679093041557",
+          "evidence_class": "provenance",
+          "label": "nb_macro_f1",
+          "note": "macro-F1 on the provided Reuters test set at the required feature count, as the report states it",
+          "repro": "grep -n '0.9647679093041557' docs/seed-evidence/task2-naive-bayes-report.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task2-naive-bayes-report.md",
+          "unit": "raw",
+          "value": 0.9647679093041557
+        },
+        {
+          "basis": "copied",
+          "display": "10000",
+          "evidence_class": "provenance",
+          "label": "nb_features_baseline",
+          "repro": "grep -n '10000' docs/seed-evidence/task2-naive-bayes-report.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task2-naive-bayes-report.md",
+          "unit": "count",
+          "value": 10000
+        },
+        {
+          "basis": "copied",
+          "display": "3000",
+          "evidence_class": "provenance",
+          "label": "nb_features_min",
+          "repro": "grep -n '3000' docs/seed-evidence/task2-naive-bayes-report.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task2-naive-bayes-report.md",
+          "unit": "count",
+          "value": 3000
+        },
+        {
+          "basis": "copied",
+          "display": "5000",
+          "evidence_class": "provenance",
+          "label": "nb_features_mid",
+          "repro": "grep -n '5000' docs/seed-evidence/task2-naive-bayes-report.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task2-naive-bayes-report.md",
+          "unit": "count",
+          "value": 5000
+        },
+        {
+          "basis": "copied",
+          "display": "15000",
+          "evidence_class": "provenance",
+          "label": "nb_features_max",
+          "repro": "grep -n '15000' docs/seed-evidence/task2-naive-bayes-report.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task2-naive-bayes-report.md",
+          "unit": "count",
+          "value": 15000
+        },
+        {
+          "basis": "copied",
+          "display": "0.9636702838478547",
+          "evidence_class": "provenance",
+          "label": "nb_sweep_low",
+          "note": "lowest macro-F1 in the report's feature-count sweep",
+          "repro": "grep -n '0.9636702838478547' docs/seed-evidence/task2-naive-bayes-report.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task2-naive-bayes-report.md",
+          "unit": "raw",
+          "value": 0.9636702838478547
+        },
+        {
+          "basis": "copied",
+          "display": "0.9658523189692165",
+          "evidence_class": "provenance",
+          "label": "nb_sweep_high",
+          "note": "highest macro-F1 in the report's feature-count sweep",
+          "repro": "grep -n '0.9658523189692165' docs/seed-evidence/task2-naive-bayes-report.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task2-naive-bayes-report.md",
+          "unit": "raw",
+          "value": 0.9658523189692165
+        },
+        {
+          "basis": "copied",
+          "display": "5,787",
+          "evidence_class": "provenance",
+          "label": "nb_train_docs",
+          "repro": "grep -n '5,787' docs/seed-evidence/task2-naive-bayes-report.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task2-naive-bayes-report.md",
+          "unit": "count",
+          "value": 5787
+        },
+        {
+          "basis": "copied",
+          "display": "2,298",
+          "evidence_class": "provenance",
+          "label": "nb_test_docs",
+          "repro": "grep -n '2,298' docs/seed-evidence/task2-naive-bayes-report.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task2-naive-bayes-report.md",
+          "unit": "count",
+          "value": 2298
+        },
+        {
+          "basis": "copied",
+          "display": "0.8322",
+          "evidence_class": "provenance",
+          "label": "ner_dev_first",
+          "note": "dev macro-F1 of the owner's own first feature phase",
+          "repro": "grep -n '0.8322' docs/seed-evidence/task3-ner-memm-session-summary.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task3-ner-memm-session-summary.md",
+          "unit": "raw",
+          "value": 0.8322
+        },
+        {
+          "basis": "copied",
+          "display": "0.8733",
+          "evidence_class": "provenance",
+          "label": "ner_dev_best",
+          "note": "dev macro-F1 after feature pruning and more iterations",
+          "repro": "grep -n '0.8733' docs/seed-evidence/task3-ner-memm-session-summary.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task3-ner-memm-session-summary.md",
+          "unit": "raw",
+          "value": 0.8733
+        },
+        {
+          "basis": "copied",
+          "display": "0.82335",
+          "evidence_class": "provenance",
+          "label": "ner_kaggle_low",
+          "note": "weakest of the four public scores the summary documents",
+          "repro": "grep -n '0.82335' docs/seed-evidence/task3-ner-memm-session-summary.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task3-ner-memm-session-summary.md",
+          "unit": "raw",
+          "value": 0.82335
+        },
+        {
+          "basis": "copied",
+          "display": "0.83522",
+          "evidence_class": "provenance",
+          "label": "ner_kaggle_high",
+          "note": "best of the four public scores the summary documents",
+          "repro": "grep -n '0.83522' docs/seed-evidence/task3-ner-memm-session-summary.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task3-ner-memm-session-summary.md",
+          "unit": "raw",
+          "value": 0.83522
+        },
+        {
+          "basis": "copied",
+          "display": "0.04",
+          "evidence_class": "provenance",
+          "label": "ner_dev_test_gap",
+          "note": "the dev-to-test macro-F1 gap the summary calls structural",
+          "repro": "grep -n '0.04' docs/seed-evidence/task3-ner-memm-session-summary.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task3-ner-memm-session-summary.md",
+          "unit": "raw",
+          "value": 0.04
+        },
+        {
+          "basis": "copied",
+          "display": "15",
+          "evidence_class": "provenance",
+          "label": "ner_max_iter_from",
+          "repro": "grep -n '15' docs/seed-evidence/task3-ner-memm-session-summary.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task3-ner-memm-session-summary.md",
+          "unit": "count",
+          "value": 15
+        },
+        {
+          "basis": "copied",
+          "display": "25",
+          "evidence_class": "provenance",
+          "label": "ner_max_iter_to",
+          "repro": "grep -n '25' docs/seed-evidence/task3-ner-memm-session-summary.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task3-ner-memm-session-summary.md",
+          "unit": "count",
+          "value": 25
+        },
+        {
+          "basis": "copied",
+          "display": "200",
+          "evidence_class": "provenance",
+          "label": "scrape_books",
+          "note": "book descriptions crawled, cleaned, tokenized and stemmed",
+          "repro": "grep -n '200' docs/seed-evidence/task1-scraping-report.md",
+          "run_ids": [],
+          "source": "docs/seed-evidence/task1-scraping-report.md",
+          "unit": "count",
+          "value": 200
+        },
+        {
+          "basis": "copied",
+          "display": "0.83615",
+          "evidence_class": "provenance",
+          "label": "appendix_kaggle_uncited",
+          "note": "quoted only to record the discrepancy in `gaps`; its source document is not in docs/seed-evidence/",
+          "repro": "grep -n '0.83615' UPGRADE_PLAN.md",
+          "run_ids": [],
+          "source": "UPGRADE_PLAN.md",
+          "unit": "raw",
+          "value": 0.83615
+        },
+        {
+          "basis": "copied",
+          "display": "0.8136",
+          "evidence_class": "provenance",
+          "label": "appendix_starter_baseline",
+          "note": "quoted only to record the discrepancy in `gaps`; its source document is not in docs/seed-evidence/",
+          "repro": "grep -n '0.8136' UPGRADE_PLAN.md",
+          "run_ids": [],
+          "source": "UPGRADE_PLAN.md",
+          "unit": "raw",
+          "value": 0.8136
+        }
+      ],
+      "paragraphs": [
+        "This lab began as the rewrite of three graduate NLP coursework projects, and the figures in this section are here for lineage only: coursework seed scores are self-reported class results — provenance, not evidence. No claim anywhere else on this page rests on them. Everything this lab asserts rests instead on artifacts a stranger can re-derive: a frozen CFPB snapshot, an append-only run log, a bootstrap interval on every headline number, and a reproduction command for each one.",
+        "The numbers below were copied character-for-character out of docs/seed-evidence/, a read-only citation archive of the original write-ups. They were not recomputed and have not been verified here; the build simply refuses to print a figure it cannot find in the archived file. The Naive Bayes report also carries an explicit AI-assistance acknowledgement, and the NER project's feature catalogue was synthesized from AI research sources — which is one more reason the portfolio narrative rests on this lab's evidence rather than on these.",
+        "Naive Bayes on the five-class Reuters set, implemented from scratch: macro-F1 0.9647679093041557 at the required 10000-feature setting, over 5,787 training and 2,298 test documents. Sweeping the feature count across 3000 / 5000 / 10000 / 15000 moved the score only between 0.9636702838478547 and 0.9658523189692165 — a spread with no interval around it, which is exactly the habit this lab was built to break.",
+        "The MEMM NER project logged four documented feature phases, from a dev macro-F1 of 0.8322 to 0.8733, and four Kaggle submissions between 0.82335 and 0.83522, each with a stated hypothesis and a stated verdict — including one recorded, in the summary's own words, as HYPOTHESIS WRONG. That summary also calls its dev-to-test gap of about 0.04 F1 a structural property of the corpus: the test split comes from a later period of news with a higher out-of-vocabulary rate. A drift protocol grew out of that sentence."
+      ],
+      "repro": [
+        "shasum -a 256 docs/seed-evidence/*",
+        "uv run python -m triage_lab.demo_build --all"
+      ],
       "run_ids": [],
-      "title": "Provenance — coursework seeds"
+      "title": "Provenance — the coursework seeds, and what they are not"
     }
   ],
   "source_note": "Every numeric token in every paragraph below is declared in that section's `numbers` array and copied at build time from `results/runs.jsonl` or a committed derived artifact. Entries marked `derived` are arithmetic over copied values with no free parameters and carry their formula. The build fails if a paragraph contains a number no entry declares.",

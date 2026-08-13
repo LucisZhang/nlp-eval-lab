@@ -92,10 +92,42 @@ function el(tag, className, children) {
 }
 
 function evidenceBadge(cls) {
-  const known = ["measured", "estimated", "projected", "derived"];
+  const known = ["measured", "estimated", "projected", "derived", "provenance"];
   const norm = known.includes(cls) ? cls : "derived";
   const span = el("span", `evidence-badge ${norm}`, cls || "unknown");
   return span;
+}
+
+// ---- repo links -------------------------------------------------------------
+// One place that turns a repo-relative path / commit sha into a URL. `repo.url_base` is a
+// single constant in src/triage_lab/demo_build.py and is EMPTY until this repo is pushed to
+// GitHub; while it is empty every reference renders as plain <code> with a chip saying so,
+// so the page never ships a dead link. Kinds: blob (a file), commit (a sha), actions (CI).
+const REPO_LINK_PENDING_NOTE = "link resolves after GitHub push";
+
+function repoUrl(repo, kind, ref) {
+  const base = (repo && repo.url_base) || "";
+  if (!base) return null;
+  const branch = (repo && repo.default_branch) || "main";
+  if (kind === "actions") return `${base}/actions`;
+  if (kind === "commit") return `${base}/commit/${ref}`;
+  return `${base}/blob/${branch}/${ref}`;
+}
+
+function repoRef(repo, kind, ref, label) {
+  const text = label || ref;
+  const href = repoUrl(repo, kind, ref);
+  if (!href) {
+    return el("span", "repo-ref", [
+      el("code", "repo-path", text),
+      el("span", "repo-ref-chip", REPO_LINK_PENDING_NOTE),
+    ]);
+  }
+  const link = el("a", "repo-path", text);
+  link.href = href;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  return el("span", "repo-ref", link);
 }
 
 // run-id chip: 8-char mono prefix, clickable -> opens receipts drawer
@@ -1482,6 +1514,61 @@ function renderVerificationSection(section) {
   return card;
 }
 
+// The coursework-seed section. Same card furniture as the narrative sections, plus three
+// blocks the other sections do not have: the archive's file list (rendered through
+// repoRef), the lesson -> practice lineage table, and the caveat rows. Every figure inside
+// it wears the `provenance` badge — self-reported, not measured here.
+function renderProvenanceSection(section, repo) {
+  const card = el("div", "card cs-section cs-provenance");
+  card.appendChild(el("h3", "cs-heading", section.title));
+  (section.paragraphs || []).forEach((p) => card.appendChild(el("p", "cs-para", p)));
+
+  const items = section.items || [];
+  if (items.length) {
+    const list = el("div", "cs-seed-list");
+    items.forEach((item) => {
+      const row = el("div", "cs-seed");
+      row.appendChild(el("div", "cs-seed-head", [
+        repoRef(repo, "blob", item.path),
+        el("span", "cs-seed-role", item.role),
+        evidenceBadge(item.evidence_class),
+      ]));
+      row.appendChild(el("div", "cs-seed-text", item.text));
+      list.appendChild(row);
+    });
+    card.appendChild(list);
+  }
+
+  const lineage = section.lineage || [];
+  if (lineage.length) {
+    const table = el("table", "kv-table cs-lineage-table");
+    table.appendChild(el("tr", null, [
+      el("td", "k", "coursework lesson"), el("td", "k", "practice it seeded here"),
+    ]));
+    lineage.forEach((row) => table.appendChild(el("tr", null, [
+      el("td", "cs-lineage-lesson", row.lesson), el("td", null, row.practice),
+    ])));
+    card.appendChild(el("div", "cs-lineage", [
+      el("div", "cs-block-title", "Methodology lineage"), table,
+    ]));
+  }
+
+  (section.caveats || []).forEach((c) => {
+    card.appendChild(el("div", "info-card cs-caveat", [el("strong", null, "caveat: "), c]));
+  });
+  (section.gaps || []).forEach((g) => {
+    card.appendChild(el("div", "info-card cs-gap", [
+      el("strong", null, "not shown here: "), g,
+    ]));
+  });
+
+  const receipts = receiptsLine(section);
+  if (receipts) card.appendChild(receipts);
+  const numbers = numbersTable(section.numbers);
+  if (numbers) card.appendChild(numbers);
+  return card;
+}
+
 function renderLimitsSection(section) {
   const card = el("div", "card cs-section cs-limits");
   card.appendChild(el("h3", "cs-heading", section.title));
@@ -1509,7 +1596,9 @@ async function initCaseStudy() {
   data.sections.forEach((section) => {
     if (section.kind === "verification") body.appendChild(renderVerificationSection(section));
     else if (section.kind === "limits") body.appendChild(renderLimitsSection(section));
-    else body.appendChild(renderNarrativeSection(section));
+    else if (section.kind === "provenance") {
+      body.appendChild(renderProvenanceSection(section, data.repo));
+    } else body.appendChild(renderNarrativeSection(section));
   });
 
   const pending = data.pending || [];

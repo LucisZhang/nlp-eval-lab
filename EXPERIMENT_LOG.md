@@ -2220,3 +2220,63 @@ reported runs. Every portfolio-bound number carries its reproduction command
   uv run pytest tests/test_prior_shift.py tests/test_tier_c_compare.py tests/test_demo_build.py -q
   python3 -m http.server 8642 -d demo   # open /#casestudy
   ```
+
+## 2026-08-13 — Phase 6: provenance links to coursework seeds ($0, presentation-only)
+
+- **Scope:** the case-study page's `provenance_seeds` pending slot becomes a real
+  section (`kind: "provenance"`), linking the coursework seed archive under the
+  read-only `docs/seed-evidence/` (linked, never touched). $0, no new runs;
+  `results/runs.jsonl` untouched at 55 records. The stance is UPGRADE_PLAN §9's,
+  verbatim on the page: coursework seed scores are **self-reported class results —
+  provenance, not evidence**; no lab claim rests on them.
+- **Content:** all 7 archive files carded with path + role per §3.3 (NB report +
+  4 classification-result sweeps = seed exhibit lineage of the classical tier;
+  NER MEMM session summary = prior experimental discipline; task1 scraping report
+  = archived context, not a seed — Task1 was discarded); a methodology-lineage
+  table mapping the 5 documented coursework lessons (MAX_ITER convergence,
+  harmful-feature removal, single-variable submissions, ~0.04 dev→test temporal-OOV
+  drift, "couldn't afford bootstrap CIs") to the lab practice each seeded; caveats:
+  group NER role attribution is biographical, not measured; Reuters/CoNLL-2003
+  research-licensed datasets deliberately excluded from this repo.
+- **Quotation gate (new):** 19 numbers displayed, every one `basis: "copied"` under a
+  new `provenance` evidence class added to the shared legend (exhibits are test-barred
+  from using it). `_seed_number` hard-fails the build unless the display is an exact
+  whole numeric token of the cited archive file — rounding (0.9648), truncation, or
+  de-comma'ing (5787 vs "5,787") is rejected as a new number, and a negative test
+  proves the gate can fail. This is why the NB macro-F1 appears at full precision
+  0.9647679093041557.
+- **Archive over Appendix A (4 divergences, recorded in the section's `gaps`):** the
+  committed session summary's best Kaggle public score is **0.83522 (v1)** across
+  **four** documented submissions — Appendix A's 0.83615 (v5, confirmed in a v7
+  notebook docstring) and the 0.8136 starter baseline (NER Score.docx) cite artifacts
+  NOT in the committed archive, so the page quotes 0.83522, starts the dev progression
+  at the owner's own first phase 0.8322, and marks the higher/lower figures uncited;
+  the bootstrap-CI arc is stated as narrative lineage (speaker notes not in archive);
+  AI-assistance is described per-file as each file actually states it.
+- **Repo-URL-base plumbing (owner requirement):** one module constant
+  `REPO_URL_BASE = ""` in `demo_build.py` → `repo` block in `case_study.json`;
+  `app.js` `repoUrl()` builds `blob`/`commit`/`actions` URLs from it. Empty base
+  (shipped state) renders paths as non-link code + a "link resolves after GitHub push"
+  chip; the purity test asserts the payload block is exactly the normalized image of
+  the constant, so the push session fills the one constant and reruns `make demo-data`
+  — **no test edit required**. `meta.json` changed with it: the shared EVIDENCE_LEGEND
+  gains `provenance` (one legend, no forked source of truth) and `git_sha` refreshed
+  (inherent to any rebuild).
+- **Verification:** `make demo-data` twice → byte-identical (case_study `7c3c53ab…`,
+  meta `4a95a317…`); the other 8 contract JSONs byte-identical to HEAD; suite
+  **652 passed / 1 skipped / 0 failed** (test_demo_build +8, incl. verbatim-gate
+  negative test and repo-block purity); ruff clean; browser-verified in the app pane
+  (DOM/computed-style checks per the 2026-08-13 convention: 7 seed cards + 7 chips
+  render, lineage table complete, pending list down to reproduce_headline alone,
+  shipped `repoUrl()` exercised in-page on a filled base → correct blob/commit/actions
+  URLs and null on empty, light + dark both readable — worst new-element contrast
+  4.69:1 dark — zero console errors).
+- **Verdict:** ACCEPTED — provenance is now linked and labeled exactly as §9 demands,
+  every coursework figure is a verbatim quotation of a committed read-only file, and
+  the only remaining Phase 6 pending slot is `reproduce_headline`.
+- **Reproduce:**
+  ```
+  make demo-data            # = uv run python -m triage_lab.demo_build --all ; run twice → byte-identical
+  uv run pytest tests/test_demo_build.py -q
+  python3 -m http.server 8642 -d demo   # open /#casestudy — provenance card
+  ```

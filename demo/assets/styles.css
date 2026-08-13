@@ -219,6 +219,8 @@ a { color: var(--accent); }
 .evidence-badge.estimated { border-color: var(--warn); color: var(--warn); }
 .evidence-badge.projected { border-color: var(--accent); color: var(--accent); }
 .evidence-badge.derived { border-color: var(--pending); color: var(--pending); }
+/* provenance = a self-reported coursework figure, never a measurement of this lab's. */
+.evidence-badge.provenance { border-color: var(--border-strong); color: var(--text-dim); }
 
 /* ---- run-id chip ---- */
 
@@ -886,4 +888,100 @@ pre.raw-json {
   font-size: 12.5px;
   margin-top: 5px;
   color: var(--text-dim);
+}
+
+/* ---- panel 7: provenance section (coursework seeds) ---- */
+/* Same variables as everything above, so light and dark need no second rule set. */
+
+.cs-block-title {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.cs-seed-list {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.cs-seed {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.cs-seed-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.cs-seed-role {
+  font-size: 11px;
+  color: var(--text-dim);
+  border: 1px dashed var(--border-strong);
+  border-radius: 4px;
+  padding: 0 5px;
+}
+
+.cs-seed-text {
+  font-size: 12.5px;
+  line-height: 1.55;
+  max-width: 74ch;
+}
+
+.repo-ref {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.repo-path {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  word-break: break-all;
+}
+
+a.repo-path { color: var(--accent); }
+
+.repo-ref-chip {
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: var(--pending);
+  border: 1px dotted var(--pending);
+  border-radius: 4px;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+.cs-lineage {
+  margin: 14px 0 4px;
+}
+
+.cs-lineage-table td {
+  border-top: 1px solid var(--border);
+  vertical-align: top;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.cs-lineage-table tr:first-child td {
+  border-top: none;
+}
+
+.cs-lineage-lesson {
+  color: var(--text-dim);
+  max-width: 44ch;
+}
+
+.cs-caveat {
+  border-left-color: var(--pending);
+  max-width: 74ch;
 }

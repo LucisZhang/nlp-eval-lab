@@ -147,7 +147,11 @@ def test_meta_shape(payload, records):
     assert meta["snapshot_sha256"] == demo_build.snapshot_sha256(records)
     cfg = cost_model.load_cost_config(demo_build.DEMO_COST_CONFIG)
     assert meta["cost_model"] == {"path": "configs/cost_model_v2.yaml", "sha256": cfg.sha256}
-    assert set(meta["evidence_classes"]) == {"measured", "estimated", "projected", "derived"}
+    # `provenance` joined the legend on 2026-08-13 with the case study's coursework-seed
+    # section. It is a legend entry everywhere (one definition of a badge, site-wide) but is
+    # only ever USED there — the exhibit files below may not carry it.
+    assert set(meta["evidence_classes"]) == {"measured", "estimated", "projected",
+                                             "derived", "provenance"}
     # Owner decision 2026-08-12, executed in this payload.
     assert meta["headline_router"]["policy"] == "a_to_b"
     assert meta["headline_router"]["evaluation_set"] == router_sim.EVAL_FULL
@@ -177,7 +181,9 @@ def test_tier_b_backfill_left_exactly_one_labeled_pending_slot(payload):
 
 @_needs_demo
 def test_every_exhibit_declares_an_evidence_class(payload):
-    allowed = set(demo_build.EVIDENCE_LEGEND)
+    # `provenance` is deliberately excluded: an exhibit built from this lab's own runs may
+    # never wear the badge reserved for self-reported coursework figures.
+    allowed = set(demo_build.EVIDENCE_LEGEND) - {"provenance"}
     seen = 0
     for name in ("frontier.json", "policies.json", "calibration.json", "samples.json"):
         for path, value in _walk(payload[name], ()):
@@ -691,6 +697,22 @@ def _cs_display_signed(display: str) -> list[str]:
             for m in _CS_SIGNED_RE.finditer(display)]
 
 
+# Every string on a section that the page RENDERS AS PROSE, and therefore that the
+# numeric-token gate must police. Keys are listed explicitly (rather than walking every
+# string) so that `source` paths, `repro` commands and a number's own `display` — all of
+# which legitimately contain digits — stay out, while a new prose field cannot sneak in
+# unnoticed: `test_case_study_provenance_section_shape` pins the key sets it covers.
+def _cs_prose_texts(section: dict) -> list[str]:
+    texts = list(section.get("paragraphs", []))
+    for item in section.get("items", []):
+        texts += [item[key] for key in ("title", "role", "text") if key in item]
+    texts += list(section.get("gaps", []))
+    texts += list(section.get("caveats", []))
+    for row in section.get("lineage", []):
+        texts += [row["lesson"], row["practice"]]
+    return texts
+
+
 def _cs_numeric_leaves(obj) -> set[float]:
     out: set[float] = set()
     for _path, value in _walk(obj, ()):
@@ -715,6 +737,11 @@ def _cs_source_leaves(entry: dict, records: list[dict]) -> set[float] | None:
     if path.suffix == ".yaml":
         import yaml
         return _cs_numeric_leaves(yaml.safe_load(path.read_text(encoding="utf-8")))
+    if path.suffix in {".md", ".txt"}:
+        # Prose sources (the read-only seed archive, UPGRADE_PLAN.md): the "leaves" are the
+        # numeric tokens in the text. Same regex the prose gate uses, so a figure the page
+        # quotes must be a figure the file writes.
+        return {float(t) for t in _cs_display_tokens(path.read_text(encoding="utf-8"))}
     return _cs_numeric_leaves(json.loads(path.read_text(encoding="utf-8")))
 
 
@@ -744,9 +771,11 @@ def test_case_study_shape(case_study, cs_sections):
         "intro", "tiers", "drift", "thresholds", "router", "robustness", "negatives",
         "verification", "limits", "provenance",
     ]
+    assert case_study["repo"] == demo_build.repo_block()
     allowed_evidence = set(demo_build.EVIDENCE_LEGEND) | {"pending"}
     for section in case_study["sections"]:
-        assert section["kind"] in {"narrative", "verification", "limits", "pending"}
+        assert section["kind"] in {"narrative", "verification", "limits", "pending",
+                                   "provenance"}
         assert section["title"]
         assert isinstance(section["paragraphs"], list)
         assert isinstance(section["numbers"], list)
@@ -771,14 +800,17 @@ def test_case_study_shape(case_study, cs_sections):
 
 @_needs_demo
 def test_case_study_pending_slots_are_labeled_objects(case_study, cs_sections):
+    """One slot left: `provenance_seeds` shipped 2026-08-13 and must not regress to pending."""
     slots = {p["slot"] for p in case_study["pending"]}
-    assert slots == {"reproduce_headline", "provenance_seeds"}
+    assert slots == {"reproduce_headline"}
     for slot in case_study["pending"]:
         assert slot["pending"] is True and slot["label"]
-    # ...and both are visible where the reader meets them, not only in the footer.
+    # ...and it is visible where the reader meets it, not only in the footer.
     verification_pending = [i for i in cs_sections["verification"]["items"] if i.get("pending")]
     assert [i["pending"]["slot"] for i in verification_pending] == ["reproduce_headline"]
-    assert cs_sections["provenance"]["pending"]["slot"] == "provenance_seeds"
+    provenance = cs_sections["provenance"]
+    assert "pending" not in provenance and provenance["kind"] == "provenance"
+    assert provenance["numbers"] and provenance["items"]
 
 
 @_needs_demo
@@ -915,9 +947,7 @@ def test_every_numeric_token_in_the_prose_is_a_declared_number(case_study):
         declared: set[str] = set()
         for entry in section["numbers"]:
             declared.update(_cs_display_tokens(entry["display"]))
-        texts = list(section["paragraphs"])
-        texts += [item["text"] for item in section["items"] if "text" in item]
-        for text in texts:
+        for text in _cs_prose_texts(section):
             tokens = _cs_numeric_tokens(text)
             total_tokens += len(tokens)
             undeclared = tokens - declared
@@ -1085,6 +1115,167 @@ def test_case_study_sections_carry_receipts(cs_sections):
     # The verification checklist is the page's spine: every item states a source.
     for item in cs_sections["verification"]["items"]:
         assert item["source"] and item["title"] and item["text"]
+
+
+# ---------------------------------------------------------------------------
+# Provenance section (coursework seeds, docs/seed-evidence/ — READ-ONLY)
+# ---------------------------------------------------------------------------
+
+SEED_DIR = demo_build.REPO_ROOT / "docs" / "seed-evidence"
+
+
+@_needs_demo
+def test_provenance_describes_every_file_in_the_read_only_seed_archive(cs_sections):
+    """Gate (a): the citation set is the WHOLE archive, and every path exists on disk."""
+    section = cs_sections["provenance"]
+    described = [item["path"] for item in section["items"]]
+    assert len(described) == len(set(described)), "a seed file is described twice"
+    on_disk = sorted(f"docs/seed-evidence/{p.name}" for p in SEED_DIR.iterdir()
+                     if p.is_file() and not p.name.startswith("."))
+    assert sorted(described) == on_disk
+    assert len(on_disk) == 7, "the archive changed size; the page must be updated with it"
+    for path in described:
+        assert (demo_build.REPO_ROOT / path).is_file(), f"{path} is not on disk"
+    # Every declared source is a real file too (the archive, plus the plan for the `gaps`).
+    for entry in section["numbers"]:
+        assert (demo_build.REPO_ROOT / entry["source"]).is_file()
+
+
+@_needs_demo
+def test_provenance_numbers_are_quoted_verbatim_from_their_source_file(cs_sections):
+    """Gate (b), stronger than the float gate: the DISPLAY is a substring of the file.
+
+    Float equality would accept a reformatted figure ("0.9648" for a value the report
+    writes to sixteen decimals). Provenance is a quotation, so it is checked as one.
+    """
+    section = cs_sections["provenance"]
+    texts: dict[str, str] = {}
+    for entry in section["numbers"]:
+        assert entry["basis"] == "copied", f"{entry['label']}: provenance is never derived"
+        assert entry["evidence_class"] == "provenance"
+        assert entry["run_ids"] == [], "a coursework figure has no run in this lab"
+        source = entry["source"]
+        text = texts.setdefault(source,
+                                (demo_build.REPO_ROOT / source).read_text(encoding="utf-8"))
+        assert entry["display"] in text, (
+            f"{entry['label']}: {entry['display']!r} is not literally in {source}")
+        # ...and as a WHOLE number, not as the "15" inside "1155".
+        assert entry["display"].replace(",", "") in _cs_display_tokens(text), (
+            f"{entry['label']}: {entry['display']!r} only occurs inside a longer number "
+            f"in {source}")
+        assert entry["repro"] == f"grep -n '{entry['display']}' {source}"
+    assert len(section["numbers"]) >= 15, "suspiciously few coursework figures quoted"
+
+
+@_needs_demo
+def test_provenance_section_shape(cs_sections):
+    """Pins the key sets the prose gate walks — a new prose field cannot arrive unpoliced."""
+    section = cs_sections["provenance"]
+    assert section["run_ids"] == [] and section["repro"]
+    for item in section["items"]:
+        assert set(item) == {"path", "role", "text", "evidence_class"}
+        assert item["evidence_class"] == "provenance"
+        assert item["path"].startswith("docs/seed-evidence/")
+    for row in section["lineage"]:
+        assert set(row) == {"lesson", "practice"}
+        assert row["lesson"] and row["practice"]
+    assert len(section["lineage"]) >= 4
+    assert section["caveats"] and section["gaps"]
+    # No other section may carry the provenance-only keys.
+    for other in cs_sections.values():
+        if other["id"] == "provenance":
+            continue
+        assert "lineage" not in other and "caveats" not in other
+
+
+@_needs_demo
+def test_provenance_says_the_scores_are_not_evidence(cs_sections, case_study):
+    """The stance is the point of the section; it is not optional copy."""
+    prose = " ".join(_cs_prose_texts(cs_sections["provenance"]))
+    assert "provenance, not evidence" in prose
+    assert "self-reported" in prose
+    assert "read-only" in prose
+    assert "docs/seed-evidence/" in prose
+    # Group work stays biographical context, in this section and in the limits list.
+    assert "not a measured claim" in prose
+    limits = " ".join(item["text"] for item in cs_sections["limits"]["items"])
+    assert "provenance, not evidence" in limits
+    # The excluded research-licensed corpora are named as excluded (CLAUDE.md rule 7).
+    assert "Reuters" in prose and "CoNLL-2003" in prose and "excluded" in prose
+    # The legend the badges resolve against carries the class.
+    assert "provenance" in case_study["evidence_classes"]
+    assert "not evidence" in case_study["evidence_classes"]["provenance"]
+
+
+@_needs_demo
+def test_provenance_records_the_upgrade_plan_discrepancies_in_gaps(cs_sections):
+    """Appendix A cites two figures whose sources are NOT in the archive; both are gaps.
+
+    The page quotes what the committed session summary states instead, so this pins both
+    the omission and the substitution.
+    """
+    section = cs_sections["provenance"]
+    gaps = " ".join(section["gaps"])
+    numbers = {n["label"]: n for n in section["numbers"]}
+    for label in ("appendix_kaggle_uncited", "appendix_starter_baseline"):
+        assert numbers[label]["source"] == "UPGRADE_PLAN.md"
+        assert numbers[label]["display"] in gaps, (
+            f"{label} is declared but the gap that explains it does not show it")
+        assert "not in docs/seed-evidence/" in numbers[label]["note"]
+    summary = (SEED_DIR / "task3-ner-memm-session-summary.md").read_text(encoding="utf-8")
+    # The substituted figures must be the archive's own, and the uncited ones must not be.
+    assert numbers["ner_kaggle_high"]["display"] in summary
+    assert numbers["appendix_kaggle_uncited"]["display"] not in summary
+    assert numbers["appendix_starter_baseline"]["display"] not in summary
+    assert numbers["ner_kaggle_high"]["value"] < numbers["appendix_kaggle_uncited"]["value"]
+
+
+def test_seed_number_refuses_a_figure_the_archive_does_not_write():
+    """The build-time quotation gate is only worth its runtime if it can fail. Prove it.
+
+    Reads the committed read-only archive; needs no `data/`.
+    """
+    report = demo_build.SEED_NB_REPORT
+    ok = demo_build._seed_number("nb", "0.9647679093041557", source=report)
+    assert ok["value"] == 0.9647679093041557 and ok["evidence_class"] == "provenance"
+    for restated in ("0.9648",                 # rounded: a new number, not a quotation
+                     "0.96476790930415",       # truncated
+                     "5787"):                  # right value; this file writes it "5,787"
+        with pytest.raises(ValueError, match="quote the archive"):
+            demo_build._seed_number("nb", restated, source=report)
+    # A short display may not ride along inside a longer number.
+    with pytest.raises(ValueError, match="quote the archive"):
+        demo_build._seed_number("ner", "115", source=demo_build.SEED_NER_SUMMARY)
+
+
+def test_repo_block_is_a_pure_function_of_the_two_constants():
+    """Gate (d): whatever REPO_URL_BASE holds, the payload's repo block is exactly its
+    normalized image — the push session fills the one constant and reruns `make demo-data`,
+    with no test edit required."""
+    assert demo_build.repo_block() == {
+        "url_base": demo_build.REPO_URL_BASE.rstrip("/"),
+        "default_branch": "main",
+    }
+    assert demo_build.repo_block("", "main") == {"url_base": "", "default_branch": "main"}
+    filled = demo_build.repo_block("https://github.com/example/nlp-eval-lab/", "trunk")
+    assert filled == {"url_base": "https://github.com/example/nlp-eval-lab",
+                      "default_branch": "trunk"}
+
+
+def test_app_js_builds_repo_hrefs_from_that_one_constant():
+    """The consumer side of `repo`: no link while the base is empty, real URLs once set."""
+    app = (demo_build.REPO_ROOT / "demo" / "assets" / "app.js").read_text(encoding="utf-8")
+    assert "function repoUrl(repo, kind, ref)" in app
+    assert "function repoRef(repo, kind, ref, label)" in app
+    assert "link resolves after GitHub push" in app
+    for fragment in ("${base}/blob/${branch}/${ref}", "${base}/commit/${ref}",
+                     "${base}/actions"):
+        assert fragment in app, f"app.js cannot build {fragment}"
+    assert "renderProvenanceSection(section, data.repo)" in app
+    assert 'section.kind === "provenance"' in app
+    styles = (demo_build.REPO_ROOT / "demo" / "assets" / "styles.css").read_text("utf-8")
+    for rule in (".evidence-badge.provenance", ".repo-ref-chip", ".cs-seed", ".cs-lineage"):
+        assert rule in styles, f"styles.css has no {rule} rule"
 
 
 @_needs_demo
