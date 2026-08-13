@@ -1,7 +1,7 @@
 {
   "cost_model": {
-    "path": "configs/cost_model_v1.yaml",
-    "sha256": "f76ad15a87457db64f50392d3a7bdd9ea65a581fa06478b6759538d16b5143d0"
+    "path": "configs/cost_model_v2.yaml",
+    "sha256": "2c969255c03b315d9755078f77693e308a9864e40e3ebb4a1d31f9ffe5bcb417"
   },
   "evidence_classes": {
     "derived": "arithmetic over measured inputs with no free parameters (calibration bins, the CAL threshold sweep, per-sample router paths under a frozen tau)",
@@ -9,16 +9,15 @@
     "measured": "read off a real observation: a logged run metric, a per-call receipt, or a deterministic derivation from a frozen per-example artifact",
     "projected": "an extrapolation to conditions not evaluated (e.g. cost at a volume no run reached); carries the assumption that produced it"
   },
-  "git_sha": "633b1adeeb353c5b19f452edc328958ef57df13a",
+  "git_sha": "508932b13ca0cc60f25db41052bcf6502af169a1",
+  "headline_router": {
+    "evaluation_set": "full_test_iid",
+    "note": "Owner decision 2026-08-12: headline_router = a_to_b (full TEST-IID) — the only certified two-axis win (cost AND macro-F1 paired CIs excl. 0 vs b2_only), dominating 3 model baselines. a_to_c_parsefail_human is retained as the LLM-cascade contrast exhibit; the drift-chapter Sonnet-terminal variant is unchanged.",
+    "policy": "a_to_b"
+  },
   "op_version": "v2-isocal",
   "pending_tier_b": [
-    "tier_b1_modernbert",
-    "tier_b2_distilbert",
-    "router_a_b_c",
-    "tier_b1",
-    "tier_b2",
-    "tier_b1_temp_scaling",
-    "tier_b2_temp_scaling"
+    "tier_b1"
   ],
   "schema_version": "demo-v1",
   "snapshot_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f"

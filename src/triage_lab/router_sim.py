@@ -9,13 +9,20 @@ router's thresholds meet TEST data.
 Offline throughout: no model is run and no API is called. Every number comes from frozen
 prediction artifacts plus the committed Tier C receipts. `results/runs.jsonl` is read-only.
 
-**Owner decisions this module implements (2026-08-07), binding:**
+**Owner decisions this module implements (2026-08-07; headline amended 2026-08-12), binding:**
 
-- The headline router is the **Haiku-terminal cascade** ``a_to_c_parsefail_human``: Tier A
-  answers above tau, otherwise Tier C answers and its verdict is final, except that a
-  receipt marked ``parse_failed`` routes to a human. Haiku logged zero parse failures on
-  TEST-IID, so that arm is empty here — reported as a robustness fact, not hidden. The
-  ``c_human`` sensitivity therefore lives entirely in the ``a_to_human`` rung.
+- **The headline router is ``a_to_b`` (owner decision 2026-08-12)** whenever the cost
+  config prices Tier B: it is the only certified two-axis win in the exhibit (cheaper AND
+  higher macro-F1 than b2_only, both paired CIs excluding zero) and dominates 3 model
+  baselines on the full slice. Under a cost config that does not price Tier B the policy
+  does not exist and the pre-decision headline below stands, so v1-generation artifacts
+  regenerate unchanged.
+- The **Haiku-terminal cascade** ``a_to_c_parsefail_human`` — the original 2026-08-07
+  headline — is retained as the **LLM-cascade contrast exhibit**: Tier A answers above
+  tau, otherwise Tier C answers and its verdict is final, except that a receipt marked
+  ``parse_failed`` routes to a human. Haiku logged zero parse failures on TEST-IID, so
+  that arm is empty here — reported as a robustness fact, not hidden. The ``c_human``
+  sensitivity therefore lives entirely in the ``a_to_human`` rung.
 - No Sonnet-terminal variant (deferred to the drift chapter).
 - **Tier B, when priced** (`configs/cost_model_v2.yaml`), adds four single-tier points
   (ModernBERT ×3 seeds, DistilBERT) and two cascades: ``a_to_b`` (Tier A gate, Tier B
@@ -1526,12 +1533,29 @@ def build_summary(evaluations: dict[str, dict], cfg: cost_model.CostConfig, *,
                   op_version: str = OP_V1) -> dict:
     """Headline table + the two verdicts Phase 4 acceptance turns on."""
     paired = evaluations[EVAL_PAIRED]
-    router = "a_to_c_parsefail_human"
+    contrast_router = "a_to_c_parsefail_human"
     decision_1 = next(d for d in paired["paired_deltas"]
-                      if d["a"] == router and d["b"] == "a_to_human")
+                      if d["a"] == contrast_router and d["b"] == "a_to_human")
     baselines = model_baselines(cfg)
     dominance = dominance_census(evaluations, baselines)
-    headline = dominance[f"{EVAL_PAIRED}/{router}"]
+    # Owner decision 2026-08-12: the headline router is a_to_b (full slice, the certified
+    # two-axis win) whenever Tier B is priced; the Haiku-terminal cascade stays as the
+    # LLM-cascade contrast exhibit. Under a cost config without Tier B the a_to_b policy
+    # does not exist and the pre-decision headline stands, so v1-generation artifacts
+    # regenerate with their original headline.
+    if POLICY_A_TO_B in evaluations[EVAL_FULL]["policies"]:
+        router, headline_set = POLICY_A_TO_B, EVAL_FULL
+        # The two explanatory keys exist only where the 2026-08-12 decision applies:
+        # emitting them in the fallback would rewrite pre-decision artifacts, which a
+        # byte-identity test (correctly) forbids.
+        headline_block = {
+            "headline_evaluation_set": headline_set,
+            "llm_cascade_contrast_router": contrast_router,
+        }
+    else:
+        router, headline_set = contrast_router, EVAL_PAIRED
+        headline_block = {}
+    headline = dominance[f"{headline_set}/{router}"]
     version_block = {} if op_version == OP_V1 else {
         "operating_point_version": op_version,
         "tau_derivation_note": threshold_opt.ISOCAL_IN_SAMPLE_NOTE,
@@ -1542,6 +1566,7 @@ def build_summary(evaluations: dict[str, dict], cfg: cost_model.CostConfig, *,
         **version_block,
         "cost_config": cost_model.config_block(cfg),
         "headline_router": router,
+        **headline_block,
         "evaluations": {
             name: {
                 "n_examples": ev["n_examples"],

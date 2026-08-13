@@ -741,6 +741,7 @@ function renderPolicyList() {
     const row = el("div", "policy-bar-row");
     const labelDiv = el("div", null, [
       policy.label || policy.key,
+      policy.headline ? el("span", "tag headline", "headline") : null,
       el("br"),
       el("span", "panel-desc", `macro-F1: ${metricStr(policy.macro_f1_system)}`),
     ]);
@@ -797,7 +798,11 @@ async function initDrift() {
 // drift.json summary.series is a dict keyed by evidence arm ("logged": per-tier raw
 // eval records with a `tier`/`macro_f1` field; "escalation": per-router-policy
 // records with `policy`/`macro_f1_system`/`escalation_rate`). We flatten each arm's
-// record list into named line-series keyed by tier or policy.
+// record list into named line-series. Escalation records are keyed by the FULL arm
+// identity (policy + terminal model + tau-fit dataset), never by policy alone: the same
+// policy ships more than one arm (a_to_human and a_to_b each carry a full_cal-tau and a
+// paired-subset-tau arm; a_to_c has Haiku- and Sonnet-terminal arms), and collapsing
+// arms onto one key would zigzag two different measurements through one polyline.
 
 function driftXScale(sliceOrder, x0, x1) {
   const idx = {};
@@ -805,16 +810,25 @@ function driftXScale(sliceOrder, x0, x1) {
   return { scale: makeLinearScale([0, Math.max(sliceOrder.length - 1, 1)], [x0, x1]), idx };
 }
 
-function buildDriftLineSeries(summary, valueField, groupField, labelField) {
+function driftArmKey(rec) {
+  if (!rec.policy) return null;
+  const terminal = rec.terminal_model && rec.terminal_model !== "human"
+    ? "→" + rec.terminal_model : "";
+  const dataset = rec.dataset ? ` [τ: ${rec.dataset}]` : "";
+  return rec.policy + terminal + dataset;
+}
+
+function buildDriftLineSeries(summary, valueField, groupOf, labelOf) {
   const seriesDict = summary.series || {};
   const bySeriesKey = {};
   Object.values(seriesDict).forEach((records) => {
-    (records || []).forEach((rec) => {
-      const groupKey = rec[groupField];
+    if (!Array.isArray(records)) return;
+    records.forEach((rec) => {
+      const groupKey = groupOf(rec);
       if (!groupKey) return;
       const val = rec[valueField];
       if (val === undefined || val === null) return;
-      if (!bySeriesKey[groupKey]) bySeriesKey[groupKey] = { label: rec[labelField] || groupKey, points: [] };
+      if (!bySeriesKey[groupKey]) bySeriesKey[groupKey] = { label: (labelOf && labelOf(rec)) || groupKey, points: [] };
       bySeriesKey[groupKey].points.push({ slice: rec.slice, value: typeof val === "object" ? val.point : val });
     });
   });
@@ -831,8 +845,8 @@ function drawDriftF1Chart(data) {
   const sliceOrder = summary.slice_order || Object.keys(summary.slice_labels || {});
   const sliceLabels = summary.slice_labels || {};
 
-  const tierSeries = buildDriftLineSeries(summary, "macro_f1", "tier", "tier_display");
-  const policySeries = buildDriftLineSeries(summary, "macro_f1_system", "policy", "policy");
+  const tierSeries = buildDriftLineSeries(summary, "macro_f1", (r) => r.tier, (r) => r.tier_display);
+  const policySeries = buildDriftLineSeries(summary, "macro_f1_system", driftArmKey);
   const allSeries = { ...tierSeries, ...policySeries };
   const seriesKeys = Object.keys(allSeries);
   if (!seriesKeys.length) return;
@@ -871,7 +885,7 @@ function drawDriftF1Chart(data) {
   (data.pending_series || []).forEach((ps) => {
     const item = el("span", null);
     item.appendChild(el("span", "legend-swatch pending"));
-    item.appendChild(document.createTextNode("pending Tier B — " + (ps.slot || "")));
+    item.appendChild(document.createTextNode(ps.label || ("pending Tier B — " + (ps.slot || ""))));
     legendWrap.appendChild(item);
   });
 
@@ -896,7 +910,7 @@ function drawDriftEscalationChart(data) {
   const sliceOrder = summary.slice_order || Object.keys(summary.slice_labels || {});
   const sliceLabels = summary.slice_labels || {};
 
-  const escSeries = buildDriftLineSeries(summary, "escalation_rate", "policy", "policy");
+  const escSeries = buildDriftLineSeries(summary, "escalation_rate", driftArmKey);
   const seriesKeys = Object.keys(escSeries);
   if (!seriesKeys.length) {
     const t = svgEl("text", { x: 10, y: 20, "font-size": 11 });

@@ -1997,3 +1997,87 @@ reported runs. Every portfolio-bound number carries its reproduction command
   make prior-shift   # = uv run python -m triage_lab.prior_shift --all  (~8 s, seed 20260805)
   uv run pytest tests/test_prior_shift.py -q
   ```
+
+## 2026-08-13 — Phase 6: Tier B panels + headline_router repoint + demo-data regen ($0, derivation-only)
+
+- **Accept criteria restated (UPGRADE_PLAN §8 Phase 6, panels portion, + owner decision
+  2026-08-12):** (1) `headline_router` repoints from `a_to_c_parsefail_human` to
+  **`a_to_b`** — the only certified two-axis win (Δcost AND ΔF1 paired CIs excl. 0 vs
+  b2_only), dominating 3 model baselines — with the Haiku cascade retained as the
+  LLM-cascade **contrast exhibit** and the drift-chapter Sonnet-terminal variant
+  unchanged; (2) `make demo-data` regenerates `demo/data` from the now-complete 55-run
+  results log with every freeze/traceability gate intact; (3) every former "pending
+  Tier B" demo placeholder renders real data; (4) the two known demo-staleness test
+  failures clear and the full suite ends green.
+- **Hypothesis:** the repoint + regen is pure derivation — no new measurement is needed
+  to fill every scaffold slot, because every number the panels want already sits in
+  frozen artifacts (runs.jsonl 55 records, router_sim/frontier v2 artifacts, drift
+  rollup, per-example preds); and the curated n=200 freeze survives regeneration.
+- **Result — repoint (`router_sim.build_summary`):** headline selection is now
+  evidence-conditional: `a_to_b` (full slice) whenever the cost config prices Tier B,
+  else the pre-decision Haiku-terminal headline — which keeps every v1-generation
+  artifact byte-stable under regeneration (`test_v1_router_outputs_regenerate_byte_identically`
+  caught the first, unconditional version adding keys to the v1 summary; fixed by
+  emitting `headline_evaluation_set` + `llm_cascade_contrast_router` only where the
+  decision applies). Regenerated `results/router_sim/summary__opv2__cost-2c969255.json`:
+  `headline_router: a_to_b`, `headline_evaluation_set: full_test_iid`, dominated model
+  baselines `[a_only, b1_only_sa, b2_only]`, meets-≥2 ✓. **Byte-identity proof:**
+  `full_test_iid`/`paired_subset` opv2 cost-2c969255 artifacts reproduce with identical
+  sha256 (4bcd3a37…, 40c91e22…); all cost-f76ad15a artifacts untouched on disk; re-running
+  the regen reproduces the new summary byte-identically (1d9c558f…).
+- **Result — demo regen (`make demo-data`, now under `configs/cost_model_v2.yaml`,
+  sha `2c969255…`; build hard-fails under a config not pricing Tier B):** 7 of 9
+  payloads changed; `curated_ids.json` and `receipts.json` byte-identical — the frozen
+  selection survived regeneration exactly (CLAUDE.md rule 2 gate exercised, passed).
+  All former pending slots now real data:
+  - **frontier.json**: 12 points — Tier A ×2, **Tier B1 ×3 seeds** (862.60/865.58/867.94
+    $/1k at F1 0.7878/0.7878/0.7863), **Tier B2** (834.32 at 0.7950), Tier C ×2, routers
+    a_to_human (872.81/0.8475), **a_to_b 812.83/0.7976 (`headline: true`)**,
+    a_to_c_haiku (relabeled "LLM-cascade contrast"), **a_to_b_to_c** (786.10/0.7985);
+    `pending_points: []`; claims block = verbatim v2 frontier file (14 claims).
+  - **policies.json**: 4 policies (a_to_human, **a_to_b headline**, a_to_c_haiku
+    contrast, a_to_b_to_c with its frozen `tau_b` 0.5770 block); all taus loaded from
+    `results/thresholds/*cost-2c969255*` via the replay-verifying loader, never
+    transcribed.
+  - **samples.json**: tier_b1 (seed sa, documented in `tier_b1_note`) + tier_b2 cards
+    real per-sample (label/p_max/correct/run_id from frozen preds); per-sample router
+    path repointed to the **headline a_to_b** (τ_A 0.6448830480864552, full_cal):
+    134/200 answered-at-A, 66/200 escalated→B2-answered, 0 human (B2-terminal, no human
+    arm exists). **Replay gate strengthened:** `np.where(p_max_A ≥ τ, A_label, B2_label)`
+    must reproduce router_sim's `policy.y_pred` vector exactly (hard fail otherwise).
+  - **calibration.json**: 7 exhibits — Tier A trio + all four temperature-scaled Tier B
+    TEST-IID finals (ECE-replay gate at 1e-9 passed for all); `pending: []`.
+  - **drift.json**: verbatim copy of the 2026-08-12 rollup (tier_b2 yearly series +
+    both a_to_b escalation arms); the ONE remaining pending slot is the Tier B1 yearly
+    series, labeled "descoped by owner 2026-08-12".
+  - **meta.json**: cost_model → v2; new `headline_router` block recording the owner
+    decision; `pending_tier_b: [tier_b1]`. **runs_index.json**: 55/55 records verbatim.
+- **Panel fix found during the work:** the drift charts keyed policy line-series by
+  `policy` alone, silently merging arms that share a policy (a_to_human full_cal +
+  paired_subset τ arms; a_to_c Haiku + Sonnet terminals) into one zigzag polyline.
+  Series are now keyed by full arm identity (policy + terminal model + τ-fit dataset) —
+  scaffold-era latent chart bug, exposed the moment a_to_b added a second two-arm
+  policy.
+- **Verification:** full suite **593 passed / 1 skipped / 0 failed** (was 590/2 failed:
+  `test_runs_index_has_one_verbatim_entry_per_record` at 46≠55 and the drift verbatim
+  copy — both cleared by the regen, not by test edits; tests were updated only where
+  they pinned the OLD contract, and gained Tier B provenance + headline assertions);
+  ruff clean on every file touched. Browser-verified (local static server, light +
+  dark, zero console errors): all five tier cards real per sample, a_to_b path animates
+  (A→answered / A→escalated→B2→answered), frontier renders 12 points with no pending
+  legend, policy builder shows 4 rows with the `headline` tag on a_to_b and measured
+  costs at defaults reproducing the frozen records exactly (786.10 / 812.83 / 872.81 /
+  908.44), drift charts draw per-arm lines incl. tier_b2 and both a_to_b arms with the
+  descoped-B1 label, calibration shows 7 cards, receipts table lists 55 runs.
+- **Verdict:** ACCEPTED — owner decision 2026-08-12 executed exactly as recorded;
+  demo/data current at 55 runs with all gates green; every former pending-Tier-B
+  placeholder renders measured data; suite fully green. Cost: **$0.000** (no API calls,
+  no model inference; `results/runs.jsonl` untouched at 55 records — derivation-only).
+- **Repro:**
+
+  ```
+  uv run python -m triage_lab.router_sim --op-version v2-isocal --cost-config configs/cost_model_v2.yaml
+  make demo-data        # = uv run python -m triage_lab.demo_build --all  (needs data/ from `make data` + `make preds`)
+  uv run pytest -q      # 593 passed, 1 skipped
+  python3 -m http.server -d demo   # browser check
+  ```

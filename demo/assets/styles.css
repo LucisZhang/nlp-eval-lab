@@ -520,6 +520,7 @@ svg text {
 
 .tag.measured { color: var(--ok); border-color: var(--ok); }
 .tag.derived { color: var(--pending); border-color: var(--pending); }
+.tag.headline { color: var(--accent); border-color: var(--accent); font-weight: 600; }
 
 /* ---- drawer ---- */
 

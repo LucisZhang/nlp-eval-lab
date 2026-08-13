@@ -143,31 +143,34 @@ def test_meta_shape(payload, records):
     assert len(meta["git_sha"]) == 40
     assert meta["op_version"] == "v2-isocal"
     assert meta["snapshot_sha256"] == demo_build.snapshot_sha256(records)
-    cfg = cost_model.load_cost_config()
-    assert meta["cost_model"] == {"path": "configs/cost_model_v1.yaml", "sha256": cfg.sha256}
+    cfg = cost_model.load_cost_config(demo_build.DEMO_COST_CONFIG)
+    assert meta["cost_model"] == {"path": "configs/cost_model_v2.yaml", "sha256": cfg.sha256}
     assert set(meta["evidence_classes"]) == {"measured", "estimated", "projected", "derived"}
-    assert meta["pending_tier_b"] == list(demo_build.PENDING_TIER_B_SLOTS)
+    # Owner decision 2026-08-12, executed in this payload.
+    assert meta["headline_router"]["policy"] == "a_to_b"
+    assert meta["headline_router"]["evaluation_set"] == router_sim.EVAL_FULL
+    assert meta["pending_tier_b"] == list(demo_build.PENDING_TIER_B_SLOTS) == ["tier_b1"]
 
 
 @_needs_demo
-def test_pending_tier_b_slots_are_real_objects(payload):
-    """Every Tier B slot is an object with `pending: true`, never an omitted key."""
-    slots = set()
-    for obj in (payload["frontier.json"]["pending_points"],
-                payload["calibration.json"]["pending"],
-                payload["drift.json"]["pending_series"]):
-        for entry in obj:
-            assert entry["pending"] is True
-            slots.add(entry["slot"])
+def test_tier_b_backfill_left_exactly_one_labeled_pending_slot(payload):
+    """Tier B backfilled 2026-08-12: the only pending slot left is the drift panel's B1
+    yearly series (descoped by owner), still a real labeled object, never an omitted key."""
+    assert payload["frontier.json"]["pending_points"] == []
+    assert payload["calibration.json"]["pending"] == []
 
+    pending = payload["drift.json"]["pending_series"]
+    assert [p["slot"] for p in pending] == ["tier_b1"]
+    assert pending[0]["pending"] is True
+    assert "descoped" in pending[0]["label"]
+    assert set(payload["meta.json"]["pending_tier_b"]) == {"tier_b1"}
+
+    # The former sample-card slots are real per-tier data now.
     for sample in payload["samples.json"]["samples"]:
         for key in ("tier_b1", "tier_b2"):
-            slot = sample["tiers"][key]
-            assert slot["pending"] is True and slot["slot"] == key
-            slots.add(key)
-
-    assert slots <= set(payload["meta.json"]["pending_tier_b"])
-    assert {"tier_b1_modernbert", "tier_b2_distilbert", "router_a_b_c"} <= slots
+            tier = sample["tiers"][key]
+            assert "pending" not in tier
+            assert set(tier) == {"label", "p_max", "correct", "run_id"}
 
 
 @_needs_demo
@@ -222,7 +225,8 @@ def test_runs_index_has_one_verbatim_entry_per_record(payload, records):
 def test_frontier_claims_are_a_verbatim_copy_of_the_primary_file(payload):
     # Selected by the cost config the payload was built under: one frontier file exists
     # per cost generation, so "the only one there" stops being a selection.
-    source = demo_build.primary_frontier_path(cost_model.load_cost_config())
+    source = demo_build.primary_frontier_path(
+        cost_model.load_cost_config(demo_build.DEMO_COST_CONFIG))
     claims = dict(payload["frontier.json"]["claims"])
     assert claims.pop("source") == "results/frontier/" + source.name
     assert claims == json.loads(source.read_text(encoding="utf-8"))
@@ -236,6 +240,7 @@ def test_frontier_single_tier_points_copy_macro_f1_and_cost_exactly(payload, res
         "tier_a_cnb": (demo_build.TIER_A_CNB_TEST, "test_iid"),
         "tier_c_haiku": (demo_build.HAIKU_TEST, "test_iid"),
         "tier_c_sonnet": (demo_build.SONNET_TEST, "test_iid"),
+        **{key: (config, "test_iid") for config, key, _ in demo_build.TIER_B_TESTS},
     }
     for key, (config_name, slice_name) in expected.items():
         point = points[key]
@@ -256,14 +261,20 @@ def test_frontier_single_tier_points_copy_macro_f1_and_cost_exactly(payload, res
         assert point["cost_model_source"] == f"results/cost_model/{record['run_id']}.json"
 
 
+ROUTER_EXHIBITS = (
+    # (payload key, evaluation set, router_sim policy name, headline?)
+    ("a_to_human", router_sim.EVAL_FULL, "a_to_human", False),
+    ("a_to_b", router_sim.EVAL_FULL, "a_to_b", True),
+    ("a_to_c_haiku", router_sim.EVAL_PAIRED, "a_to_c_parsefail_human", False),
+    ("a_to_b_to_c", router_sim.EVAL_PAIRED, "a_to_b_to_c", False),
+)
+
+
 @_needs_demo
 def test_frontier_router_points_copy_router_sim_exactly(payload):
     points = {p["key"]: p for p in payload["frontier.json"]["points"]}
-    cfg = cost_model.load_cost_config()
-    for key, eval_set, policy_name in (
-        ("a_to_human", router_sim.EVAL_FULL, "a_to_human"),
-        ("a_to_c_haiku", router_sim.EVAL_PAIRED, "a_to_c_parsefail_human"),
-    ):
+    cfg = cost_model.load_cost_config(demo_build.DEMO_COST_CONFIG)
+    for key, eval_set, policy_name, headline in ROUTER_EXHIBITS:
         path = router_sim.DEFAULT_ROUTER_DIR / router_sim.result_filename(
             eval_set, cfg, demo_build.OP_VERSION)
         policy = json.loads(path.read_text(encoding="utf-8"))["policies"][policy_name]
@@ -274,11 +285,16 @@ def test_frontier_router_points_copy_router_sim_exactly(payload):
         assert point["macro_f1"] == {"point": policy["macro_f1_system"]}
         assert point["n"] == policy["n_examples"]
         assert point["cost_model_source"] == f"results/router_sim/{path.name}"
+        assert point["headline"] is headline
+    # Exactly one headline point, and it is the owner-decided a_to_b (2026-08-12).
+    headline_keys = [p["key"] for p in payload["frontier.json"]["points"]
+                     if p.get("headline")]
+    assert headline_keys == ["a_to_b"]
 
 
 @_needs_demo
 def test_policies_copy_router_sim_and_the_frozen_thresholds(payload):
-    cfg = cost_model.load_cost_config()
+    cfg = cost_model.load_cost_config(demo_build.DEMO_COST_CONFIG)
     policies_doc = payload["policies.json"]
     assert policies_doc["op_version"] == demo_build.OP_VERSION
     assert policies_doc["cost_defaults"]["c_misroute"] == cfg.c_misroute_usd
@@ -286,14 +302,20 @@ def test_policies_copy_router_sim_and_the_frozen_thresholds(payload):
     assert policies_doc["cost_defaults"]["sha256"] == cfg.sha256
 
     by_key = {p["key"]: p for p in policies_doc["policies"]}
-    for key, eval_set, policy_name in (
-        ("a_to_human", router_sim.EVAL_FULL, "a_to_human"),
-        ("a_to_c_haiku", router_sim.EVAL_PAIRED, "a_to_c_parsefail_human"),
-    ):
+    assert list(by_key) == [k for k, _, _, _ in ROUTER_EXHIBITS]
+    assert [k for k, p in by_key.items() if p["headline"]] == ["a_to_b"]
+    for key, eval_set, policy_name, _headline in ROUTER_EXHIBITS:
         path = router_sim.DEFAULT_ROUTER_DIR / router_sim.result_filename(
             eval_set, cfg, demo_build.OP_VERSION)
         policy = json.loads(path.read_text(encoding="utf-8"))["policies"][policy_name]
         block = by_key[key]
+        assert block["router_sim_policy"] == policy_name
+        assert block["evaluation_set"] == eval_set
+        # The two-gate cascade also publishes its frozen second threshold.
+        if "tau_b" in policy["gate"]:
+            assert block["tau_b"]["value"] == policy["gate"]["tau_b"]
+        else:
+            assert "tau_b" not in block
 
         assert block["expected_cost_per_1k"] == policy["expected_cost_per_1k"]
         assert block["rates"] == {
@@ -323,13 +345,19 @@ def test_drift_is_a_verbatim_copy_plus_annotations(payload):
     assert drift["summary"] == source
     assert drift["source"] == "results/drift/summary.json"
     assert [a["x"] for a in drift["annotations"]] == ["2023-04", "2026-H1"]
-    assert [s["slot"] for s in drift["pending_series"]] == ["tier_b1", "tier_b2"]
+    assert [s["slot"] for s in drift["pending_series"]] == ["tier_b1"]
+    # The copied rollup must actually carry the Tier B series the panel renders.
+    assert "tier_b2" in drift["summary"]["tier_order"]
+    assert {"a_to_b__full_slice", "a_to_b__paired_subset"} <= set(
+        drift["summary"]["arm_order"])
 
 
 @_needs_demo
 def test_calibration_ece_and_brier_are_copied_from_the_run_records(payload, resolved):
     exhibits = payload["calibration.json"]["exhibits"]
     assert len(exhibits) >= 2
+    # The four temperature-scaled Tier B TEST-IID finals ship alongside the Tier A trio.
+    assert {key for _, key, _ in demo_build.TIER_B_TESTS} <= {e["key"] for e in exhibits}
     by_run = {r["run_id"]: r for r in predictions.load_records(RESULTS_PATH)}
     for exhibit in exhibits:
         record = by_run[exhibit["run_id"]]
@@ -338,7 +366,7 @@ def test_calibration_ece_and_brier_are_copied_from_the_run_records(payload, reso
             assert exhibit[key] == {"point": logged["point"], "ci_lo": logged["ci_lo"],
                                     "ci_hi": logged["ci_hi"]}, f"{exhibit['key']}.{key}"
         assert exhibit["slice"] == record["dataset"]["split"]
-        assert exhibit["calibration"] in {"raw", "isotonic"}
+        assert exhibit["calibration"] in {"raw", "isotonic", "temperature"}
 
 
 @_needs_demo
@@ -489,15 +517,16 @@ def test_samples_selection_matches_curated_ids(payload):
 
 @_needs_demo
 def test_samples_router_paths_use_the_frozen_op(payload):
+    """The per-sample path is the HEADLINE router (a_to_b, owner decision 2026-08-12):
+    B2-terminal, so no human arm exists and every path ends answered."""
     allowed = {("A", "answered"),
-               ("A", "escalated", "C", "answered"),
-               ("A", "escalated", "C", "human")}
+               ("A", "escalated", "B2", "answered")}
     tau = payload["policies.json"]
-    frozen_tau = next(p["tau"]["value"] for p in tau["policies"] if p["key"] == "a_to_c_haiku")
+    frozen_tau = next(p["tau"]["value"] for p in tau["policies"] if p["key"] == "a_to_b")
     for sample in payload["samples.json"]["samples"]:
         router = sample["router"]
         assert router["op_version"] == "v2-isocal"
-        assert router["policy"] == "a_to_c_haiku"
+        assert router["policy"] == "a_to_b"
         assert router["tau"] == frozen_tau
         assert tuple(router["path"]) in allowed
         # The gate decision must agree with the Tier A confidence the same file publishes.
@@ -517,6 +546,22 @@ def test_samples_carry_narrative_and_tier_a_provenance(payload, resolved):
         assert tier_a["label"] in labels
         assert 0.0 <= tier_a["p_max"] <= 1.0
         assert tier_a["correct"] == (tier_a["label"] == sample["y_true"])
+
+
+@_needs_demo
+def test_samples_carry_tier_b_provenance(payload, resolved):
+    """Both Tier B cards trace to the frozen TEST-IID finals (tier_b1 shows seed sa)."""
+    b1 = demo_build.record_for(resolved, demo_build.TIER_B1_SAMPLE_CONFIG, "test_iid")
+    b2 = demo_build.record_for(resolved, demo_build.TIER_B2_SAMPLE_CONFIG, "test_iid")
+    labels = set(payload["samples.json"]["class_labels"])
+    assert "seed sa" in payload["samples.json"]["tier_b1_note"]
+    for sample in payload["samples.json"]["samples"]:
+        for key, record in (("tier_b1", b1), ("tier_b2", b2)):
+            tier = sample["tiers"][key]
+            assert tier["run_id"] == record["run_id"]
+            assert tier["label"] in labels
+            assert 0.0 <= tier["p_max"] <= 1.0
+            assert tier["correct"] == (tier["label"] == sample["y_true"])
 
 
 @_needs_demo

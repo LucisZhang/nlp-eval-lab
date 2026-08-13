@@ -190,9 +190,11 @@
       }
     },
     "criterion": "router is cheaper than the baseline with a paired bootstrap CI on the cost/1k difference that excludes zero (CLAUDE.md comparison rule)",
-    "headline_router_meets_two_model_baselines": false,
+    "headline_router_meets_two_model_baselines": true,
     "headline_router_model_baselines_dominated": [
-      "a_only"
+      "a_only",
+      "b1_only_sa",
+      "b2_only"
     ],
     "model_baselines": [
       "a_only",
@@ -568,8 +570,10 @@
       ]
     }
   },
-  "headline_router": "a_to_c_parsefail_human",
+  "headline_evaluation_set": "full_test_iid",
+  "headline_router": "a_to_b",
   "kind": "summary",
+  "llm_cascade_contrast_router": "a_to_c_parsefail_human",
   "n_parse_failed_tier_c_test_iid": 0,
   "notes": {
     "human_credit": "accuracy_system and macro_f1_system credit every human-routed row as correct (y_pred := y_true), matching the cost model's P(error|human)=0 assumption. That flatters any policy with a human arm, so accuracy_machine and macro_f1_answered are reported alongside over machine-answered rows only, where no assumption applies. Compare policies with different human rates using both.",

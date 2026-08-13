@@ -526,6 +526,11 @@ def test_a_to_b_to_c_pays_both_tiers_when_a_row_falls_through(tmp_path):
 def test_tier_b_comparisons_and_dominance_census_include_the_new_points(tmp_path):
     _, cfg, ev = _build_tier_b(tmp_path)
     summary = router_sim.build_summary(ev, cfg)
+    # Owner decision 2026-08-12: with Tier B priced, the headline router is a_to_b (full
+    # slice) and the Haiku-terminal cascade is demoted to the LLM-cascade contrast exhibit.
+    assert summary["headline_router"] == "a_to_b"
+    assert summary["headline_evaluation_set"] == router_sim.EVAL_FULL
+    assert summary["llm_cascade_contrast_router"] == "a_to_c_parsefail_human"
     dom = summary["dominance"]["by_router"]
     assert f"{router_sim.EVAL_FULL}/a_to_b" in dom
     assert f"{router_sim.EVAL_FULL}/b2_only" in dom
@@ -920,7 +925,12 @@ def test_cli_is_byte_deterministic(tmp_path):
 def test_summary_reports_dominance_and_decision_1(tmp_path):
     _, cfg, ev = _build(tmp_path)
     summary = router_sim.build_summary(ev, cfg)
+    # No Tier B in this fixture's cost config -> the a_to_b policy does not exist, so the
+    # pre-2026-08-12 headline stands, on the pre-decision schema exactly (this is what
+    # keeps v1-generation artifacts byte-stable under regeneration).
     assert summary["headline_router"] == "a_to_c_parsefail_human"
+    assert "headline_evaluation_set" not in summary
+    assert "llm_cascade_contrast_router" not in summary
     dom = summary["dominance"]
     assert set(dom["model_baselines"]) == {"a_only", "a_only_cnb", "c_only"}
     assert "all_human" not in dom["model_baselines"]

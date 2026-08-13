@@ -30,9 +30,20 @@ from the paired Haiku ∩ Sonnet TEST-IID receipt ids under seed 20260806 and co
 ``demo/data/curated_ids.json``; every later build REGENERATES the selection and hard-fails
 on any difference. It is never reselected to make an exhibit look better.
 
-**Tier B is pending, not omitted.** Every Tier B slot is a real object
-``{"pending": true, "slot": ..., "label": ...}`` so the backfill replaces it in place and a
-missing panel is visible as a missing panel rather than as silence.
+**Tier B is real data (backfilled 2026-08-12).** The scaffold's pending slots are replaced
+in place: frontier points (B1 x3 seeds, B2, the a_to_b and a_to_b_to_c routers), policy
+blocks for both Tier B cascades, per-sample tier_b1/tier_b2 cards, temperature-scaled
+calibration exhibits, and the tier_b2 drift series with the a_to_b escalation arms. The
+one slot that remains pending is the Tier B1 yearly drift series — descoped by owner
+(2026-08-12), retained as a labeled slot because "not measured" and "measured to be
+absent" are different claims. The build now requires a cost config that prices Tier B
+(``configs/cost_model_v2.yaml``) and hard-fails otherwise.
+
+**The headline router is ``a_to_b`` (owner decision 2026-08-12)** — the only certified
+two-axis win (cost AND macro-F1 paired CIs excluding zero vs b2_only), dominating 3 model
+baselines on the full slice. The Haiku-terminal cascade ``a_to_c_parsefail_human`` stays
+in the payload as the LLM-cascade contrast exhibit; the drift-chapter Sonnet-terminal
+variant is unchanged.
 
 **Reused, never reimplemented.** The router path shown per sample comes from
 ``router_sim.build_paired_policies`` under the frozen ``v2-isocal`` operating point, the
@@ -79,6 +90,23 @@ SCHEMA_VERSION = "demo-v1"
 # The primary operating point for every reported router number (STATUS.md Phase 4 task 5).
 OP_VERSION = router_sim.OP_V2
 
+# The demo builds under the cost generation that prices Tier B (Phase 4 backfill,
+# 2026-08-11): v2 = v1 verbatim + tier_b1/tier_b2 amortized-estimate pricing, so every
+# pre-Tier-B number reproduces exactly while the Tier B policies become scorable. This is
+# deliberately NOT cost_model.DEFAULT_COST_CONFIG (still v1 for the v1-generation
+# artifacts' sake).
+DEMO_COST_CONFIG = REPO_ROOT / "configs" / "cost_model_v2.yaml"
+
+# Owner decision 2026-08-12, executed in this payload: a_to_b is the headline router;
+# the Haiku-terminal cascade is retained as the LLM-cascade contrast exhibit.
+HEADLINE_ROUTER = threshold_opt.FAMILY_A_TO_B
+HEADLINE_NOTE = (
+    "Owner decision 2026-08-12: headline_router = a_to_b (full TEST-IID) — the only "
+    "certified two-axis win (cost AND macro-F1 paired CIs excl. 0 vs b2_only), dominating "
+    "3 model baselines. a_to_c_parsefail_human is retained as the LLM-cascade contrast "
+    "exhibit; the drift-chapter Sonnet-terminal variant is unchanged."
+)
+
 # --- frozen curated-set selection (CLAUDE.md rule 2) -------------------------------------
 CURATED_VERSION = "v1"
 CURATED_SEED = 20260806
@@ -98,6 +126,22 @@ SONNET_TEST = "tier_c_sonnet_zeroshot_test_iid"
 TEST_IID = "test_iid"
 CAL = "cal"
 
+# The four frozen Tier B TEST-IID finals (Phase 2 eval backfill, 2026-08-10), as
+# (config stem, frontier/calibration key, label). B1's three seeds are three separate
+# points everywhere — seed variance is the exhibit, and averaging them would be a number
+# no run record carries.
+TIER_B_TESTS: tuple[tuple[str, str, str], ...] = (
+    ("tier_b1_modernbert_sa", "tier_b1_sa", "Tier B1 — ModernBERT-base (seed a)"),
+    ("tier_b1_modernbert_sb", "tier_b1_sb", "Tier B1 — ModernBERT-base (seed b)"),
+    ("tier_b1_modernbert_sc", "tier_b1_sc", "Tier B1 — ModernBERT-base (seed c)"),
+    ("tier_b2_distilbert_s0", "tier_b2", "Tier B2 — DistilBERT (deployment point)"),
+)
+# The per-sample tier_b1 card shows one seed; sa is the first of the frozen seed list
+# (20260805, the same seed B2 trained under), not a metric-based pick — sb ties sa on
+# macro-F1 and all three runs ship as their own frontier + calibration exhibits.
+TIER_B1_SAMPLE_CONFIG = "tier_b1_modernbert_sa"
+TIER_B2_SAMPLE_CONFIG = router_sim.TIER_B_CASCADE_CONFIG  # B2, the cascade rung
+
 CALIBRATION_N_BINS = metrics.DEFAULT_N_BINS  # 15, the repo's ECE binning
 # The bins must be the ones the logged ECE was computed over, not merely 15 bins that look
 # like them, so the recomputation is pinned against the record at this tolerance.
@@ -109,23 +153,15 @@ TAU_SWEEP_MAX_POINTS = 256
 
 ROUND = cost_model.JSON_ROUND
 
-# --- pending Tier B slots (real objects everywhere, per the contract) --------------------
-PENDING_FRONTIER_POINTS = (
-    ("tier_b1_modernbert", "Tier B1 — ModernBERT-base (3 seeds)"),
-    ("tier_b2_distilbert", "Tier B2 — DistilBERT int8 ONNX"),
-    ("router_a_b_c", "Router A→B→C"),
+# --- the one remaining pending slot (real object, per the contract) ----------------------
+# Everything else the scaffold marked "pending Tier B" is real data as of 2026-08-12. The
+# B1 yearly drift series was descoped by owner the same day (~8h MPS for a model B2
+# dominates on every TEST-IID metric); the slot stays labeled rather than deleted.
+PENDING_DRIFT_SERIES = (
+    ("tier_b1", ("Tier B1 yearly drift series — descoped by owner 2026-08-12 "
+                 "(slot retained; not measured ≠ measured absent)")),
 )
-PENDING_SAMPLE_TIERS = (
-    ("tier_b1", "Tier B1 — ModernBERT-base (3 seeds)"),
-    ("tier_b2", "Tier B2 — DistilBERT int8 ONNX"),
-)
-PENDING_CALIBRATION = (
-    ("tier_b1_temp_scaling", "Tier B1 — temperature scaling"),
-    ("tier_b2_temp_scaling", "Tier B2 — temperature scaling"),
-)
-PENDING_TIER_B_SLOTS = tuple(
-    slot for slot, _ in (*PENDING_FRONTIER_POINTS, *PENDING_SAMPLE_TIERS, *PENDING_CALIBRATION)
-)
+PENDING_TIER_B_SLOTS = tuple(slot for slot, _ in PENDING_DRIFT_SERIES)
 
 EVIDENCE_LEGEND = {
     "measured": (
@@ -157,8 +193,9 @@ TIER_C_CALIBRATION_NOTE = (
 )
 
 FROZEN_TAU_NOTE = (
-    "a_to_c tau is frozen from Phase 4 CAL optimization; the demo does not re-solve it "
-    "(Haiku scored only the paired subset on CAL)."
+    "a_to_c, a_to_b and a_to_b_to_c taus are frozen from Phase 4 CAL optimization; the "
+    "demo does not re-solve them (only the a_to_human arm carries a published CAL sweep; "
+    "Haiku scored only the paired subset on CAL)."
 )
 
 TAU_SWEEP_NOTE = (
@@ -174,9 +211,10 @@ SLIDER_NOTE = (
 )
 
 SUPPORT_NOTE = (
-    "Supports differ by point and are NOT comparable as populations: Tier A and the "
-    "a_to_human router are scored on the full 104,443-row TEST-IID slice, Haiku and the "
-    "a_to_c cascade on Haiku's 5,000-row uniform subsample, Sonnet on the paired 1,500."
+    "Supports differ by point and are NOT comparable as populations: Tier A, all four "
+    "Tier B points, and the a_to_human / a_to_b routers are scored on the full "
+    "104,443-row TEST-IID slice; Haiku, the a_to_c cascade and the a_to_b_to_c cascade "
+    "on Haiku's 5,000-row uniform subsample; Sonnet on the paired 1,500."
 )
 
 ROUTER_PATH_NOTE = (
@@ -413,6 +451,11 @@ def build_meta(records: list[dict], cfg: cost_model.CostConfig) -> dict:
         "op_version": OP_VERSION,
         "cost_model": {"path": _rel(cfg.path), "sha256": cfg.sha256},
         "evidence_classes": EVIDENCE_LEGEND,
+        "headline_router": {
+            "policy": HEADLINE_ROUTER,
+            "evaluation_set": router_sim.EVAL_FULL,
+            "note": HEADLINE_NOTE,
+        },
         "pending_tier_b": list(PENDING_TIER_B_SLOTS),
     }
 
@@ -524,7 +567,7 @@ def _single_tier_point(key: str, label: str, record: dict, *, cost_dir) -> dict:
 
 
 def _router_point(key: str, label: str, policy: dict, *, source: Path,
-                  run_refs: list[str]) -> dict:
+                  run_refs: list[str], headline: bool = False) -> dict:
     """A router frontier point, copied from the frozen v2 router_sim evaluation.
 
     `macro_f1` carries no CI: `router_sim` logs `macro_f1_system` as a point estimate (the
@@ -535,6 +578,7 @@ def _router_point(key: str, label: str, policy: dict, *, source: Path,
         "key": key,
         "label": label,
         "kind": "router",
+        "headline": headline,
         "run_id": run_refs[0],
         "run_refs": run_refs,
         "n": policy["n_examples"],
@@ -572,12 +616,17 @@ def build_frontier(resolved: dict, cfg: cost_model.CostConfig, *,
     cnb = record_for(resolved, TIER_A_CNB_TEST, TEST_IID)
     haiku = record_for(resolved, HAIKU_TEST, TEST_IID)
     sonnet = record_for(resolved, SONNET_TEST, TEST_IID)
+    tier_b = {config: record_for(resolved, config, TEST_IID)
+              for config, _, _ in TIER_B_TESTS}
+    b2 = tier_b[TIER_B2_SAMPLE_CONFIG]
 
     points = [
         _single_tier_point("tier_a_logreg", "Tier A — TF-IDF LogReg", logreg,
                            cost_dir=cost_dir),
         _single_tier_point("tier_a_cnb", "Tier A — TF-IDF ComplementNB", cnb,
                            cost_dir=cost_dir),
+        *[_single_tier_point(key, label, tier_b[config], cost_dir=cost_dir)
+          for config, key, label in TIER_B_TESTS],
         _single_tier_point("tier_c_haiku", "Tier C — Claude Haiku 4.5 (TEST-IID)", haiku,
                            cost_dir=cost_dir),
         _single_tier_point("tier_c_sonnet",
@@ -585,16 +634,25 @@ def build_frontier(resolved: dict, cfg: cost_model.CostConfig, *,
                            cost_dir=cost_dir),
         _router_point("a_to_human", "Router A→human", full["policies"]["a_to_human"],
                       source=full_path, run_refs=[logreg["run_id"]]),
-        _router_point("a_to_c_haiku", "Router A→Haiku (terminal, parse-fail→human)",
+        _router_point("a_to_b", "Router A→B2 (headline)",
+                      full["policies"][threshold_opt.FAMILY_A_TO_B],
+                      source=full_path, headline=True,
+                      run_refs=[logreg["run_id"], b2["run_id"]]),
+        _router_point("a_to_c_haiku", "Router A→Haiku (LLM-cascade contrast, "
+                      "parse-fail→human)",
                       paired["policies"][threshold_opt.FAMILY_A_TO_C],
                       source=paired_path,
                       run_refs=[logreg["run_id"], haiku["run_id"]]),
+        _router_point("a_to_b_to_c", "Router A→B2→Haiku (parse-fail→human)",
+                      paired["policies"][threshold_opt.FAMILY_A_TO_B_TO_C],
+                      source=paired_path,
+                      run_refs=[logreg["run_id"], b2["run_id"], haiku["run_id"]]),
     ]
     return {
         "claims": {**claims, "source": _rel(frontier_path)},
         "points": points,
-        "pending_points": [pending_slot(slot, label)
-                           for slot, label in PENDING_FRONTIER_POINTS],
+        "headline_note": HEADLINE_NOTE,
+        "pending_points": [],
         "support_note": SUPPORT_NOTE,
     }
 
@@ -604,13 +662,23 @@ def build_frontier(resolved: dict, cfg: cost_model.CostConfig, *,
 # ---------------------------------------------------------------------------
 
 def _policy_block(key: str, label: str, policy: dict, *, source: Path,
-                  run_refs: list[str]) -> dict:
+                  run_refs: list[str], headline: bool = False) -> dict:
     routing = policy["routing"]
     gate = policy["gate"]
     accuracy_machine = policy["accuracy_machine"]
+    # The two-gate cascade carries its frozen second threshold too; single-gate policies
+    # have no tau_b key and the contract keeps the absence (never a null placeholder).
+    tau_b_block = {} if "tau_b" not in gate else {
+        "tau_b": {
+            "value": gate["tau_b"],
+            "cal_tau_b_star": gate["tau_source"].get("cal_tau_b_star"),
+            "cal_coverage_b_marginal": gate["tau_source"].get("cal_coverage_b_marginal"),
+        },
+    }
     return {
         "key": key,
         "label": label,
+        "headline": headline,
         "router_sim_policy": policy["policy"],
         "evaluation_set": policy["evaluation_set"],
         "n": policy["n_examples"],
@@ -622,6 +690,7 @@ def _policy_block(key: str, label: str, policy: dict, *, source: Path,
             "source": f"results/thresholds/{gate['tau_source']['file']}",
             "sha256": gate["tau_source"]["sha256"],
         },
+        **tau_b_block,
         "run_refs": run_refs,
         "rates": {
             "answered_a": routing["coverage_a"],
@@ -687,6 +756,7 @@ def build_policies(resolved: dict, cfg: cost_model.CostConfig, *, art_cal, recor
 
     logreg = record_for(resolved, TIER_A_LOGREG_TEST, TEST_IID)
     haiku = record_for(resolved, HAIKU_TEST, TEST_IID)
+    b2 = record_for(resolved, TIER_B2_SAMPLE_CONFIG, TEST_IID)
     return {
         "op_version": OP_VERSION,
         "cost_defaults": {
@@ -696,14 +766,27 @@ def build_policies(resolved: dict, cfg: cost_model.CostConfig, *, art_cal, recor
             "sha256": cfg.sha256,
             "evidence_class": "estimated",
         },
+        "headline_note": HEADLINE_NOTE,
         "policies": [
             _policy_block("a_to_human", "Tier A gate → human queue",
                           full["policies"]["a_to_human"], source=full_path,
                           run_refs=[logreg["run_id"]]),
-            _policy_block("a_to_c_haiku", "Tier A gate → Haiku terminal (parse-fail→human)",
+            _policy_block("a_to_b", "Tier A gate → DistilBERT terminal (headline router)",
+                          full["policies"][threshold_opt.FAMILY_A_TO_B],
+                          source=full_path, headline=True,
+                          run_refs=[logreg["run_id"], b2["run_id"]]),
+            _policy_block("a_to_c_haiku",
+                          "Tier A gate → Haiku terminal (LLM-cascade contrast, "
+                          "parse-fail→human)",
                           paired["policies"][threshold_opt.FAMILY_A_TO_C],
                           source=paired_path,
                           run_refs=[logreg["run_id"], haiku["run_id"]]),
+            _policy_block("a_to_b_to_c",
+                          "Tier A gate → DistilBERT gate → Haiku terminal "
+                          "(parse-fail→human)",
+                          paired["policies"][threshold_opt.FAMILY_A_TO_B_TO_C],
+                          source=paired_path,
+                          run_refs=[logreg["run_id"], b2["run_id"], haiku["run_id"]]),
         ],
         "tau_sweep_a_to_human": {
             "slice": _slice_of(record_cal),
@@ -726,11 +809,14 @@ def build_policies(resolved: dict, cfg: cost_model.CostConfig, *, art_cal, recor
 # ---------------------------------------------------------------------------
 
 def build_drift(summary_path=DEFAULT_DRIFT_SUMMARY) -> dict:
+    """Verbatim copy of the drift rollup (which now carries the tier_b2 yearly series and
+    the two a_to_b escalation arms) plus annotations and the one remaining pending slot."""
     path = Path(summary_path)
     return {
         "summary": json.loads(path.read_text(encoding="utf-8")),
         "annotations": [dict(a) for a in DRIFT_ANNOTATIONS],
-        "pending_series": [pending_slot("tier_b1"), pending_slot("tier_b2")],
+        "pending_series": [pending_slot(slot, label)
+                           for slot, label in PENDING_DRIFT_SERIES],
         "source": _rel(path),
     }
 
@@ -800,19 +886,27 @@ def calibration_exhibit(key: str, label: str, record: dict, art, *,
 
 
 def build_calibration(resolved: dict, artifacts: dict) -> dict:
-    """Three exhibits: the raw CAL rung, the same rung isotonic, the shipped TEST-IID point.
+    """Tier A raw/isotonic/deployment exhibits plus the four temperature-scaled Tier B ones.
 
     There is deliberately no "Tier A logreg RAW on TEST-IID" exhibit, because no such run
     exists: every reported TEST-IID final is `calibration: isotonic` (fit on CAL). The raw
     vs isotonic contrast is therefore shown where it was actually measured — on CAL, on the
     two rungs that differ by exactly that one switch — and each exhibit states its own
-    slice rather than borrowing the other's.
+    slice rather than borrowing the other's. All four Tier B TEST-IID finals ship
+    (temperature fit on CAL): B1's three seeds are three exhibits for the same reason the
+    frontier carries three points — seed variance is the exhibit.
     """
     raw_cal = record_for(resolved, TIER_A_RAW_CAL, CAL)
     isocal = record_for(resolved, TIER_A_ISOCAL_CAL, CAL)
     test_iid = record_for(resolved, TIER_A_LOGREG_TEST, TEST_IID)
     haiku = record_for(resolved, HAIKU_TEST, TEST_IID)
     sonnet = record_for(resolved, SONNET_TEST, TEST_IID)
+    tier_b_exhibits = []
+    for config, key, label in TIER_B_TESTS:
+        record = record_for(resolved, config, TEST_IID)
+        tier_b_exhibits.append(calibration_exhibit(
+            key, f"{label} — temperature-scaled (TEST-IID)",
+            record, artifacts[record["run_id"]], calibration="temperature"))
     return {
         "exhibits": [
             calibration_exhibit(
@@ -825,6 +919,7 @@ def build_calibration(resolved: dict, artifacts: dict) -> dict:
                 "tier_a_logreg_test_iid",
                 "Tier A LogReg — isotonic, deployment point (TEST-IID)",
                 test_iid, artifacts[test_iid["run_id"]], calibration="isotonic"),
+            *tier_b_exhibits,
         ],
         "no_raw_test_iid_note": (
             "No raw-probability TEST-IID exhibit exists: every reported TEST-IID final is "
@@ -837,7 +932,7 @@ def build_calibration(resolved: dict, artifacts: dict) -> dict:
             "text": TIER_C_CALIBRATION_NOTE,
             "run_ids": [haiku["run_id"], sonnet["run_id"]],
         },
-        "pending": [pending_slot(slot, label) for slot, label in PENDING_CALIBRATION],
+        "pending": [],
     }
 
 
@@ -1022,33 +1117,62 @@ def tier_c_sample_fields(ids, record: dict, class_labels: list[str]) -> dict[int
 
 
 def router_paths(inputs: router_sim.TestInputs, cal_thresholds: dict) -> tuple[dict, float]:
-    """complaint_id -> the frozen v2 cascade's path for that row, plus the tau it used.
+    """complaint_id -> the HEADLINE router's path for that row, plus the tau it used.
 
-    The policy is built by `router_sim.build_paired_policies`, so the op semantics are the
-    Phase 4 ones by construction. The A-gate outcome is then recomputed with the router's
-    own expression (`p_max >= tau`) and cross-checked against the policy's `to_human`
-    vector, which is defined as `(~answered) & parse_failed` — if the two disagree, this
-    module has drifted from the op it claims to replay and the build fails.
+    The headline policy (a_to_b, owner decision 2026-08-12) is built by
+    `router_sim.build_full_policies`, so the op semantics are the Phase 4 ones by
+    construction. The A-gate outcome is then recomputed with the router's own expression
+    (`p_max >= tau`) and cross-checked against the policy's full label vector — for a
+    B2-terminal cascade every row is answered by machine, so the strongest replay check is
+    that `np.where(answered, A's label, B2's label)` reproduces `policy.y_pred` exactly.
+    If it does not, this module has drifted from the op it claims to replay and the build
+    fails.
     """
     policies = {p.name: p
-                for p in router_sim.build_paired_policies(inputs, cal_thresholds)}
-    policy = policies[threshold_opt.FAMILY_A_TO_C]
+                for p in router_sim.build_full_policies(inputs, cal_thresholds)}
+    policy = policies[HEADLINE_ROUTER]
+    rung = inputs.tier_b_cascade
+    if rung is None:
+        raise ValueError("the headline a_to_b policy needs a Tier B cascade rung; the "
+                         "cost config does not price Tier B")
     tau = float(policy.gate["tau"])
-    answered = np.asarray(inputs.art_a.p_max[inputs.index_paired], dtype=np.float64) >= tau
-    if not np.array_equal(policy.to_human, (~answered) & inputs.parse_failed):
+    answered = np.asarray(inputs.art_a.p_max, dtype=np.float64) >= tau
+    expected = np.where(answered,
+                        np.asarray(inputs.art_a.y_pred, dtype=object),
+                        np.asarray(rung.art.y_pred[rung.index_full], dtype=object))
+    if policy.to_human.any() or not np.array_equal(policy.y_pred, expected):
         raise ValueError(
-            "recomputed A-gate outcome disagrees with router_sim's to_human vector; the "
+            "recomputed a_to_b outcome disagrees with router_sim's policy vectors; the "
             "demo's router path is not the frozen op"
         )
     out = {}
-    for cid, is_answered, to_human in zip(policy.ids, answered, policy.to_human,
-                                          strict=True):
-        if is_answered:
-            path = ["A", "answered"]
-        else:
-            path = ["A", "escalated", "C", "human" if to_human else "answered"]
-        out[int(cid)] = path
+    for cid, is_answered in zip(policy.ids, answered, strict=True):
+        out[int(cid)] = (["A", "answered"] if is_answered
+                         else ["A", "escalated", "B2", "answered"])
     return out, tau
+
+
+def _tier_b_sample_fields(ids, rung: router_sim.TierBRung, record: dict) -> dict[int, dict]:
+    """Per-id Tier B demo fields from the rung's already-verified frozen artifact."""
+    index = threshold_opt.restrict_to_ids(rung.art, ids)
+    out = {}
+    for cid, pos in zip(ids, index, strict=True):
+        label = str(rung.art.y_pred[pos])
+        out[int(cid)] = {
+            "label": label,
+            "p_max": float(rung.art.p_max[pos]),
+            "correct": label == str(rung.art.y_true[pos]),
+            "run_id": record["run_id"],
+        }
+    return out
+
+
+def _tier_b_rung(inputs: router_sim.TestInputs, config_name: str) -> router_sim.TierBRung:
+    for rung in inputs.tier_b:
+        if rung.config_name == config_name:
+            return rung
+    raise ValueError(f"no Tier B rung loaded for config {config_name!r}; the cost config "
+                     "must price Tier B")
 
 
 def build_samples(curated: dict, *, resolved: dict, inputs: router_sim.TestInputs,
@@ -1057,12 +1181,18 @@ def build_samples(curated: dict, *, resolved: dict, inputs: router_sim.TestInput
     logreg = record_for(resolved, TIER_A_LOGREG_TEST, TEST_IID)
     haiku = record_for(resolved, HAIKU_TEST, TEST_IID)
     sonnet = record_for(resolved, SONNET_TEST, TEST_IID)
+    b1_record = record_for(resolved, TIER_B1_SAMPLE_CONFIG, TEST_IID)
+    b2_record = record_for(resolved, TIER_B2_SAMPLE_CONFIG, TEST_IID)
 
     class_labels = list(inputs.art_a.class_labels)
     split_rows = load_split_rows(ids, TEST_IID, splits_dir)
     index_a = threshold_opt.restrict_to_ids(inputs.art_a, ids)
     haiku_fields = tier_c_sample_fields(ids, haiku, class_labels)
     sonnet_fields = tier_c_sample_fields(ids, sonnet, class_labels)
+    b1_fields = _tier_b_sample_fields(ids, _tier_b_rung(inputs, TIER_B1_SAMPLE_CONFIG),
+                                      b1_record)
+    b2_fields = _tier_b_sample_fields(ids, _tier_b_rung(inputs, TIER_B2_SAMPLE_CONFIG),
+                                      b2_record)
     paths, tau = router_paths(inputs, cal_thresholds)
 
     samples = []
@@ -1087,14 +1217,14 @@ def build_samples(curated: dict, *, resolved: dict, inputs: router_sim.TestInput
                     "correct": a_label == y_true,
                     "run_id": logreg["run_id"],
                 },
-                "tier_b1": pending_slot("tier_b1", PENDING_SAMPLE_TIERS[0][1]),
-                "tier_b2": pending_slot("tier_b2", PENDING_SAMPLE_TIERS[1][1]),
+                "tier_b1": b1_fields[cid],
+                "tier_b2": b2_fields[cid],
                 "haiku": {**haiku_row, "correct": haiku_row["label"] == y_true},
                 "sonnet": {**sonnet_row, "correct": sonnet_row["label"] == y_true},
             },
             "router": {
                 "op_version": OP_VERSION,
-                "policy": "a_to_c_haiku",
+                "policy": HEADLINE_ROUTER,
                 "tau": tau,
                 "path": paths[cid],
                 "note": ROUTER_PATH_NOTE,
@@ -1104,10 +1234,17 @@ def build_samples(curated: dict, *, resolved: dict, inputs: router_sim.TestInput
         "selection": {**curated, "narrative_source": NARRATIVE_SOURCE},
         "samples": samples,
         "class_labels": class_labels,
+        "router_note": HEADLINE_NOTE,
+        "tier_b1_note": (
+            "The tier_b1 card shows seed sa (20260805, the first of the frozen seed "
+            "list); seeds sb and sc are separate logged runs with their own frontier and "
+            "calibration exhibits."
+        ),
         "parse_failure_note": (
             "A row with parse_failed=true carries the run's frozen FALLBACK label "
-            f"({(haiku.get('extra') or {}).get('fallback_label')!r}); `correct` scores that "
-            "fallback, while the router discards it and sends the row to a human."
+            f"({(haiku.get('extra') or {}).get('fallback_label')!r}); `correct` scores "
+            "that fallback. The headline a_to_b router never consults Tier C; the "
+            "parse-fail→human arm lives in the LLM-cascade contrast policies (panel 3)."
         ),
         "evidence_class": "measured",
     }
@@ -1179,7 +1316,7 @@ def build_receipts(records: list[dict]) -> dict:
 
 def build_all(out_dir=DEFAULT_OUT_DIR, *, results_path=DEFAULT_RESULTS_PATH,
               preds_dir=DEFAULT_PREDS_DIR, splits_dir=DEFAULT_SPLITS_DIR,
-              cost_config_path=cost_model.DEFAULT_COST_CONFIG,
+              cost_config_path=DEMO_COST_CONFIG,
               thresholds_dir=router_sim.DEFAULT_THRESHOLDS_DIR,
               frontier_dir=DEFAULT_FRONTIER_DIR, router_dir=DEFAULT_ROUTER_DIR,
               cost_dir=DEFAULT_COST_DIR,
@@ -1187,11 +1324,18 @@ def build_all(out_dir=DEFAULT_OUT_DIR, *, results_path=DEFAULT_RESULTS_PATH,
     """Write all nine contract files. Everything is computed before anything is written."""
     out_dir = Path(out_dir)
     cfg = cost_model.load_cost_config(cost_config_path)
+    if not cost_model.prices_tier_b(cfg):
+        raise ValueError(
+            f"cost config {cfg.path.name} does not price Tier B; the demo ships Tier B "
+            "exhibits and must build under the v2 cost generation "
+            "(configs/cost_model_v2.yaml)"
+        )
     records = predictions.load_records(results_path)
     resolved = resolve_records(records)
 
-    # Frozen TEST-IID inputs + the CAL tau* constants, through the router's own gates.
-    inputs = router_sim.load_test_inputs(preds_dir, results_path)
+    # Frozen TEST-IID inputs (incl. the four Tier B rungs) + the CAL tau* constants,
+    # through the router's own gates.
+    inputs = router_sim.load_test_inputs(preds_dir, results_path, cost_config=cfg)
     cal_thresholds = router_sim.load_cal_thresholds(
         thresholds_dir, cost_sha256=cfg.sha256, results_path=results_path,
         derivation=OP_VERSION, cost_config=cfg, preds_dir=preds_dir)
@@ -1208,6 +1352,11 @@ def build_all(out_dir=DEFAULT_OUT_DIR, *, results_path=DEFAULT_RESULTS_PATH,
         isocal_record["run_id"]: art_isocal,
         test_record["run_id"]: inputs.art_a,
     }
+    # The Tier B calibration exhibits reuse the rungs' artifacts — already loaded through
+    # `load_artifact_verified` by `router_sim.load_test_inputs`, never loaded twice.
+    for config, _, _ in TIER_B_TESTS:
+        record = record_for(resolved, config, TEST_IID)
+        artifacts[record["run_id"]] = _tier_b_rung(inputs, config).art
 
     haiku = record_for(resolved, HAIKU_TEST, TEST_IID)
     sonnet = record_for(resolved, SONNET_TEST, TEST_IID)
@@ -1242,7 +1391,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--results", type=Path, default=DEFAULT_RESULTS_PATH)
     parser.add_argument("--preds-dir", type=Path, default=DEFAULT_PREDS_DIR)
     parser.add_argument("--splits-dir", type=Path, default=DEFAULT_SPLITS_DIR)
-    parser.add_argument("--cost-config", type=Path, default=cost_model.DEFAULT_COST_CONFIG)
+    parser.add_argument("--cost-config", type=Path, default=DEMO_COST_CONFIG)
     parser.add_argument("--thresholds-dir", type=Path,
                         default=router_sim.DEFAULT_THRESHOLDS_DIR)
     args = parser.parse_args(argv)
@@ -1254,7 +1403,8 @@ def main(argv: list[str] | None = None) -> int:
                       thresholds_dir=args.thresholds_dir)
     for path in paths:
         print(f"{_rel(path):32s} {path.stat().st_size:>9,d} bytes")
-    print(f"op_version={OP_VERSION} pending_tier_b={list(PENDING_TIER_B_SLOTS)}")
+    print(f"op_version={OP_VERSION} headline_router={HEADLINE_ROUTER} "
+          f"pending_tier_b={list(PENDING_TIER_B_SLOTS)}")
     return 0
 
 
