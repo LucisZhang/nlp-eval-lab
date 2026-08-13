@@ -1,0 +1,74 @@
+{
+  "analysis": "tier_c_paired_compare",
+  "arm_a": {
+    "config_name": "tier_c_sonnet_zeroshot_test_iid",
+    "model_slug": "anthropic/claude-sonnet-5",
+    "n_dropped_unpaired": 0,
+    "receipts": "results/tier_c_raw/tier_c_sonnet_zeroshot_test_iid/20260807T015725Z/calls.jsonl",
+    "role": "Claude Sonnet 5 zero-shot (TEST-IID final)",
+    "run_id": "e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a"
+  },
+  "arm_b": {
+    "config_name": "tier_c_haiku_zeroshot_test_iid",
+    "model_slug": "anthropic/claude-haiku-4.5",
+    "n_dropped_unpaired": 3500,
+    "receipts": "results/tier_c_raw/tier_c_haiku_zeroshot_test_iid/20260807T004109Z/calls.jsonl",
+    "role": "Claude Haiku 4.5 zero-shot (TEST-IID final)",
+    "run_id": "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e"
+  },
+  "bootstrap": {
+    "ci_pct": [
+      2.5,
+      97.5
+    ],
+    "method": "percentile",
+    "n_resamples": 1000,
+    "pairing": "shared_index_vectors_per_replicate",
+    "seed": 20260805
+  },
+  "class_labels": [
+    "card",
+    "credit_reporting",
+    "debt_collection",
+    "deposit_account",
+    "money_service",
+    "mortgage",
+    "payday_personal_loan",
+    "student_loan",
+    "vehicle_loan"
+  ],
+  "comparison": "A_minus_B",
+  "cost_note": "derivation only: no model was run and results/runs.jsonl is untouched",
+  "cost_usd": 0.0,
+  "deltas": {
+    "accuracy": {
+      "ci_hi": 0.014000000000000012,
+      "ci_lo": -0.016666666666666607,
+      "delta": -0.0006666666666665932,
+      "excludes_zero": false
+    },
+    "macro_f1": {
+      "ci_hi": 0.026304210516739982,
+      "ci_lo": -0.04271658562188962,
+      "delta": -0.0072715208935451026,
+      "excludes_zero": false
+    }
+  },
+  "fallback_label": "card",
+  "generated_at": "2026-08-13T11:49:22.383474Z",
+  "git_sha": "018ec5114985d4d2a3572d1f4f960b95177c537c",
+  "key": "sonnet_minus_haiku__test_iid",
+  "mcnemar": {
+    "b": 68,
+    "c": 69,
+    "n_discordant": 137,
+    "p_value": 1.0
+  },
+  "n_examples": 1500,
+  "pairing": "shared",
+  "prompt_version": "v1",
+  "protocol_note": "frozen protocol: a parse_failed call enters as the run's fallback label, exactly as the runner scored it; no row is dropped for failing to parse",
+  "repro_command": "uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_sonnet_zeroshot_test_iid/20260807T015725Z/calls.jsonl results/tier_c_raw/tier_c_haiku_zeroshot_test_iid/20260807T004109Z/calls.jsonl --split test_iid --pair-on shared --role-a 'Claude Sonnet 5 zero-shot (TEST-IID final)' --role-b 'Claude Haiku 4.5 zero-shot (TEST-IID final)' --out results/tier_c_compare/sonnet_minus_haiku__test_iid.json",
+  "schema_version": 1,
+  "split": "test_iid"
+}

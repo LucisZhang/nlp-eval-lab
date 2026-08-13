@@ -28,6 +28,10 @@ _what's next_.
   variant (OOV hypothesis already refuted model-free; re-probing a closed question). Slots stay
   labeled below, not deleted. The fourth — **Tier B2 prior-shift decomposition** — was approved
   and is **done** (see Phase 5 table + EXPERIMENT_LOG 2026-08-12 task 5).
+- **Owner decision (2026-08-13, repo rule):** the ~67 MB Tier B2 int8 ONNX
+  (`demo/live/tier_b2/model.int8.onnx`, 67,575,183 bytes) **stays committed in git as-is** —
+  GitHub Pages cannot serve LFS objects and demo self-containment wins. It is the **only**
+  large binary allowed in history; no other artifact of comparable size may be committed.
 - Last updated: 2026-08-13.
 
 ---
@@ -102,13 +106,13 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 | Novel-class probe (stretch) | pending | — |
 | Drift charts from results log; escalation-rate-over-time; evidence classes labeled | **done for A + B2 + C** (2026-08-10 available tiers; **Tier B2 series + a_to_b escalation arms added 2026-08-12**, $0 derivation-only: tier_b2 on macro-F1 + ECE charts; a_to_b at frozen τ_A 0.6449/0.7981 (full_cal/paired, replay-verified, B2-terminal — no B→human arm exists in the frozen family, none invented); escalate-to-B2 rate quasi-flat 0.296–0.329 2022→2025 then **0.4849 [0.4780, 0.4921]** at 2026-H1 (+47% rel.); frozen-τ cascade slightly trails b2_only at the cliff (acc 0.7550 vs 0.7584) — τ-staleness finding; module cost config v1→v2, pre-existing τ byte-identical; TEST-IID arm reproduces frozen frontier point bit-for-bit; B1 series = explicit pending slot). Escalation self-adjusts late and abruptly: a_to_human flat at CAL op point 2022→2025 (0.095–0.103 vs 0.0994) then **0.1674 [0.1623, 0.1724]** at 2026-H1 (+68% rel.); selective gate worth ~5 acc pts at the cliff (answered 0.7436 vs full 0.6918); a_to_c parse-fail→human ≤0.27% everywhere (Haiku exactly 0) | EXPERIMENT_LOG 2026-08-10 Phase 5 task 6; `results/drift/summary.json` + `results/drift/charts/` (3 SVGs, evidence-class footnotes); `make drift-charts` |
 
-### Phase 6 — Demo + case study  ▶ **IN PROGRESS (scaffold done 2026-08-10; Tier B panels done 2026-08-13)**
+### Phase 6 — Demo + case study  ▶ **IN PROGRESS (scaffold 2026-08-10; Tier B panels, live inference, case study page all done 2026-08-13; remaining: provenance links, reproduce-headline)**
 | Task | Status | Evidence |
 |---|---|---|
 | Static demo **site scaffold** (triage playground, frontier plot, policy builder, drift timeline, calibration panel, receipts drawer) | **done** (2026-08-10, $0, no new API calls, runs.jsonl untouched). `demo/` static site (vanilla JS, no external deps) + `demo/data/` (9 committed JSONs) built deterministically by `make demo-data` (`src/triage_lab/demo_build.py`, contract in `demo/DATA_CONTRACT.md`); curated set n=200 FROZEN (seed 20260806, pool = 1,500 Haiku∩Sonnet TEST-IID receipt ids, narratives from frozen splits); traceability test-enforced (`tests/test_demo_build.py`, 43 passed; CI-safe subset without `data/`); browser-verified light+dark, zero console errors; all Tier B panels explicit **pending Tier B** slot placeholders. Live ONNX inference deferred to a later Phase 6 task | EXPERIMENT_LOG 2026-08-10 Phase 6 task 1 |
 | Tier B panels + `headline_router` repoint + demo-data regen | **done** (2026-08-13, $0, derivation-only, runs.jsonl untouched at 55). Owner decision 2026-08-12 executed: `headline_router` → **`a_to_b`** (evidence-conditional in `router_sim.build_summary`; v2 summary regenerated, full/paired artifacts + all v1-generation artifacts byte-identical, sha-verified); demo rebuilt under `cost_model_v2.yaml`. All former pending slots real data: frontier 12 points (B1 ×3, B2, a_to_b `headline: true`, a_to_b_to_c; Haiku cascade relabeled LLM-cascade contrast), policy builder 4 policies (incl. frozen τ_B block), samples with real tier_b1/tier_b2 cards + a_to_b router paths (134 A / 66 B2 of 200; y_pred-vector replay gate), calibration 7 exhibits (4 temperature-scaled Tier B, ECE replay 1e-9), drift with tier_b2 series + both a_to_b arms. Only pending slot left: B1 yearly series (descoped, labeled). Curated set byte-identical (freeze gate exercised). Drift-chart latent bug fixed (series now keyed by full arm identity, not policy). Suite **593 passed / 1 skipped / 0 failed** — both known staleness failures cleared; browser-verified light+dark, zero console errors | EXPERIMENT_LOG 2026-08-13; `make demo-data` |
 | Live in-browser inference (Tier A + B2 int8) | **done** (2026-08-13, $0, runs.jsonl untouched at 55). Owner pre-check ran first: per-channel MatMulInteger probe in onnxruntime-web **PASS** (no fallback needed; logit deltas = unfused int8 kernel-order noise, bounded by Python's own unfused execution). Tier A exported via harness-code-path refit — **bit-identical** to frozen run `8e4d6345…` (200/200, Δ=0.0) — and reimplemented in JS (analyzers + WordPiece 0-mismatch vs sklearn/HF); B2 = shipped int8 ONNX (sha-verified vs parity artifact) + frozen T=1.31917 via vendored ort-web 1.27 wasm. **Browser-vs-Python agreement, curated 200: Tier A 100% (max|Δp_max| 1.7e-6), B2 99.0% vs official fp32 / 98.0% vs python-int8 batch-1** (all flips near-ties; batching sensitivity of DynamicQuantizeLinear measured + recorded); report frozen at `demo/live/agreement_report.json`, disclosed in the UI where predictions render. B2 lazy-loaded behind ~64 MB consent + progress; fully offline/vendored (`demo/vendor/ort/`, `demo/live/`); suite 610/1/0 with +17 `tests/test_demo_live.py`; `make demo-live` | EXPERIMENT_LOG 2026-08-13 (live in-browser inference) |
-| Case study page (verification + "does not prove" sections) | pending | — |
+| Case study page (verification + "does not prove" sections) | **done** (2026-08-13, $0, derivation/presentation-only, runs.jsonl untouched at 55). Demo panel 7, data-driven via 10th contract file `demo/data/case_study.json` (DATA_CONTRACT §10): prose + declared `numbers` per section, every numeric token interpolated at build time from runs.jsonl or a committed derived artifact and test-gated — no hand-typed numbers. Narrative arc as owner-specified incl. honest negatives; §9 verification + does-not-prove sections complete; provenance + reproduce-headline render as labeled pending slots. **Owner's deferred paired CI ran first: within_A − within_B2 = +0.0168 [+0.0058, +0.0276], CI excl. 0 → sentence CERTIFIED** (robust across paths; `make prior-shift-paired`; new artifact `results/prior_shift/paired_within_…2026h1.json`; pre-existing 15 decompositions byte-identical). Tier C paired deltas materialized as committed artifacts (`results/tier_c_compare/`, `tier_c_compare --out/--pair-on shared`, 18/18 values reproduce the log). Suite **644/1/0**; `make demo-data` byte-identical ×2; browser-verified light+dark, zero console errors | EXPERIMENT_LOG 2026-08-13 (case study page) |
 | Provenance links to coursework seeds | pending | — |
 | `make reproduce-headline` | pending | — |
 | Demo fully static/offline; every number traces to a results record; reproduce-headline on clean machine | pending | — |
@@ -143,8 +147,8 @@ Tier B is **BLOCKED-until-weekend**; do the GPU-free work first, in this exact o
 4. ~~**Phase 6 — Site scaffold.** Build the static demo structure and wire in available exhibits.~~
    **Done 2026-08-10** (EXPERIMENT_LOG Phase 6 task 1). Any panel/number sourced from Tier B is
    **pending Tier B**. Remaining Phase 6 tasks, in order: ~~live in-browser inference (Tier A +
-   B2 int8)~~ **done 2026-08-13** → case study page (verification + "does not prove"),
-   provenance links, `make reproduce-headline`.
+   B2 int8)~~ **done 2026-08-13** → ~~case study page (verification + "does not prove")~~
+   **done 2026-08-13** → provenance links, `make reproduce-headline`.
 
 **Tier B training: DONE (ingested + validated 2026-08-10).** Backfill order for the coming
 sessions (one task per session): ~~**(1)** Tier B harness finals — the four configs on TEST-IID with
@@ -166,9 +170,12 @@ regenerated at 55 runs, both staleness test failures cleared, suite fully green)
 **pending Tier B** backfill list is now empty. ~~Live in-browser inference (Tier A + B2
 int8)~~ — **done 2026-08-13** (EXPERIMENT_LOG 2026-08-13: owner pre-check PASS, Tier A
 bit-identical export + 100% browser agreement, B2 99.0% vs official fp32, report frozen
-+ disclosed in UI). Remaining Phase 6 tasks, in order (§b item 4): case study page
-(verification + "does not prove"), provenance links, `make reproduce-headline` —
-**next session starts there**.
++ disclosed in UI). ~~Case study page (verification + "does not prove")~~ — **done
+2026-08-13** (EXPERIMENT_LOG 2026-08-13 case study page: panel 7 data-driven via
+`case_study.json`, every number test-gated to a results record; paired within-class CI
+certified at $0; Tier C paired deltas materialized as committed artifacts). Remaining
+Phase 6 tasks, in order (§b item 4): provenance links to coursework seeds, then
+`make reproduce-headline` — **next session starts there**.
 
 ---
 

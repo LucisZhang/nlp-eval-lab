@@ -2151,3 +2151,72 @@ reported runs. Every portfolio-bound number carries its reproduction command
   uv run pytest tests/test_demo_live.py -q
   python3 -m http.server 8642 -d demo   # then open /live/agreement.html?autorun=all → freezes report shown at /index.html
   ```
+
+## 2026-08-13 — Phase 6: case study page (verification + "does not prove") + paired within-class CI
+
+- **Scope:** The demo gains panel 7, "Case study" — the narrative arc the results log
+  already tells (IID tiering → drift triptych → τ-staleness → routing-to-cheap-capacity
+  → perturbation cost-tax), plus the §9 "How this was verified" checklist and the full
+  "What this does not prove" list, with the honest negatives (OOV refuted, few-shot
+  refuted, LLM cascade not paying) as their own card. $0, derivation/presentation only;
+  `results/runs.jsonl` untouched at 55 records. Provenance links and
+  `make reproduce-headline` remain separate pending tasks and render as labeled pending
+  slots on the page.
+- **Architecture decision:** the page is data, not copy. A 10th contract file
+  `demo/data/case_study.json` (built by `demo_build.build_case_study`, spec'd in
+  `demo/DATA_CONTRACT.md` §10) carries the prose AND a declared `numbers` array per
+  section; every numeric token in every paragraph is interpolated at build time from a
+  run record or committed derived artifact and test-gated (paragraph token ⊆ declared
+  displays; display ↔ value; value ↔ source artifact; run_id ↔ runs.jsonl). A number
+  cannot be typed onto the page by hand.
+- **Owner-deferred paired CI (ran FIRST — it decides a sentence's phrasing):**
+  hypothesis: "B2's within-class damage is smaller than Tier A's" survives a paired test
+  (the per-tier within::path_p CIs overlap, so their separation was never a test).
+  New `--paired-within` mode in `triage_lab.prior_shift` recomputes both tiers'
+  bootstrap replicates with the frozen seed (20260805, n=1,000) — identical index
+  vectors, asserted-identical complaint_id row order on both slices (2023 ref +
+  2026-H1, n=20,000 each), per-tier replicates cross-checked **bit-identical** to
+  `results/prior_shift/summary.json` (14/14 components, Δ=0.0) — and reports the CI on
+  the difference. **Result: within_A − within_B2 = +0.0167736014
+  [+0.0057520559, +0.0276165437] — CI excludes zero → CERTIFIED**, not directional;
+  robust across decomposition paths (path_q +0.0209 [+0.0062, +0.0345], shapley
+  +0.0188 [+0.0069, +0.0302], all excl. 0; interaction delta ∋ 0, which is why the
+  paths agree). Scope caveat carried onto the page: evaluation-sample uncertainty only —
+  B2 is a single fine-tune, so the claim is about these two fitted systems, not the
+  model families. Artifact: `results/prior_shift/paired_within_tier_a_vs_tier_b2_2026h1.json`;
+  the pre-existing 15 decompositions + summary.json reproduce byte-identically
+  (verified, 16/16 modulo generated_at/git_sha).
+- **Tier C paired comparisons materialized (gap found during traceability pass):**
+  the Sonnet−Haiku and few-shot paired deltas existed only as stdout + log prose —
+  quoting them on the page would have violated the trace rule. `triage_lab.tier_c_compare`
+  gained opt-in `--out` (writes a canonical JSON artifact; default invocation
+  byte-identical, read-only test unchanged) and `--pair-on shared` (replaces the
+  hand-filtering step; test proves shared ≡ the logged hand-filtered procedure,
+  byte-equal deltas/McNemar). Three committed artifacts under `results/tier_c_compare/`,
+  every value reproducing EXPERIMENT_LOG exactly (18/18 checks): Sonnet−Haiku TEST-IID
+  −0.0073 [−0.0427, +0.0263] p=1.00; TEST-POSTCUTOFF +0.0458 [+0.0282, +0.0663]
+  p=2.0e-10; Haiku k=9−k=0 CAL +0.0107 [−0.0054, +0.0266] p=0.41. Each artifact's
+  `repro_command` field is its own pasteable reproduction command.
+- **Honest-content notes:** numbers the spec wanted but no committed artifact records
+  were dropped rather than transcribed from prose (e.g. the rejected per-tensor 0.9824
+  parity figure, the "~4× less" gate multiplier — the actual ratio is 2.8×, both dollar
+  figures shown instead); the one remaining declared gap (superseded v1-generation
+  cascade delta) is recorded in the payload's `gaps` field. Spec's credit_reporting
+  "0.887→0.215" corrected to the decomposition's actual ref-2023 pair 0.9000→0.2147.
+- **Verification:** `make demo-data` twice → byte-identical; suite **644 passed /
+  1 skipped / 0 failed** (test_demo_build 43→59, test_prior_shift +13,
+  test_tier_c_compare 13→19); ruff clean; browser-verified in the app pane
+  (light + dark computed styles, zero console errors, receipts drawer opens from
+  case-study chips, no horizontal overflow, pending slots visible; per the 2026-08-13
+  convention, checks are DOM/computed-style assertions plus one compositing screenshot).
+- **Verdict:** ACCEPTED — the case-study page states only certified or explicitly
+  directional claims, every number traces, and the two §9 sections are complete; the
+  within-class comparison upgraded from directional to certified at $0.
+- **Reproduce:**
+  ```
+  make prior-shift-paired   # = uv run python -m triage_lab.prior_shift --paired-within tier_a tier_b2 --year 2026h1
+  # tier C paired artifacts: repro_command field inside each results/tier_c_compare/*.json
+  make demo-data            # = uv run python -m triage_lab.demo_build --all
+  uv run pytest tests/test_prior_shift.py tests/test_tier_c_compare.py tests/test_demo_build.py -q
+  python3 -m http.server 8642 -d demo   # open /#casestudy
+  ```

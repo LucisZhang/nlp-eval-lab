@@ -1,8 +1,8 @@
-# demo/data contract — Phase 6 site scaffold
+# demo/data contract — Phase 6 site
 
 Normative contract between `src/triage_lab/demo_build.py` (producer) and the static site
 (`demo/index.html` + `demo/assets/`, consumer). Both sides follow this file exactly.
-All files live in `demo/data/` and are **committed**. The build is **deterministic**:
+All ten files live in `demo/data/` and are **committed**. The build is **deterministic**:
 no wall-clock timestamps; the only timestamps are those copied from results records.
 
 Global conventions:
@@ -138,3 +138,69 @@ Per Tier C run: `{"run_id", "config_name", "model", "raw_log_path", "receipts_sh
 "n_calls", "total_cost_usd", "provider_mix": {"<provider>": count}, "token_totals": {"prompt": int, "completion": int},
 "parse_failures": int}` — aggregated from `results/tier_c_raw/**/calls.jsonl`. Plus
 `{"repro": {"results_log": "results/runs.jsonl", "note": "append-only; corrections reference superseded run ids"}}`.
+
+### 10. `case_study.json`
+
+The narrative panel (panel 7). Prose AND its numbers, so no figure on the page can be typed
+by hand: the paragraphs are templates in `demo_build.py` with each numeric **display**
+formatted from a **value copied at build time** out of a run record or a committed derived
+artifact.
+
+```
+{"schema_version": "case-study-v1", "title": "...", "source_note": "...",
+ "evidence_classes": {...same legend as meta.json...},
+ "pending": [{"pending": true, "slot": "reproduce_headline"|"provenance_seeds", "label": "..."}],
+ "sections": [
+   {"id": "intro|tiers|drift|thresholds|router|robustness|negatives|verification|limits|provenance",
+    "kind": "narrative|verification|limits|pending",
+    "title": "...",
+    "paragraphs": ["..."],                      // [] for verification/limits
+    "numbers": [{"label": "<unique within section>",
+                 "display": "<exact string as it appears in the prose>",
+                 "value": float|int|{point, ci_lo, ci_hi},
+                 "unit": "raw|usd|pct|pctpoint|count|pvalue",
+                 "basis": "copied|derived|declared",
+                 "evidence_class": "measured|estimated|projected|derived",
+                 "run_ids": ["..."], "source": "<repo-relative path>",
+                 "repro": "<command>"?, "note": "<formula / caveat>"?}],
+    "repro": ["<command>"...],                  // the section's receipts line
+    "run_ids": ["..."],                         // ordered union of its numbers' ids -> chips
+    "items": [...],                             // verification / limits rows, else []
+    "gaps": ["..."],                            // numbers deliberately NOT quoted, and why
+    "pending": {...}?}]}
+```
+
+`items` shape by `kind`: **verification** rows are
+`{"n": int, "title", "text", "source", "run_ids": [...], "evidence_class", "pending": {...}?}`;
+**limits** rows are `{"text"}`.
+
+Rules the tests enforce (`tests/test_demo_build.py`):
+
+1. Every `run_ids` entry exists in `results/runs.jsonl`.
+2. Every `numbers[].value` with `basis: "copied"` appears **exactly** (float equality) among
+   the numeric leaves of the artifact its `source` names; headline entries are additionally
+   spot-checked against a hand-written lookup.
+3. Every `numbers[].display` reads back to its own `value` under its `unit` — the digits in
+   the display are re-parsed and compared component-wise (point, ci_lo, ci_hi) at the
+   display's own precision. `raw` = the value; `usd`/`count` = the value with separators;
+   `pct` = value × 100; `pctpoint` = the value, already in percent; `pvalue` = one
+   significant figure.
+4. Every numeric token in `paragraphs` and in `items[].text` matches a `display` string
+   declared by that same section. The only exempt tokens are IDENTIFIERS, never
+   quantities: calendar years and half-year slice labels (`2015`, `2026-H1`), ISO dates,
+   hex digests, letter-prefixed tokens (`A6000`, `bf16`, `int8`, `fp32`, `v2`), the unit
+   suffix `1k`, standard names (`SHA-256`) and the model names `Haiku 4.5` / `Sonnet 5`.
+5. `basis: "derived"` entries are recomputed independently by the test from their sources;
+   `basis: "declared"` is reserved for the pytest-suite counts, which no results record can
+   carry, and is a named constant in `demo_build.py`.
+
+Numbers with no committed artifact behind them are NOT on the page: the section records the
+omission and its reason in `gaps` instead of quoting the figure. (The three paired Tier C
+comparisons that were `gaps` on 2026-08-13 are now stated — `triage_lab.tier_c_compare
+--out` writes `results/tier_c_compare/*.json`, so they have a source to be checked against.
+The surviving `gaps` entry is a figure that exists only under a superseded cost generation.)
+
+Two slots are pending and rendered as labeled pending objects, never omitted:
+`reproduce_headline` (the `make reproduce-headline` target, next Phase 6 task) and
+`provenance_seeds` (links to the coursework seeds under the read-only
+`docs/seed-evidence/`).

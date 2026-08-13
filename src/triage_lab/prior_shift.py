@@ -101,6 +101,7 @@ collapses / the LLMs do not" claim is made on identical rows rather than 20,000 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 from datetime import UTC, datetime
@@ -168,6 +169,21 @@ COMPONENT_KEYS: tuple[str, ...] = (
     "balanced_accuracy_delta",
 )
 PRIMARY_COMPONENTS = ("total", "prior::path_p", "within::path_p")
+
+# Between-tier paired comparison (`--paired-within`): the primary component and the
+# sensitivities carried alongside it. Path P's within-term absorbs the whole interaction,
+# so a between-tier claim about it is only honest if the other readings are shown too.
+PAIRED_COMPONENT = "within::path_p"
+PAIRED_SENSITIVITY_COMPONENTS: tuple[str, ...] = (
+    "total",
+    "within::path_q",
+    "within::shapley",
+    "within_main::anova",
+    "interaction",
+    "balanced_accuracy_delta",
+)
+# Rounding applied on write; the recorded-value cross-check is done at that resolution.
+RECORDED_MATCH_TOL = 10.0 ** (-JSON_ROUND)
 
 
 # ---------------------------------------------------------------------------
@@ -647,6 +663,40 @@ def paired_subsample_ids(tier: str, year: str, records, preds_dir) -> np.ndarray
 # Decomposition assembly
 # ---------------------------------------------------------------------------
 
+def load_tier_pair(tier: str, year: str, *, ref_year: str, records: dict, preds_dir) -> dict:
+    """Verified (reference, year) artifact pair for one tier, plus the shared coordinates.
+
+    Extracted so the between-tier paired comparison loads exactly what
+    ``build_decomposition`` loads -- same verification gate, same class-label order check,
+    same row order (artifact order, untouched). Two loaders would be two chances to pair
+    the wrong rows.
+    """
+    stem_ref, stem_year = config_stem(tier, ref_year), config_stem(tier, year)
+    rec_ref, rec_year = records[stem_ref], records[stem_year]
+    art_ref = _load_verified(rec_ref, preds_dir)
+    art_year = _load_verified(rec_year, preds_dir)
+
+    class_labels = list(art_ref.class_labels)
+    if list(art_year.class_labels) != class_labels:
+        raise ValueError(
+            f"{tier}/{year}: reference and year artifacts declare different class label "
+            "orders; the decomposition's coordinates would not be comparable"
+        )
+    if OAT_CLASS not in class_labels:
+        raise ValueError(f"one-at-a-time class {OAT_CLASS!r} not among {class_labels}")
+    return {
+        "tier": tier,
+        "stem_ref": stem_ref,
+        "stem_year": stem_year,
+        "record_ref": rec_ref,
+        "record_year": rec_year,
+        "artifact_ref": art_ref,
+        "artifact_year": art_year,
+        "class_labels": class_labels,
+        "oat_index": class_labels.index(OAT_CLASS),
+    }
+
+
 def _logged(record: dict, key: str) -> float | None:
     block = (record.get("metrics") or {}).get(key)
     return None if block is None else float(block["point"])
@@ -676,21 +726,12 @@ def build_decomposition(
     git_sha: str | None = None,
 ) -> dict:
     """Full JSON object for one (tier, year, scope) decomposition. See module docstring."""
-    stem_ref, stem_year = config_stem(tier, ref_year), config_stem(tier, year)
-    rec_ref, rec_year = records[stem_ref], records[stem_year]
-    art_ref = _load_verified(rec_ref, preds_dir)
-    art_year = _load_verified(rec_year, preds_dir)
-
-    class_labels = list(art_ref.class_labels)
-    if list(art_year.class_labels) != class_labels:
-        raise ValueError(
-            f"{tier}/{year}: reference and year artifacts declare different class label "
-            "orders; the decomposition's coordinates would not be comparable"
-        )
+    pair = load_tier_pair(tier, year, ref_year=ref_year, records=records, preds_dir=preds_dir)
+    stem_ref, stem_year = pair["stem_ref"], pair["stem_year"]
+    rec_ref, rec_year = pair["record_ref"], pair["record_year"]
+    art_ref, art_year = pair["artifact_ref"], pair["artifact_year"]
+    class_labels, oat_index = pair["class_labels"], pair["oat_index"]
     n_classes = len(class_labels)
-    if OAT_CLASS not in class_labels:
-        raise ValueError(f"one-at-a-time class {OAT_CLASS!r} not among {class_labels}")
-    oat_index = class_labels.index(OAT_CLASS)
 
     if scope == SCOPE_NATIVE:
         y_ref, p_ref = art_ref.y_true, art_ref.y_pred
@@ -1011,6 +1052,391 @@ def _source_block(record, art, config_name, n_used) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Between-tier paired comparison of a decomposition component
+# ---------------------------------------------------------------------------
+#
+# The per-tier decompositions above answer "how much of THIS system's drop is within-class
+# behaviour". Comparing two of those numbers across tiers -- "B2's within-class damage is
+# smaller than Tier A's" -- is a different claim with a different standard of proof: the
+# two marginal CIs overlap heavily (Tier A [0.0385, 0.0625] vs Tier B2 [0.0234, 0.0451]),
+# and overlapping marginal intervals are NOT a test of the difference. The difference has
+# its own sampling distribution, and it is much tighter than the marginals because the two
+# tiers are scored on the SAME rows: the shared 2023/2026-H1 sampling error cancels in the
+# difference.
+#
+# That cancellation is free here, and only here, because of an invariant of
+# `bootstrap_components`: it draws POSITIONAL indices from a stream determined solely by
+# (seed, n_ref, n_year). Tier A and Tier B2 both have n_ref = n_year = 20,000, so replicate
+# i uses byte-identical `idx_ref` / `idx_year` vectors for both tiers. Positional identity
+# is only *complaint* identity if the two artifacts carry the same complaint_ids in the
+# same order -- so that is asserted, per slice, rather than assumed (`_id_alignment`). Both
+# artifacts are written complaint_id-ascending over the same frozen split, so the check
+# passes exactly; if it ever did not, the honest options are aligning by id (which changes
+# which complaints the recorded per-tier replicates used, so the recorded CIs would no
+# longer be reproduced -- flagged in the artifact) or, for disjoint row sets, refusing.
+#
+# No new resampling scheme is introduced: the per-tier replicate streams are the *same*
+# calls `build_decomposition` makes for its primary CI, so the per-tier points and CIs
+# recomputed here must equal the recorded ones bit-for-bit at the stored resolution. That
+# equality is checked and hard-fails -- it is the evidence that the delta replicates are
+# differences of the recorded quantities and not of some near-miss recomputation.
+
+
+def _id_alignment(ids_x, ids_y, *, slice_name: str, tier_x: str, tier_y: str):
+    """Verify two tiers cover the same complaints; return (report, take_x, take_y).
+
+    ``take_*`` are ``None`` when the row orders already agree (the only case in which the
+    recorded per-tier bootstrap replicates are reproduced bit-identically), and id-sorting
+    permutations when the sets agree but the orders do not.
+    """
+    ids_x = np.asarray(ids_x)
+    ids_y = np.asarray(ids_y)
+    if len(ids_x) != len(ids_y):
+        raise ValueError(
+            f"paired comparison on slice {slice_name}: {tier_x} has {len(ids_x)} rows and "
+            f"{tier_y} has {len(ids_y)}; a paired bootstrap needs one row set, not two"
+        )
+    order_x = np.argsort(ids_x, kind="stable")
+    order_y = np.argsort(ids_y, kind="stable")
+    if not np.array_equal(ids_x[order_x], ids_y[order_y]):
+        n_shared = int(np.intersect1d(ids_x, ids_y).size)
+        raise ValueError(
+            f"paired comparison on slice {slice_name}: {tier_x} and {tier_y} do not cover "
+            f"identical complaint_ids ({n_shared} of {len(ids_x)} shared); the pairing "
+            "claim is false, so no paired interval is computed"
+        )
+    exact = bool(np.array_equal(ids_x, ids_y))
+    report = {
+        "slice": slice_name,
+        "n": len(ids_x),
+        "same_id_set": True,
+        "exact_row_order_match": exact,
+        "ascending": {
+            tier_x: bool(np.all(np.diff(ids_x) > 0)),
+            tier_y: bool(np.all(np.diff(ids_y) > 0)),
+        },
+        "realigned_by_complaint_id": not exact,
+        "ids_sha256": hashlib.sha256(
+            np.ascontiguousarray(ids_x[order_x], dtype=np.int64).tobytes()
+        ).hexdigest(),
+    }
+    return report, (None if exact else order_x), (None if exact else order_y)
+
+
+def _take(values, order):
+    return values if order is None else np.asarray(values)[order]
+
+
+def recorded_component_row(
+    summary_path, tier: str, year: str, component: str,
+    *, scope: str = SCOPE_NATIVE, pi_source: str = PI_ARTIFACT,
+) -> dict | None:
+    """The flat summary.json row for one (tier, year, scope, pi_source, component).
+
+    ``None`` when summary.json is absent (a fresh out-dir); a duplicate match is an error
+    rather than a silent first-wins, because this row is what the recomputation is
+    certified against.
+    """
+    path = Path(summary_path)
+    if not path.exists():
+        return None
+    rows = json.loads(path.read_text())["rows"]
+    hits = [
+        r for r in rows
+        if r["tier"] == tier and r["year"] == year and r["scope"] == scope
+        and r["pi_source"] == pi_source and r["component"] == component
+    ]
+    if len(hits) > 1:
+        raise ValueError(
+            f"{path}: {len(hits)} rows match {tier}/{year}/{scope}/{pi_source}/{component}; "
+            "the recorded value this recomputation is checked against is ambiguous"
+        )
+    return hits[0] if hits else None
+
+
+def _recorded_check(computed: dict, recorded: dict | None, *, where: str, strict: bool) -> dict:
+    """Compare a recomputed CI block against its recorded summary.json row.
+
+    Recorded values are rounded to ``JSON_ROUND`` on write, so equality is asserted at that
+    resolution. A mismatch means the replicate stream is not the one behind the recorded
+    per-tier CIs, which would silently invalidate the pairing argument -- so it hard-fails
+    by default instead of being reported and ignored.
+    """
+    if recorded is None:
+        return {"available": False, "matches": None,
+                "note": "summary.json absent; per-tier values could not be cross-checked"}
+    deltas = {k: abs(float(computed[k]) - float(recorded[k]))
+              for k in ("point", "ci_lo", "ci_hi")}
+    matches = all(v <= RECORDED_MATCH_TOL for v in deltas.values())
+    out = {
+        "available": True,
+        "matches": bool(matches),
+        "tol": RECORDED_MATCH_TOL,
+        "recorded": {k: recorded[k] for k in ("point", "ci_lo", "ci_hi", "ci_valid")},
+        "abs_delta": deltas,
+    }
+    if strict and not matches:
+        detail = ", ".join(f"{k}: |delta| = {v:.3e}" for k, v in deltas.items())
+        raise ValueError(
+            f"{where}: recomputed within-component does not reproduce the recorded "
+            f"summary.json value ({detail} > {RECORDED_MATCH_TOL:.0e}). The paired delta "
+            "is only a delta of the published numbers if this matches exactly"
+        )
+    return out
+
+
+def _cell_identity_checks(pair: dict, cells: dict, balanced: dict) -> list[dict]:
+    """Cells A and D vs the two runs' own logged macro-F1 (the native-scope gate)."""
+    checks = [
+        _identity_check("cell_A_vs_logged_macro_f1", cells["A_ref_mix_ref_behavior"],
+                        _logged(pair["record_ref"], "macro_f1"), True),
+        _identity_check("cell_D_vs_logged_macro_f1", cells["D_year_mix_year_behavior"],
+                        _logged(pair["record_year"], "macro_f1"), True),
+        _identity_check("balanced_accuracy_ref_vs_logged", balanced["ref"],
+                        _logged(pair["record_ref"], "balanced_accuracy"), True),
+        _identity_check("balanced_accuracy_year_vs_logged", balanced["year"],
+                        _logged(pair["record_year"], "balanced_accuracy"), True),
+    ]
+    failed = [c for c in checks if c["ok"] is False]
+    if failed:
+        detail = "; ".join(
+            f"{c['name']}: computed {c['computed']!r} vs logged {c['logged']!r}" for c in failed
+        )
+        raise ValueError(
+            f"{pair['tier']} fails its identity gate -- {detail}. A paired delta built on "
+            "cells that are not the runs' own logged numbers is not a delta of those runs"
+        )
+    return checks
+
+
+def paired_within_delta(
+    tier_x: str,
+    tier_y: str,
+    year: str,
+    *,
+    records: dict,
+    preds_dir=DEFAULT_PREDS_DIR,
+    ref_year: str = REF_YEAR,
+    component: str = PAIRED_COMPONENT,
+    n_resamples: int = harness.N_RESAMPLES,
+    seed: int = harness.BOOTSTRAP_SEED,
+    summary_path=None,
+    strict_recorded: bool = True,
+    generated_at: str | None = None,
+    git_sha: str | None = None,
+) -> dict:
+    """Paired percentile-bootstrap CI on ``component(tier_x) - component(tier_y)``.
+
+    Native scope only: the paired_subsample scope restricts Tier A to Tier C's rows, which
+    is a different (and separately reported) estimand. Sign convention follows the
+    decomposition's: positive = degradation, so a positive delta means tier_x degrades more
+    than tier_y on that component.
+    """
+    if tier_x == tier_y:
+        raise ValueError("paired comparison needs two different tiers")
+    if component not in COMPONENT_KEYS:
+        raise ValueError(f"unknown component {component!r}; known: {list(COMPONENT_KEYS)}")
+    summary_path = Path(summary_path) if summary_path is not None \
+        else DEFAULT_OUT_DIR / "summary.json"
+
+    pairs = {
+        t: load_tier_pair(t, year, ref_year=ref_year, records=records, preds_dir=preds_dir)
+        for t in (tier_x, tier_y)
+    }
+    class_labels = pairs[tier_x]["class_labels"]
+    if pairs[tier_y]["class_labels"] != class_labels:
+        raise ValueError(
+            f"{tier_x} and {tier_y} declare different class-label orders; their component "
+            "vectors are not commensurable"
+        )
+    n_classes = len(class_labels)
+    oat_index = pairs[tier_x]["oat_index"]
+
+    # --- pairing validity (the whole argument rests on this) ----------------
+    align = {}
+    takes = {}
+    for slot, key in (("ref", "artifact_ref"), ("year", "artifact_year")):
+        report, take_x, take_y = _id_alignment(
+            pairs[tier_x][key].complaint_id, pairs[tier_y][key].complaint_id,
+            slice_name=SPLIT_FMT.format(year=ref_year if slot == "ref" else year),
+            tier_x=tier_x, tier_y=tier_y,
+        )
+        align[slot] = report
+        takes[(tier_x, slot)], takes[(tier_y, slot)] = take_x, take_y
+    exact_order = all(align[s]["exact_row_order_match"] for s in ("ref", "year"))
+
+    # --- per-tier points, gates, and replicate streams -----------------------
+    per_tier: dict[str, dict] = {}
+    reps: dict[str, dict] = {}
+    for tier in (tier_x, tier_y):
+        pair = pairs[tier]
+        art_ref, art_year = pair["artifact_ref"], pair["artifact_year"]
+        true_ref = metrics.encode_labels(_take(art_ref.y_true, takes[(tier, "ref")]), class_labels)
+        pred_ref = metrics.encode_labels(_take(art_ref.y_pred, takes[(tier, "ref")]), class_labels)
+        true_year = metrics.encode_labels(
+            _take(art_year.y_true, takes[(tier, "year")]), class_labels)
+        pred_year = metrics.encode_labels(
+            _take(art_year.y_pred, takes[(tier, "year")]), class_labels)
+
+        pi_r, cond_r, sup_r = prior_and_conditional(true_ref, pred_ref, n_classes)
+        pi_y, cond_y, sup_y = prior_and_conditional(true_year, pred_year, n_classes)
+        point, cells = component_vector(pi_r, cond_r, sup_r, pi_y, cond_y, sup_y, oat_index)
+        balanced = {"ref": balanced_accuracy_cell(cond_r, sup_r),
+                    "year": balanced_accuracy_cell(cond_y, sup_y)}
+        checks = _cell_identity_checks(pair, cells, balanced)
+
+        boot = bootstrap_components(
+            true_ref, pred_ref, true_year, pred_year, n_classes, oat_index,
+            variant="both", n_resamples=n_resamples, seed=seed,
+        )
+        empty = boot["empty_ref"] + boot["empty_year"]
+        ci_valid = bool(np.all(empty <= EMPTY_CLASS_CI_FRACTION * n_resamples))
+        reps[tier] = boot["replicates"]
+
+        blocks = {}
+        recorded = {}
+        for key in (component, *PAIRED_SENSITIVITY_COMPONENTS):
+            blocks[key] = _ci_block(point[key], boot["replicates"][key], ci_valid)
+            recorded[key] = _recorded_check(
+                blocks[key],
+                recorded_component_row(summary_path, tier, year, key),
+                where=f"{tier}/{year}/{key}",
+                strict=strict_recorded and exact_order,
+            )
+        per_tier[tier] = {
+            "tier": tier,
+            "n_ref": len(true_ref),
+            "n_year": len(true_year),
+            "cells": cells,
+            "components": blocks,
+            "recorded_cross_check": recorded,
+            "identity_check": {"tol": IDENTITY_TOL, "checks": checks},
+            "balanced_accuracy": balanced,
+            "ci_valid": ci_valid,
+            "runs": {
+                "ref": _source_block(pair["record_ref"], pair["artifact_ref"],
+                                     pair["stem_ref"], len(true_ref)),
+                "year": _source_block(pair["record_year"], pair["artifact_year"],
+                                      pair["stem_year"], len(true_year)),
+            },
+        }
+
+    # --- the paired delta ----------------------------------------------------
+    ci_valid = per_tier[tier_x]["ci_valid"] and per_tier[tier_y]["ci_valid"]
+
+    def _delta(key: str) -> dict:
+        draws = reps[tier_x][key] - reps[tier_y][key]
+        point = (per_tier[tier_x]["components"][key]["point"]
+                 - per_tier[tier_y]["components"][key]["point"])
+        block = _ci_block(point, draws, ci_valid)
+        block["excludes_zero"] = ci_excludes_zero(block)
+        block["frac_replicates_gt_zero"] = float(np.mean(draws > 0.0))
+        block["replicate_mean"] = float(np.mean(draws))
+        block["replicate_std"] = float(np.std(draws, ddof=1))
+        return block
+
+    primary = _delta(component)
+    x_block = per_tier[tier_x]["components"][component]
+    y_block = per_tier[tier_y]["components"][component]
+    overlap = (x_block["ci_lo"] <= y_block["ci_hi"]) and (y_block["ci_lo"] <= x_block["ci_hi"])
+
+    scope_note = (
+        "delta replicates are differences taken WITHIN each replicate: both tiers are "
+        "scored on the same resampled complaints, so the shared slice-sampling error "
+        "cancels. This is why the paired interval can exclude 0 while the two marginal "
+        "intervals overlap."
+    )
+    obj = {
+        "schema_version": SCHEMA_VERSION,
+        "generated_at": generated_at or datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+        "git_sha": git_sha if git_sha is not None else _current_git_sha(),
+        "repro_command": (
+            f"uv run python -m triage_lab.prior_shift --paired-within {tier_x} {tier_y} "
+            f"--year {year}"
+        ),
+        "kind": "paired_component_delta",
+        "estimand": f"{component}({tier_x}) - {component}({tier_y})",
+        "component": component,
+        "path": "P_prior_first",
+        "primary_path": "P_prior_first",
+        "scope": SCOPE_NATIVE,
+        "pi_source": PI_ARTIFACT,
+        "tier_x": tier_x,
+        "tier_y": tier_y,
+        "year": year,
+        "ref_year": ref_year,
+        "class_labels": class_labels,
+        "sign_convention": (
+            "components are positive = degradation vs ref_year, so a POSITIVE delta means "
+            f"{tier_x} suffers more within-class degradation than {tier_y}"
+        ),
+        "claim_under_test": (
+            f"{tier_y}'s within-class damage is smaller than {tier_x}'s "
+            f"({SPLIT_FMT.format(year=year)} vs {SPLIT_FMT.format(year=ref_year)})"
+        ),
+        "point": primary["point"],
+        "ci_lo": primary["ci_lo"],
+        "ci_hi": primary["ci_hi"],
+        "ci_valid": primary["ci_valid"],
+        "ci_excludes_zero": primary["excludes_zero"],
+        "verdict": (
+            "certified: paired 95% CI excludes 0"
+            if primary["excludes_zero"] and ci_valid
+            else "directional only: paired 95% CI includes 0"
+        ),
+        "n_resamples": n_resamples,
+        "seed": seed,
+        "delta": primary,
+        "delta_sensitivity": {k: _delta(k) for k in PAIRED_SENSITIVITY_COMPONENTS},
+        "marginal_intervals": {
+            tier_x: {k: x_block[k] for k in ("point", "ci_lo", "ci_hi")},
+            tier_y: {k: y_block[k] for k in ("point", "ci_lo", "ci_hi")},
+            "overlap": bool(overlap),
+            "note": "marginal (unpaired) intervals; their overlap is NOT a test of the "
+                    "difference and must never be quoted as one",
+        },
+        "per_tier": per_tier,
+        "run_ids": {
+            t: {slot: per_tier[t]["runs"][slot]["run_id"] for slot in ("ref", "year")}
+            for t in (tier_x, tier_y)
+        },
+        "id_alignment": {
+            "checked": True,
+            "exact_row_order_match_all_slices": exact_order,
+            "reproduces_recorded_per_tier_replicates": exact_order,
+            "rule": "positional bootstrap indices pair complaints only if both artifacts "
+                    "carry the same complaint_ids in the same row order",
+            "on_mismatch": "same set, different order -> both tiers re-sorted by "
+                           "complaint_id (the recorded per-tier CIs would then no longer "
+                           "be reproduced, and this flag says so); different sets -> refuse",
+            "slices": align,
+        },
+        "bootstrap": {
+            "n_resamples": n_resamples,
+            "seed": seed,
+            "method": harness.BOOTSTRAP_METHOD,
+            "ci_pct": [harness.CI_LOWER_PCT, harness.CI_UPPER_PCT],
+            "resample": "both_slices_independent",
+            "draw_order": "ref_then_year",
+            "pairing": "shared_index_vectors_per_replicate",
+            "pairing_basis": "the index stream depends only on (seed, n_ref, n_year); both "
+                             "tiers have identical sizes, so replicate i uses byte-identical "
+                             "idx_ref/idx_year vectors",
+            "note": scope_note,
+            "ci_valid": ci_valid,
+        },
+        "cost_usd": 0.0,
+        "cost_note": "derivation only: no model was run and results/runs.jsonl is untouched",
+    }
+    return obj
+
+
+def paired_output_name(tier_x: str, tier_y: str, year: str, component: str) -> str:
+    kind = component.split("::", 1)[0]
+    return f"paired_{kind}_{tier_x}_vs_{tier_y}_{year}.json"
+
+
+# ---------------------------------------------------------------------------
 # Flat summary rows (drift-chart input)
 # ---------------------------------------------------------------------------
 
@@ -1142,14 +1568,59 @@ def main(argv: list[str] | None = None) -> int:
                         help="restrict to this year (repeatable)")
     parser.add_argument("--scope", action="append", choices=[SCOPE_NATIVE, SCOPE_PAIRED],
                         help="restrict to this scope (repeatable)")
+    parser.add_argument("--paired-within", nargs=2, metavar=("TIER_X", "TIER_Y"),
+                        choices=sorted(TIER_CONFIGS),
+                        help="paired bootstrap CI on within::path_p(TIER_X) - "
+                             "within::path_p(TIER_Y) for one --year; native scope, same "
+                             "rows, same frozen seed. Writes its own artifact and does not "
+                             "touch the per-tier decompositions or summary.json")
     parser.add_argument("--preds-dir", type=Path, default=DEFAULT_PREDS_DIR)
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--results", type=Path, default=harness.DEFAULT_RESULTS_PATH)
+    parser.add_argument("--summary", type=Path, default=DEFAULT_OUT_DIR / "summary.json",
+                        help="published summary.json the --paired-within recomputation is "
+                             "certified against; deliberately NOT tied to --out-dir, so "
+                             "redirecting the output still checks the committed numbers")
     parser.add_argument("--splits-stats", type=Path, default=DEFAULT_SPLITS_STATS_PATH)
     args = parser.parse_args(argv)
 
+    if args.paired_within:
+        if args.all or args.tier or args.scope:
+            parser.error("--paired-within is its own mode; do not combine it with "
+                         "--all/--tier/--scope")
+        if not args.year or len(args.year) != 1:
+            parser.error("--paired-within needs exactly one --year")
+        tier_x, tier_y = args.paired_within
+        obj = paired_within_delta(
+            tier_x, tier_y, args.year[0],
+            records=predictions.records_by_config(args.results),
+            preds_dir=args.preds_dir,
+            summary_path=args.summary,
+        )
+        out_path = write_json(
+            obj,
+            args.out_dir / paired_output_name(tier_x, tier_y, args.year[0], obj["component"]),
+        )
+        print(
+            f"[paired {obj['component']} {tier_x} - {tier_y} {args.year[0]}] "
+            f"delta={obj['point']:+.10f} [{obj['ci_lo']:+.10f},{obj['ci_hi']:+.10f}]  "
+            f"{tier_x}={obj['marginal_intervals'][tier_x]['point']:+.10f}  "
+            f"{tier_y}={obj['marginal_intervals'][tier_y]['point']:+.10f}  "
+            f"excludes_zero={obj['ci_excludes_zero']}  -> {obj['verdict']}"
+        )
+        cross = [c for t in (tier_x, tier_y)
+                 for c in obj["per_tier"][t]["recorded_cross_check"].values()
+                 if c["available"]]
+        print(
+            f"id alignment: exact row-order match on both slices = "
+            f"{obj['id_alignment']['exact_row_order_match_all_slices']}; "
+            f"recorded per-tier cross-check: {sum(bool(c['matches']) for c in cross)}"
+            f"/{len(cross)} components match -> {out_path}"
+        )
+        return 0
+
     if not args.all and not (args.tier or args.year or args.scope):
-        parser.error("give --all or at least one of --tier/--year/--scope")
+        parser.error("give --all, --paired-within, or at least one of --tier/--year/--scope")
 
     jobs = default_jobs() if args.all else select_jobs(args.tier, args.year, args.scope)
     if not jobs:

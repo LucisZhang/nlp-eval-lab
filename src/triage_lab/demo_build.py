@@ -5,9 +5,17 @@ Repro:
     make demo-data        # uv run python -m triage_lab.demo_build --all
 
 `demo/DATA_CONTRACT.md` is the normative spec; this module is its producer side and the
-static site (`demo/index.html` + `demo/assets/`) is its consumer side. Nine files land in
+static site (`demo/index.html` + `demo/assets/`) is its consumer side. Ten files land in
 ``demo/data/`` and are committed, so the demo is fully static: no server, no API call, no
 model run at page load.
+
+**The case study page is data, not copy.** ``case_study.json`` (added 2026-08-13) carries
+the narrative panel's prose AND a declared `numbers` array per section: every numeric token
+that appears in a paragraph is COPIED at build time from a run record or a committed
+derived artifact, with its source path, run ids, repro command, unit and evidence class.
+The prose lives here as templates with the displays interpolated, so a number can never be
+typed into the page by hand — and `tests/test_demo_build.py` enforces exactly that
+(paragraph token ⊆ declared displays, display ↔ value, value ↔ source artifact).
 
 **Nothing here is a new measurement.** Every number is either COPIED from an append-only
 results record / committed artifact (metrics, CIs, costs, thresholds, drift rollup) or
@@ -64,6 +72,7 @@ from pathlib import Path
 
 import duckdb
 import numpy as np
+import yaml
 
 from triage_lab import (
     cost_model,
@@ -84,6 +93,24 @@ DEFAULT_DRIFT_SUMMARY = REPO_ROOT / "results" / "drift" / "summary.json"
 DEFAULT_FRONTIER_DIR = REPO_ROOT / "results" / "frontier"
 DEFAULT_ROUTER_DIR = router_sim.DEFAULT_ROUTER_DIR
 DEFAULT_COST_DIR = cost_model.DEFAULT_COST_DIR
+
+# Committed derived artifacts the case study copies from (no new measurement anywhere).
+DEFAULT_PRIOR_SHIFT_SUMMARY = REPO_ROOT / "results" / "prior_shift" / "summary.json"
+DEFAULT_PAIRED_WITHIN = (REPO_ROOT / "results" / "prior_shift"
+                         / "paired_within_tier_a_vs_tier_b2_2026h1.json")
+DEFAULT_TIER_B_COMPARE = REPO_ROOT / "results" / "tier_b_compare" / "summary.json"
+# The three Tier C paired comparisons the case study cites. Read by path rather than
+# through a rollup: three files with three repro commands are already the index, and a
+# summary.json would be a second place the same numbers live.
+DEFAULT_TIER_C_COMPARE_DIR = REPO_ROOT / "results" / "tier_c_compare"
+TIER_C_COMPARE_SONNET_IID = "sonnet_minus_haiku__test_iid"
+TIER_C_COMPARE_SONNET_POSTCUTOFF = "sonnet_minus_haiku__test_postcutoff"
+TIER_C_COMPARE_FEWSHOT = "haiku_fewshot_minus_zeroshot__cal"
+DEFAULT_PERTURBATION_SUMMARY = REPO_ROOT / "results" / "perturbation" / "summary.json"
+DEFAULT_OOV_SUMMARY = REPO_ROOT / "results" / "oov" / "summary.json"
+DEFAULT_ONNX_PARITY = REPO_ROOT / "results" / "onnx_parity" / "tier_b2_s0_parity.json"
+DEFAULT_LIVE_AGREEMENT = REPO_ROOT / "demo" / "live" / "agreement_report.json"
+DEFAULT_SNAPSHOT_MANIFEST = REPO_ROOT / "SNAPSHOT_MANIFEST.yaml"
 
 SCHEMA_VERSION = "demo-v1"
 
@@ -1311,6 +1338,1255 @@ def build_receipts(records: list[dict]) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# 10. case_study.json
+# ---------------------------------------------------------------------------
+#
+# The case study is the one page where prose and numbers sit in the same sentence, which
+# is exactly where an unattributed figure is cheapest to write and most expensive to be
+# wrong about. So the page is built like every other exhibit: the paragraphs are templates
+# in this module, each numeric DISPLAY is formatted from a value COPIED out of a run record
+# or a committed derived artifact, and the section declares that value with its unit,
+# source path, run ids, repro command and evidence class. A handful of entries are DERIVED
+# (a ratio or a relative change over two copied values); they carry `basis: "derived"` and
+# a formula in `note`, and the tests recompute them from the sources independently.
+#
+# Numbers the spec asked for that no committed artifact carries are NOT on the page. The
+# paired Sonnet-vs-Haiku deltas and the few-shot ablation delta come from
+# `triage_lab.tier_c_compare`, which prints and writes nothing; they live in
+# EXPERIMENT_LOG.md with their repro commands, and each affected section says so in
+# `gaps` rather than quoting a number this page cannot check.
+
+CASE_STUDY_SCHEMA = "case-study-v1"
+
+CASE_STUDY_TITLE = ("Case study — what was measured, how it was verified, "
+                    "and what it does not prove")
+
+CASE_STUDY_SOURCE_NOTE = (
+    "Every numeric token in every paragraph below is declared in that section's `numbers` "
+    "array and copied at build time from `results/runs.jsonl` or a committed derived "
+    "artifact. Entries marked `derived` are arithmetic over copied values with no free "
+    "parameters and carry their formula. The build fails if a paragraph contains a number "
+    "no entry declares."
+)
+
+# The one number on the page with no results/ artifact behind it: a pytest run is not a
+# logged experiment. It is recorded here as an explicit constant, stamped with the command
+# that produced it, rather than written into the prose where nothing could check it.
+SUITE_RESULT = {
+    "passed": 644,
+    "skipped": 1,
+    "failed": 0,
+    "command": "uv run pytest -q",
+    "note": ("measured in this working tree at the git SHA meta.json records; a test run "
+             "is not a logged experiment, so this is a declared constant in "
+             "src/triage_lab/demo_build.py, not a copy from results/"),
+}
+
+CASE_STUDY_PENDING = (
+    {
+        "slot": "reproduce_headline",
+        "label": ("`make reproduce-headline` — pending (next Phase 6 task): a single "
+                  "target that re-derives every headline number on this page from the "
+                  "committed artifacts"),
+    },
+    {
+        "slot": "provenance_seeds",
+        "label": ("Provenance links to coursework seeds — pending "
+                  "(docs/seed-evidence/, read-only)"),
+    },
+)
+
+
+# --- display formatting (display strings are FORMATTED from the copied value) ------------
+
+def _fmt_f(value, digits: int = 4) -> str:
+    return f"{float(value):.{digits}f}"
+
+
+def _fmt_sf(value, digits: int = 4) -> str:
+    return f"{float(value):+.{digits}f}"
+
+
+def _fmt_ci(metric: dict, digits: int = 4, signed: bool = False) -> str:
+    fmt = _fmt_sf if signed else _fmt_f
+    return (f"{fmt(metric['point'], digits)} [{fmt(metric['ci_lo'], digits)}, "
+            f"{fmt(metric['ci_hi'], digits)}]")
+
+
+def _fmt_usd(value, digits: int = 2, signed: bool = False) -> str:
+    v = float(value)
+    if v < 0:
+        return f"-${abs(v):,.{digits}f}"
+    return f"+${v:,.{digits}f}" if signed else f"${v:,.{digits}f}"
+
+
+def _fmt_usd_ci(metric: dict, digits: int = 2, signed: bool = False) -> str:
+    return (f"{_fmt_usd(metric['point'], digits, signed)} "
+            f"[{_fmt_usd(metric['ci_lo'], digits, signed)}, "
+            f"{_fmt_usd(metric['ci_hi'], digits, signed)}]")
+
+
+def _fmt_pct(value, digits: int = 1) -> str:
+    return f"{float(value) * 100:.{digits}f}%"
+
+
+def _fmt_count(value) -> str:
+    return f"{int(value):,d}"
+
+
+def _fmt_pvalue(value) -> str:
+    """Two decimals where a p-value is readable that way, one significant figure below.
+
+    `1.0e+00` for a p of exactly 1 is technically correct and reads like a bug; `1.00` says
+    "the discordant counts are as balanced as they get", which is the actual finding.
+    """
+    p = float(value)
+    return f"{p:.2f}" if p >= 0.001 else f"{p:.1e}"
+
+
+def tier_c_compare_artifact(key: str, compare_dir=DEFAULT_TIER_C_COMPARE_DIR) -> dict:
+    """One paired Tier C comparison, with its own recorded repro command.
+
+    Hard-fails on a missing file rather than degrading to a pending slot: these three
+    comparisons are load-bearing sentences on the page, and a page that silently drops
+    "statistically tied on IID" is telling a different story than the one that was
+    measured.
+    """
+    path = Path(compare_dir) / f"{key}.json"
+    if not path.exists():
+        raise ValueError(
+            f"missing Tier C paired-comparison artifact {path}; regenerate it with "
+            "`uv run python -m triage_lab.tier_c_compare <A> <B> --out <path>` (see the "
+            "artifact's own repro_command field)")
+    artifact = json.loads(path.read_text(encoding="utf-8"))
+    if artifact["key"] != key:
+        raise ValueError(f"{path.name} declares key {artifact['key']!r}, not {key!r}")
+    return {**artifact, "path": _rel(path)}
+
+
+def _tier_c_delta_numbers(artifact: dict, prefix: str, metric: str = "macro_f1") -> list:
+    """The (delta, McNemar p, n) trio a paired Tier C sentence needs, all copied."""
+    band = ci_block_from_delta(artifact["deltas"][metric])
+    source = artifact["path"]
+    repro = artifact["repro_command"]
+    run_ids = [arm["run_id"] for arm in (artifact["arm_a"], artifact["arm_b"])
+               if arm["run_id"]]
+    return [
+        _cs_number(f"{prefix}_delta", _fmt_ci(band, signed=True), band, unit="raw",
+                   source=source, run_ids=run_ids, repro=repro,
+                   note=f"paired {metric} delta, {artifact['comparison']}, "
+                        f"slice {artifact['split']}, pairing {artifact['pairing']}"),
+        _cs_number(f"{prefix}_p", _fmt_pvalue(artifact["mcnemar"]["p_value"]),
+                   artifact["mcnemar"]["p_value"], unit="pvalue", source=source,
+                   run_ids=run_ids, repro=repro),
+        _cs_number(f"{prefix}_n", _fmt_count(artifact["n_examples"]),
+                   artifact["n_examples"], unit="count", source=source, run_ids=run_ids,
+                   repro=repro),
+    ]
+
+
+def _cs_number(label: str, display: str, value, *, unit: str, source: str,
+               run_ids=(), repro: str | None = None, basis: str = "copied",
+               evidence_class: str = "measured", note: str | None = None) -> dict:
+    """One declared number: what it says, what it is, and where it came from.
+
+    `unit` is what makes the display checkable without re-implementing the formatter in
+    the test: it says how to read the digits in `display` back into `value`
+    (raw / usd / pct / count / pvalue).
+    """
+    entry = {
+        "label": label,
+        "display": display,
+        "value": value,
+        "unit": unit,
+        "basis": basis,
+        "evidence_class": evidence_class,
+        "run_ids": list(run_ids),
+        "source": source,
+    }
+    if repro is not None:
+        entry["repro"] = repro
+    if note is not None:
+        entry["note"] = note
+    return entry
+
+
+def _cs_section(section_id: str, kind: str, title: str, *, paragraphs=(), numbers=(),
+                repro=(), items=(), gaps=(), pending=None) -> dict:
+    """A page section. `run_ids` is the ordered union of its numbers' ids (the chips)."""
+    run_ids: list[str] = []
+    for entry in numbers:
+        for run_id in entry["run_ids"]:
+            if run_id not in run_ids:
+                run_ids.append(run_id)
+    section = {
+        "id": section_id,
+        "kind": kind,
+        "title": title,
+        "paragraphs": list(paragraphs),
+        "numbers": list(numbers),
+        "repro": list(repro),
+        "run_ids": run_ids,
+        "items": list(items),
+        "gaps": list(gaps),
+    }
+    if pending is not None:
+        section["pending"] = pending
+    return section
+
+
+# --- artifact accessors (one lookup rule each; ambiguity is a hard failure) --------------
+
+def _one(rows: list[dict], where: dict, what: str) -> dict:
+    matches = [r for r in rows if all(r.get(k) == v for k, v in where.items())]
+    if len(matches) != 1:
+        raise ValueError(f"expected exactly one {what} row for {where}, found "
+                         f"{len(matches)}")
+    return matches[0]
+
+
+def _drift_logged(summary: dict, tier: str, slice_name: str) -> dict:
+    return _one(summary["series"]["logged"], {"tier": tier, "slice": slice_name},
+                "drift logged")
+
+
+def _drift_escalation(summary: dict, policy: str, slice_name: str,
+                      dataset: str = "full_cal") -> dict:
+    return _one(summary["series"]["escalation"],
+                {"policy": policy, "slice": slice_name, "dataset": dataset},
+                "drift escalation")
+
+
+def _prior_shift(rows: list[dict], tier: str, year: str, component: str,
+                 scope: str = "native") -> dict:
+    """The `pi_source: artifact` row — the slice's OWN class mix, not the full-slice one.
+
+    Every component ships twice, once per class-prior source; the artifact row is the
+    primary and the full_slice row is the sensitivity companion. Selecting on the key
+    rather than on `is_primary` is deliberate: `share_prior` is a real published row that
+    is not flagged primary, and a filter that quietly dropped it would be a silent
+    difference between what the analysis publishes and what the page can cite.
+    """
+    row = _one(rows, {"tier": tier, "year": year, "component": component, "scope": scope,
+                      "pi_source": "artifact"}, "prior-shift")
+    return ci_block(row)
+
+
+def _perturbation(summary: dict, arm: str, family: str, rate: float = 0.1) -> dict:
+    return _one(summary["rows"], {"arm": arm, "family": family, "rate": rate},
+                "perturbation")
+
+
+def _oov(summary: dict, slice_name: str, metric: str) -> dict:
+    return _one(summary["rows"], {"slice": slice_name, "metric": metric}, "oov")
+
+
+def _frontier_claim(doc: dict, router: str, baseline: str, evaluation_set: str) -> dict:
+    return _one(doc["claims"], {"router": router, "baseline": baseline,
+                                "evaluation_set": evaluation_set}, "frontier claim")
+
+
+def _tier_b_comparison(doc: dict, a: str, b: str) -> dict:
+    return _one(doc["comparisons"], {"a": a, "b": b}, "tier_b_compare")
+
+
+def _verified_receipts(record: dict) -> dict[int, dict]:
+    """The run's committed per-call receipts, through the cost model's verifying loader."""
+    extra = record["extra"]
+    prompt_rate, completion_rate = cost_model.pricing_rates(record)
+    return cost_model.load_receipt_records(
+        extra["raw_log_path"], model_slug=extra["model_slug"],
+        prompt_rate=prompt_rate, completion_rate=completion_rate)
+
+
+def prompt_token_inflation(clean_record: dict, perturbed_record: dict) -> float:
+    """(perturbed - clean) / clean prompt tokens on the rows the perturbed run scored.
+
+    DERIVED, not a new measurement: both sides are committed receipts. The clean side is
+    restricted to the perturbed run's own complaint ids, which is a pairing rather than a
+    join — the perturbed 1,500 are a byte-identical subset of the clean 5,000 under the
+    same cap_seed (results/perturbation/summary.json, methods_notes.tier_c_join).
+    """
+    clean = _verified_receipts(clean_record)
+    perturbed = _verified_receipts(perturbed_record)
+    ids = sorted(perturbed)
+    missing = [cid for cid in ids if cid not in clean]
+    if missing:
+        raise ValueError(
+            f"{len(missing)} perturbed complaint id(s) absent from the clean run's "
+            f"receipts: {missing[:cost_model.MAX_OFFENDERS_SHOWN]}")
+    clean_tokens = sum(int(clean[cid]["prompt_tokens"]) for cid in ids)
+    perturbed_tokens = sum(int(perturbed[cid]["prompt_tokens"]) for cid in ids)
+    return perturbed_tokens / clean_tokens - 1.0
+
+
+# --- the sections ------------------------------------------------------------------------
+
+def _cs_intro(records: list[dict], drift: dict) -> dict:
+    boot = drift["bootstrap"]
+    ci_lo_pct, ci_hi_pct = boot["ci_pct"]
+    numbers = [
+        _cs_number("n_run_records", _fmt_count(len(records)), len(records), unit="count",
+                   source=_rel(DEFAULT_RESULTS_PATH), basis="derived",
+                   note="len(results/runs.jsonl) at build time",
+                   repro="wc -l results/runs.jsonl"),
+        _cs_number("ci_level", f"{ci_hi_pct - ci_lo_pct:.0f}%",
+                   float(ci_hi_pct - ci_lo_pct), unit="pctpoint",
+                   source=_rel(DEFAULT_DRIFT_SUMMARY), basis="derived",
+                   note="bootstrap.ci_pct[1] - bootstrap.ci_pct[0]"),
+        _cs_number("bootstrap_resamples", _fmt_count(boot["n_resamples"]),
+                   boot["n_resamples"], unit="count",
+                   source=_rel(DEFAULT_DRIFT_SUMMARY)),
+        _cs_number("bootstrap_seed", str(int(boot["seed"])), int(boot["seed"]),
+                   unit="count", source=_rel(DEFAULT_DRIFT_SUMMARY)),
+    ]
+    d = {e["label"]: e["display"] for e in numbers}
+    return _cs_section(
+        "intro", "narrative", CASE_STUDY_TITLE,
+        paragraphs=[
+            ("A three-tier consumer-complaint triage lab on the CFPB Consumer Complaint "
+             "Database: TF-IDF linear models (Tier A), fine-tuned transformers (Tier B) "
+             "and Claude LLMs via OpenRouter (Tier C), combined into a confidence-cascade "
+             "router optimized against an explicit business cost model and stress-tested "
+             "against measured 2015 to 2026 distribution drift."),
+            (f"{d['n_run_records']} append-only run records back this page. Every headline "
+             f"number carries a {d['ci_level']} bootstrap confidence interval "
+             f"({d['bootstrap_resamples']} resamples, fixed seed {d['bootstrap_seed']}) and "
+             "a reproduction command, and traces to results/runs.jsonl or to a committed "
+             "derived artifact."),
+        ],
+        numbers=numbers,
+        repro=["uv run python -m triage_lab.demo_build --all"],
+    )
+
+
+def _cs_tiers(resolved: dict, compare: dict, cost_dir, tier_c_compare_dir) -> dict:
+    logreg = record_for(resolved, TIER_A_LOGREG_TEST, TEST_IID)
+    b1_sa = record_for(resolved, "tier_b1_modernbert_sa", TEST_IID)
+    b1_sb = record_for(resolved, "tier_b1_modernbert_sb", TEST_IID)
+    b1_sc = record_for(resolved, "tier_b1_modernbert_sc", TEST_IID)
+    b2 = record_for(resolved, TIER_B2_SAMPLE_CONFIG, TEST_IID)
+    haiku = record_for(resolved, HAIKU_TEST, TEST_IID)
+    sonnet = record_for(resolved, SONNET_TEST, TEST_IID)
+
+    b1_vs_a = _tier_b_comparison(compare, "b1_sa", "baseline")
+    b1_vs_b2 = _tier_b_comparison(compare, "b1_sa", "b2")
+
+    haiku_cost = json.loads(cost_artifact_path(haiku["run_id"], cost_dir)
+                            .read_text(encoding="utf-8"))
+    sonnet_cost = json.loads(cost_artifact_path(sonnet["run_id"], cost_dir)
+                             .read_text(encoding="utf-8"))
+    logreg_cost = json.loads(cost_artifact_path(logreg["run_id"], cost_dir)
+                             .read_text(encoding="utf-8"))
+
+    sonnet_vs_haiku = tier_c_compare_artifact(TIER_C_COMPARE_SONNET_IID,
+                                              tier_c_compare_dir)
+    runs_src = _rel(DEFAULT_RESULTS_PATH)
+    compare_src = _rel(DEFAULT_TIER_B_COMPARE)
+    compare_repro = "uv run python scripts/compare_tier_b.py"
+
+    def _f1(label, record, repro):
+        metric = metric_from_record(record, "macro_f1")
+        return _cs_number(label, _fmt_ci(metric), metric, unit="raw", source=runs_src,
+                          run_ids=[record["run_id"]], repro=repro)
+
+    harness_repro = ("uv run python -m triage_lab.harness "
+                     "configs/tier_a_logreg_test_iid.yaml")
+    numbers = [
+        _f1("tier_a_macro_f1", logreg, harness_repro),
+        _cs_number("n_test_iid", _fmt_count(logreg_cost["n_examples"]),
+                   logreg_cost["n_examples"], unit="count",
+                   source=f"results/cost_model/{logreg['run_id']}.json",
+                   run_ids=[logreg["run_id"]]),
+        _cs_number("b1_sa_macro_f1", _fmt_f(compare["provenance"]["b1_sa"]
+                                            ["macro_f1_point"]),
+                   compare["provenance"]["b1_sa"]["macro_f1_point"], unit="raw",
+                   source=compare_src, run_ids=[b1_sa["run_id"]], repro=compare_repro),
+        _cs_number("b1_sb_macro_f1", _fmt_f(compare["provenance"]["b1_sb"]
+                                            ["macro_f1_point"]),
+                   compare["provenance"]["b1_sb"]["macro_f1_point"], unit="raw",
+                   source=compare_src, run_ids=[b1_sb["run_id"]], repro=compare_repro),
+        _cs_number("b1_sc_macro_f1", _fmt_f(compare["provenance"]["b1_sc"]
+                                            ["macro_f1_point"]),
+                   compare["provenance"]["b1_sc"]["macro_f1_point"], unit="raw",
+                   source=compare_src, run_ids=[b1_sc["run_id"]], repro=compare_repro),
+        _cs_number("b1_minus_a_macro_f1",
+                   _fmt_ci(ci_block_from_delta(b1_vs_a["macro_f1"]), signed=True),
+                   ci_block_from_delta(b1_vs_a["macro_f1"]),
+                   unit="raw", source=compare_src,
+                   run_ids=[b1_sa["run_id"], logreg["run_id"]], repro=compare_repro),
+        _f1("b2_macro_f1", b2, compare_repro),
+        _cs_number("b1_minus_b2_macro_f1",
+                   _fmt_ci(ci_block_from_delta(b1_vs_b2["macro_f1"]), signed=True),
+                   ci_block_from_delta(b1_vs_b2["macro_f1"]),
+                   unit="raw", source=compare_src,
+                   run_ids=[b1_sa["run_id"], b2["run_id"]], repro=compare_repro),
+        _cs_number("b1_minus_b2_mcnemar_p",
+                   _fmt_pvalue(b1_vs_b2["mcnemar"]["p_value"]),
+                   b1_vs_b2["mcnemar"]["p_value"], unit="pvalue", source=compare_src,
+                   run_ids=[b1_sa["run_id"], b2["run_id"]], repro=compare_repro),
+        _f1("haiku_macro_f1", haiku,
+            "uv run --extra tierc python -m triage_lab.harness "
+            "configs/tier_c_haiku_zeroshot_test_iid.yaml"),
+        _cs_number("haiku_cost_per_1k",
+                   _fmt_usd(haiku_cost["expected_cost_per_1k"]["api"]["point"], 3),
+                   haiku_cost["expected_cost_per_1k"]["api"]["point"], unit="usd",
+                   source=f"results/cost_model/{haiku['run_id']}.json",
+                   run_ids=[haiku["run_id"]], repro="make cost-model"),
+        _f1("sonnet_macro_f1", sonnet,
+            "uv run --extra tierc python -m triage_lab.harness "
+            "configs/tier_c_sonnet_zeroshot_test_iid.yaml"),
+        _cs_number("sonnet_cost_per_1k",
+                   _fmt_usd(sonnet_cost["expected_cost_per_1k"]["api"]["point"], 3),
+                   sonnet_cost["expected_cost_per_1k"]["api"]["point"], unit="usd",
+                   source=f"results/cost_model/{sonnet['run_id']}.json",
+                   run_ids=[sonnet["run_id"]], repro="make cost-model"),
+        _cs_number("n_sonnet_paired", _fmt_count(sonnet_cost["n_examples"]),
+                   sonnet_cost["n_examples"], unit="count",
+                   source=f"results/cost_model/{sonnet['run_id']}.json",
+                   run_ids=[sonnet["run_id"]]),
+        *_tier_c_delta_numbers(sonnet_vs_haiku, "sonnet_minus_haiku_iid"),
+    ]
+    d = {e["label"]: e["display"] for e in numbers}
+    return _cs_section(
+        "tiers", "narrative", "Three tiers on frozen IID data",
+        paragraphs=[
+            (f"Tier A is a word+char TF-IDF logistic regression with isotonic calibration: "
+             f"macro-F1 {d['tier_a_macro_f1']} on the frozen TEST-IID slice, "
+             f"n={d['n_test_iid']}."),
+            (f"Fine-tuning buys a certified but modest gain. ModernBERT-base scores "
+             f"{d['b1_sa_macro_f1']} / {d['b1_sb_macro_f1']} / {d['b1_sc_macro_f1']} "
+             f"macro-F1 across the three frozen seeds, and the paired B1 minus A delta is "
+             f"{d['b1_minus_a_macro_f1']} — an interval that excludes zero."),
+            (f"The pre-registered surprise was CONFIRMED. DistilBERT — the smaller, cheaper "
+             f"deployment point — reaches {d['b2_macro_f1']} and tops every ModernBERT "
+             f"seed: the paired B1 minus B2 delta is {d['b1_minus_b2_macro_f1']} with "
+             f"McNemar p={d['b1_minus_b2_mcnemar_p']}."),
+            (f"Zero-shot LLMs land between the two learned tiers on quality and far above "
+             f"both on price. Haiku 4.5 scores {d['haiku_macro_f1']} on TEST-IID at a "
+             f"measured {d['haiku_cost_per_1k']}/1k calls; Sonnet 5 scores "
+             f"{d['sonnet_macro_f1']} on its paired {d['n_sonnet_paired']}-row subsample at "
+             f"{d['sonnet_cost_per_1k']}/1k. Supports differ by point and are not "
+             "comparable as populations."),
+            (f"On the rows both LLMs scored, the bigger model buys nothing in "
+             f"distribution. Paired on the same {d['sonnet_minus_haiku_iid_n']} TEST-IID "
+             f"complaints, Sonnet minus Haiku is "
+             f"{d['sonnet_minus_haiku_iid_delta']} macro-F1 with McNemar "
+             f"p={d['sonnet_minus_haiku_iid_p']} — statistically tied, at nearly three "
+             f"times the measured price per call. That tie does not survive drift; the "
+             f"next section is where it breaks."),
+        ],
+        numbers=numbers,
+        repro=[harness_repro, compare_repro, "make cost-model",
+               sonnet_vs_haiku["repro_command"]],
+    )
+
+
+def _cs_drift(resolved: dict, drift: dict, prior_shift: dict, paired_within: dict,
+              tier_c_compare_dir) -> dict:
+    summary = drift
+    sonnet_pc = tier_c_compare_artifact(TIER_C_COMPARE_SONNET_POSTCUTOFF,
+                                        tier_c_compare_dir)
+    rows = prior_shift["rows"]
+    drift_src = _rel(DEFAULT_DRIFT_SUMMARY)
+    ps_src = _rel(DEFAULT_PRIOR_SHIFT_SUMMARY)
+    pw_src = _rel(DEFAULT_PAIRED_WITHIN)
+    drift_repro = "make drift-charts"
+    ps_repro = "make prior-shift"
+    pw_repro = "make prior-shift-paired"
+
+    a_2023 = _drift_logged(summary, "tier_a", "test_drift_2023")
+    a_2024 = _drift_logged(summary, "tier_a", "test_drift_2024")
+    a_2025 = _drift_logged(summary, "tier_a", "test_drift_2025")
+    a_2026 = _drift_logged(summary, "tier_a", "test_drift_2026h1")
+    b2_2023 = _drift_logged(summary, "tier_b2", "test_drift_2023")
+    b2_2026 = _drift_logged(summary, "tier_b2", "test_drift_2026h1")
+    haiku_2026 = _drift_logged(summary, "tier_c_haiku", "test_drift_2026h1")
+    sonnet_2026 = _drift_logged(summary, "tier_c_sonnet", "test_drift_2026h1")
+
+    def _yearly(label, row, digits=4):
+        return _cs_number(label, _fmt_f(row["macro_f1"]["point"], digits),
+                          row["macro_f1"]["point"], unit="raw", source=drift_src,
+                          run_ids=[row["run_id"]], repro=drift_repro)
+
+    def _yearly_ci(label, row):
+        return _cs_number(label, _fmt_ci(ci_block(row["macro_f1"])),
+                          ci_block(row["macro_f1"]), unit="raw", source=drift_src,
+                          run_ids=[row["run_id"]], repro=drift_repro)
+
+    def _component(label, tier, component, run_ids):
+        metric = _prior_shift(rows, tier, "2026h1", component)
+        return _cs_number(label, _fmt_ci(metric, signed=True), metric, unit="raw",
+                          source=ps_src, run_ids=run_ids, repro=ps_repro)
+
+    a_runs = [a_2023["run_id"], a_2026["run_id"]]
+    b2_runs = [b2_2023["run_id"], b2_2026["run_id"]]
+    haiku_runs = [_drift_logged(summary, "tier_c_haiku", "test_drift_2023")["run_id"],
+                  haiku_2026["run_id"]]
+
+    cr_a_ref = record_for(resolved, "tier_a_logreg_test_drift_2023",
+                          "test_drift_2023")
+    cr_a_year = record_for(resolved, "tier_a_logreg_test_drift_2026h1",
+                           "test_drift_2026h1")
+    cr_b2_ref = record_for(resolved, "tier_b2_distilbert_s0_test_drift_2023",
+                           "test_drift_2023")
+    cr_b2_year = record_for(resolved, "tier_b2_distilbert_s0_test_drift_2026h1",
+                            "test_drift_2026h1")
+    runs_src = _rel(DEFAULT_RESULTS_PATH)
+
+    def _credit(label, record):
+        metric = metric_from_record(record, "f1::credit_reporting")
+        return _cs_number(label, _fmt_f(metric["point"]), metric["point"], unit="raw",
+                          source=runs_src, run_ids=[record["run_id"]])
+
+    share_a = _prior_shift(rows, "tier_a", "2026h1", "share_prior")
+    share_b2 = _prior_shift(rows, "tier_b2", "2026h1", "share_prior")
+    pw_delta = paired_within["delta"]
+
+    numbers = [
+        _yearly("a_2023", a_2023), _yearly("a_2024", a_2024), _yearly("a_2025", a_2025),
+        _yearly_ci("a_2026", a_2026),
+        _cs_number("n_drift_slice",
+                   _fmt_count(summary["slice_sizes"]["test_drift_2026h1"]),
+                   summary["slice_sizes"]["test_drift_2026h1"], unit="count",
+                   source=drift_src, repro=drift_repro),
+        _component("a_total", "tier_a", "total", a_runs),
+        _component("a_prior", "tier_a", "prior::path_p", a_runs),
+        _component("a_within", "tier_a", "within::path_p", a_runs),
+        _credit("a_credit_2023", cr_a_ref), _credit("a_credit_2026", cr_a_year),
+        _yearly("b2_2023", b2_2023), _yearly_ci("b2_2026_ci", b2_2026),
+        _component("b2_total", "tier_b2", "total", b2_runs),
+        _component("b2_prior", "tier_b2", "prior::path_p", b2_runs),
+        _component("b2_within", "tier_b2", "within::path_p", b2_runs),
+        _cs_number("b2_share_prior", _fmt_ci(share_b2), share_b2, unit="raw",
+                   source=ps_src, run_ids=b2_runs, repro=ps_repro),
+        _cs_number("a_share_prior", _fmt_ci(share_a), share_a, unit="raw",
+                   source=ps_src, run_ids=a_runs, repro=ps_repro),
+        _credit("b2_credit_2023", cr_b2_ref), _credit("b2_credit_2026", cr_b2_year),
+        _cs_number("paired_within_delta",
+                   _fmt_ci(ci_block_from_delta(pw_delta), signed=True),
+                   ci_block_from_delta(pw_delta),
+                   unit="raw", source=pw_src, run_ids=[*a_runs, *b2_runs],
+                   repro=pw_repro,
+                   note="paired component delta: within::path_p(tier_a) − "
+                        "within::path_p(tier_b2), identical bootstrap draws"),
+        _cs_number("paired_within_path_q",
+                   _fmt_ci(ci_block_from_delta(
+                       paired_within["delta_sensitivity"]["within::path_q"]), signed=True),
+                   ci_block_from_delta(
+                       paired_within["delta_sensitivity"]["within::path_q"]),
+                   unit="raw", source=pw_src, run_ids=[*a_runs, *b2_runs], repro=pw_repro,
+                   note="decomposition-path sensitivity; cited as robustness, not in prose"),
+        _cs_number("paired_within_shapley",
+                   _fmt_ci(ci_block_from_delta(
+                       paired_within["delta_sensitivity"]["within::shapley"]), signed=True),
+                   ci_block_from_delta(
+                       paired_within["delta_sensitivity"]["within::shapley"]),
+                   unit="raw", source=pw_src, run_ids=[*a_runs, *b2_runs], repro=pw_repro,
+                   note="decomposition-path sensitivity; cited as robustness, not in prose"),
+        _component("haiku_prior", "tier_c_haiku", "prior::path_p", haiku_runs),
+        _component("haiku_within", "tier_c_haiku", "within::path_p", haiku_runs),
+        _yearly("haiku_2026", haiku_2026), _yearly("sonnet_2026", sonnet_2026),
+        _yearly("a_2026_point", a_2026), _yearly("b2_2026_point", b2_2026),
+        *_tier_c_delta_numbers(sonnet_pc, "sonnet_minus_haiku_pc"),
+    ]
+    d = {e["label"]: e["display"] for e in numbers}
+    return _cs_section(
+        "drift", "narrative", "Drift: one cliff, three different autopsies",
+        paragraphs=[
+            (f"Tier A walks down and then falls off a cliff. Its yearly macro-F1 goes "
+             f"{d['a_2023']} to {d['a_2024']} to {d['a_2025']} to {d['a_2026']} from 2023 "
+             f"to 2026-H1, on frozen slices of n={d['n_drift_slice']} each."),
+            (f"It dies of both wounds. Against the 2023 reference the loss decomposes as "
+             f"total {d['a_total']} = prior shift {d['a_prior']} plus within-class "
+             f"degradation {d['a_within']}. The credit_reporting F1 goes "
+             f"{d['a_credit_2023']} to {d['a_credit_2026']}."),
+            (f"Tier B2 has the same shape at a smaller magnitude: {d['b2_2023']} to "
+             f"{d['b2_2026_ci']} yearly; total {d['b2_total']} = prior {d['b2_prior']} + "
+             f"within {d['b2_within']}; the prior share is {d['b2_share_prior']} against "
+             f"Tier A's {d['a_share_prior']}, intervals that overlap. Its credit_reporting "
+             f"F1 goes {d['b2_credit_2023']} to {d['b2_credit_2026']}. The pre-registered "
+             "“B2 behaves like an LLM under drift” hypothesis is REFUTED: "
+             "fine-tuning bought loss magnitude, not loss shape."),
+            (f"One comparison is certified rather than directional. B2's within-class "
+             f"damage is smaller than Tier A's: the paired within_A minus within_B2 delta "
+             f"is {d['paired_within_delta']} on the same n={d['n_drift_slice']} rows with "
+             f"identical bootstrap draws, and the interval excludes zero (robust across "
+             f"decomposition paths). The certification covers evaluation-sample uncertainty "
+             f"only — Tier B2 is a single fine-tune from one seed, so this is a statement "
+             f"about these two fitted systems, not about the model families."),
+            (f"The LLMs pay only the prior penalty. Haiku's prior component is "
+             f"{d['haiku_prior']} while its within-class component is {d['haiku_within']}, "
+             f"an interval containing zero. At the cliff the four points are Tier A "
+             f"{d['a_2026_point']}, Tier B2 {d['b2_2026_point']}, Haiku {d['haiku_2026']} "
+             f"and Sonnet {d['sonnet_2026']}."),
+            (f"That last gap is where the two LLMs stop being interchangeable, and the "
+             f"paired evidence for it comes from a different frozen slice — "
+             f"TEST-POSTCUTOFF, whose boundary sits strictly after both models' training "
+             f"cutoffs. On the same {d['sonnet_minus_haiku_pc_n']} rows there, Sonnet "
+             f"minus Haiku is {d['sonnet_minus_haiku_pc_delta']} macro-F1 with McNemar "
+             f"p={d['sonnet_minus_haiku_pc_p']}, after the two were statistically tied on "
+             f"TEST-IID. The capability gap only shows up off the training distribution: "
+             f"in distribution you are paying for it and not collecting it. (The 2026-H1 "
+             f"points above are un-paired slice metrics, not that comparison — different "
+             f"slice, different claim.)"),
+        ],
+        numbers=numbers,
+        repro=[drift_repro, ps_repro, pw_repro, sonnet_pc["repro_command"]],
+    )
+
+
+def ci_block_from_delta(band: dict) -> dict:
+    """`{point, ci_lo, ci_hi}` from a delta band, whose centre may be `point` or `delta`.
+
+    The repo's analysis artifacts disagree on that one key name — `frontier`/`prior_shift`
+    write `point`, `perturbation`/`tier_b_compare` write `delta` — so the accessor accepts
+    both rather than each caller re-deciding. Carrying both would be a second source of
+    truth; a band with neither is a hard failure, never a silent None.
+    """
+    if "point" in band:
+        centre = band["point"]
+    elif "delta" in band:
+        centre = band["delta"]
+    else:
+        raise ValueError(f"delta band has neither 'point' nor 'delta': {sorted(band)}")
+    return {"point": centre, "ci_lo": band["ci_lo"], "ci_hi": band["ci_hi"]}
+
+
+def _cs_thresholds(drift: dict) -> dict:
+    src = _rel(DEFAULT_DRIFT_SUMMARY)
+    repro = "make drift-charts"
+    slices = ("test_iid", "test_drift_2023", "test_drift_2024", "test_drift_2025")
+    human = {s: _drift_escalation(drift, "a_to_human", s) for s in slices}
+    human_2026 = _drift_escalation(drift, "a_to_human", "test_drift_2026h1")
+    b_arm = {s: _drift_escalation(drift, "a_to_b", s) for s in slices}
+    b_2026 = _drift_escalation(drift, "a_to_b", "test_drift_2026h1")
+    cal_human = drift["thresholds"]["a_to_human__full_slice"]["cal_escalation_rate"]
+    a_logged_2026 = _drift_logged(drift, "tier_a", "test_drift_2026h1")
+    b2_logged_2026 = _drift_logged(drift, "tier_b2", "test_drift_2026h1")
+
+    human_rise = (human_2026["escalation_rate"]["point"]
+                  / human["test_drift_2025"]["escalation_rate"]["point"] - 1.0)
+    b_rise = (b_2026["escalation_rate"]["point"]
+              / b_arm["test_drift_2025"]["escalation_rate"]["point"] - 1.0)
+
+    def _esc(label, row):
+        return _cs_number(label, _fmt_f(row["escalation_rate"]["point"]),
+                          row["escalation_rate"]["point"], unit="raw", source=src,
+                          run_ids=[row["gate_run_id"]], repro=repro)
+
+    numbers = [
+        _esc("human_2022", human["test_iid"]),
+        _esc("human_2023", human["test_drift_2023"]),
+        _esc("human_2024", human["test_drift_2024"]),
+        _esc("human_2025", human["test_drift_2025"]),
+        _cs_number("human_cal_op", _fmt_f(cal_human), cal_human, unit="raw", source=src,
+                   repro="make thresholds",
+                   note="CAL cost-argmin operating point the frozen tau was fitted at"),
+        _cs_number("human_2026", _fmt_ci(ci_block(human_2026["escalation_rate"])),
+                   ci_block(human_2026["escalation_rate"]), unit="raw", source=src,
+                   run_ids=[human_2026["gate_run_id"]], repro=repro),
+        _cs_number("human_rise", f"{human_rise * 100:.0f}%", human_rise, unit="pct",
+                   basis="derived", source=src, repro=repro,
+                   note="escalation_rate(2026-H1) / escalation_rate(2025) - 1, a_to_human "
+                        "full-slice arm"),
+        _esc("b_2022", b_arm["test_iid"]), _esc("b_2023", b_arm["test_drift_2023"]),
+        _esc("b_2024", b_arm["test_drift_2024"]), _esc("b_2025", b_arm["test_drift_2025"]),
+        _cs_number("b_2026", _fmt_ci(ci_block(b_2026["escalation_rate"])),
+                   ci_block(b_2026["escalation_rate"]), unit="raw", source=src,
+                   run_ids=[b_2026["gate_run_id"], b_2026["terminal_run_id"]],
+                   repro=repro),
+        _cs_number("b_rise", f"{b_rise * 100:.0f}%", b_rise, unit="pct",
+                   basis="derived", source=src, repro=repro,
+                   note="escalation_rate(2026-H1) / escalation_rate(2025) - 1, a_to_b "
+                        "full-slice arm"),
+        _cs_number("answered_acc_2026",
+                   _fmt_ci(ci_block(human_2026["accuracy_machine"])),
+                   ci_block(human_2026["accuracy_machine"]), unit="raw", source=src,
+                   run_ids=[human_2026["gate_run_id"]], repro=repro),
+        _cs_number("full_slice_acc_2026", _fmt_ci(ci_block(a_logged_2026["accuracy"])),
+                   ci_block(a_logged_2026["accuracy"]), unit="raw", source=src,
+                   run_ids=[a_logged_2026["run_id"]], repro=repro),
+        _cs_number("cascade_acc_2026", _fmt_ci(ci_block(b_2026["accuracy_system"])),
+                   ci_block(b_2026["accuracy_system"]), unit="raw", source=src,
+                   run_ids=[b_2026["gate_run_id"], b_2026["terminal_run_id"]],
+                   repro=repro),
+        _cs_number("b2_only_acc_2026", _fmt_ci(ci_block(b2_logged_2026["accuracy"])),
+                   ci_block(b2_logged_2026["accuracy"]), unit="raw", source=src,
+                   run_ids=[b2_logged_2026["run_id"]], repro=repro),
+    ]
+    d = {e["label"]: e["display"] for e in numbers}
+    return _cs_section(
+        "thresholds", "narrative", "Frozen thresholds go stale late and abruptly",
+        paragraphs=[
+            (f"The escalate-to-human rate under the frozen CAL threshold is flat for four "
+             f"years — {d['human_2022']}, {d['human_2023']}, {d['human_2024']}, "
+             f"{d['human_2025']} from 2022-H2 through 2025, against a CAL operating point "
+             f"of {d['human_cal_op']} — and then jumps to {d['human_2026']} at 2026-H1, a "
+             f"relative rise of {d['human_rise']}."),
+            (f"The escalate-to-DistilBERT arm under the same frozen gate moves "
+             f"{d['b_2022']}, {d['b_2023']}, {d['b_2024']}, {d['b_2025']} over the same "
+             f"slices and then {d['b_2026']}, a rise of {d['b_rise']}."),
+            (f"The gate is doing real work exactly where it is needed: at 2026-H1 the "
+             f"answered set scores accuracy {d['answered_acc_2026']} against "
+             f"{d['full_slice_acc_2026']} on the full slice."),
+            (f"But the frozen-threshold cascade slightly trails the un-gated DistilBERT at "
+             f"the same cliff — system accuracy {d['cascade_acc_2026']} against "
+             f"{d['b2_only_acc_2026']}. That is threshold staleness: a gate fitted on CAL "
+             "self-adjusts late and abruptly rather than degrading gracefully, which is a "
+             "monitoring requirement, not a tuning bug."),
+        ],
+        numbers=numbers,
+        repro=[repro, "make thresholds"],
+    )
+
+
+def _cs_router(cfg: cost_model.CostConfig, *, frontier_dir, router_dir) -> dict:
+    frontier_path = primary_frontier_path(cfg, frontier_dir)
+    claims = json.loads(frontier_path.read_text(encoding="utf-8"))
+    full_path = router_sim_path(router_sim.EVAL_FULL, cfg, router_dir)
+    paired_path = router_sim_path(router_sim.EVAL_PAIRED, cfg, router_dir)
+    full = json.loads(full_path.read_text(encoding="utf-8"))
+    paired = json.loads(paired_path.read_text(encoding="utf-8"))
+
+    fsrc = _rel(frontier_path)
+    full_src = _rel(full_path)
+    paired_src = _rel(paired_path)
+    frepro = "make tier-b-frontier"
+
+    vs_b2 = _frontier_claim(claims, "a_to_b", "b2_only", router_sim.EVAL_FULL)
+    vs_a = _frontier_claim(claims, "a_to_human", "a_only", router_sim.EVAL_FULL)
+    btc_vs_b2 = _frontier_claim(claims, "a_to_b_to_c", "b2_only", router_sim.EVAL_PAIRED)
+
+    def _delta_cost(label, claim, source, note=None):
+        band = ci_block_from_delta(claim["delta_cost_per_1k"])
+        return _cs_number(label, _fmt_usd_ci(band, signed=True), band, unit="usd",
+                          source=source, repro=frepro, note=note)
+
+    def _delta_f1(label, claim, source):
+        band = ci_block_from_delta(claim["delta_macro_f1_system"])
+        return _cs_number(label, _fmt_ci(band, signed=True), band, unit="raw",
+                          source=source, repro=frepro)
+
+    def _policy_cost(label, doc, name, source):
+        band = ci_block(doc["policies"][name]["expected_cost_per_1k"]["total"])
+        return _cs_number(label, _fmt_usd(band["point"]), band["point"], unit="usd",
+                          source=source, repro="make router-sim")
+
+    def _policy_cost_ci(label, doc, name, source):
+        band = ci_block(doc["policies"][name]["expected_cost_per_1k"]["total"])
+        return _cs_number(label, _fmt_usd_ci(band), band, unit="usd", source=source,
+                          repro="make router-sim")
+
+    numbers = [
+        _delta_cost("a_to_b_vs_b2_cost", vs_b2, fsrc),
+        _delta_f1("a_to_b_vs_b2_f1", vs_b2, fsrc),
+        _policy_cost_ci("a_to_b_cost", full, "a_to_b", full_src),
+        _cs_number("a_to_b_system_f1",
+                   _fmt_f(full["policies"]["a_to_b"]["macro_f1_system"]),
+                   full["policies"]["a_to_b"]["macro_f1_system"], unit="raw",
+                   source=full_src, repro="make router-sim"),
+        _policy_cost("a_only_cost", full, "a_only", full_src),
+        _policy_cost("b1_only_cost", full, "b1_only_sa", full_src),
+        _policy_cost("b2_only_cost", full, "b2_only", full_src),
+        _delta_cost("a_to_human_vs_a_cost", vs_a, fsrc),
+        _delta_f1("a_to_human_vs_a_f1", vs_a, fsrc),
+        _policy_cost_ci("a_to_b_to_c_cost", paired, "a_to_b_to_c", paired_src),
+        _cs_number("n_paired_subset", _fmt_count(paired["n_examples"]),
+                   paired["n_examples"], unit="count", source=paired_src,
+                   repro="make router-sim"),
+        _delta_cost("a_to_b_to_c_vs_b2_cost", btc_vs_b2, fsrc),
+    ]
+    d = {e["label"]: e["display"] for e in numbers}
+    return _cs_section(
+        "router", "narrative", "What pays is routing to cheap capacity, not the LLM",
+        paragraphs=[
+            (f"The headline router is a confidence gate in front of Tier A with DistilBERT "
+             f"as the terminal, evaluated on the full TEST-IID slice under cost-model v2 "
+             f"(Tier B priced by an amortized ESTIMATE, not a measurement). It is the only "
+             f"certified two-axis win in the study: against a DistilBERT-only baseline it "
+             f"is both cheaper, {d['a_to_b_vs_b2_cost']} per 1k complaints, and better, "
+             f"macro-F1 {d['a_to_b_vs_b2_f1']} — both paired intervals exclude zero."),
+            (f"In absolute terms it runs at {d['a_to_b_cost']} per 1k at system macro-F1 "
+             f"{d['a_to_b_system_f1']}, dominating Tier A alone ({d['a_only_cost']}), "
+             f"ModernBERT alone ({d['b1_only_cost']}) and DistilBERT alone "
+             f"({d['b2_only_cost']})."),
+            (f"The same gate in front of Tier A alone buys {d['a_to_human_vs_a_cost']} per "
+             f"1k and {d['a_to_human_vs_a_f1']} system macro-F1 against un-gated Tier A. "
+             f"The gate is certified in front of DistilBERT too, but it is worth far less "
+             f"per 1k there. What pays is not the gate; it is routing to cheap capacity."),
+            (f"The cheapest policy measured is the two-gate cascade that ends at Haiku: "
+             f"{d['a_to_b_to_c_cost']} per 1k on the paired {d['n_paired_subset']}-row "
+             f"subset. But its edge over DistilBERT alone is NOT established: "
+             f"{d['a_to_b_to_c_vs_b2_cost']}, an interval containing zero."),
+        ],
+        numbers=numbers,
+        repro=[frepro, "make router-sim"],
+    )
+
+
+def _cs_robustness(resolved: dict, perturbation: dict) -> dict:
+    src = _rel(DEFAULT_PERTURBATION_SUMMARY)
+    repro = "make perturb && make perturb-report"
+    wordchar_typo = _perturbation(perturbation, "logreg_wordchar", "typo")
+    word_typo = _perturbation(perturbation, "logreg_word_only", "typo")
+    wordchar_case = _perturbation(perturbation, "logreg_wordchar", "case")
+
+    shield = 1.0 - (wordchar_typo["metrics"]["macro_f1"]["delta"]
+                    / word_typo["metrics"]["macro_f1"]["delta"])
+
+    # The perturbed Tier C runs are named by the summary row), never by string surgery on
+    # a config stem: the row is the thing that knows which run is which arm.
+    tier_c_rows = {family: _perturbation(perturbation, "tier_c_haiku", family)
+                   for family in ("typo", "ocr", "case")}
+    clean = record_for(resolved, HAIKU_TEST, TEST_IID)
+    perturbed_records = {
+        family: record_for(resolved, row["perturbed_config"], TEST_IID)
+        for family, row in tier_c_rows.items()
+    }
+    inflation = {family: prompt_token_inflation(clean, record)
+                 for family, record in perturbed_records.items()}
+    haiku_typo = tier_c_rows["typo"]
+    haiku_ocr = tier_c_rows["ocr"]
+    haiku_case = tier_c_rows["case"]
+
+    def _delta(label, row):
+        band = ci_block_from_delta(row["metrics"]["macro_f1"])
+        return _cs_number(label, _fmt_ci(band, signed=True), band, unit="raw", source=src,
+                          run_ids=[row["perturbed_run_id"], row["clean_run_id"]],
+                          repro=repro)
+
+    def _inflation(label, family):
+        record = perturbed_records[family]
+        return _cs_number(label, _fmt_pct(inflation[family]), inflation[family],
+                          unit="pct", basis="derived", evidence_class="derived",
+                          source="results/tier_c_raw/**/calls.jsonl",
+                          run_ids=[record["run_id"], clean["run_id"]],
+                          repro="make perturb-tier-c",
+                          note="sum(prompt_tokens) perturbed / clean - 1, over the "
+                               "perturbed run's own complaint ids (a pairing: the "
+                               "perturbed rows are a byte-identical subset of the clean "
+                               "run under the same cap_seed)")
+
+    numbers = [
+        _cs_number("perturb_rate", _fmt_pct(wordchar_typo["rate"], 0),
+                   wordchar_typo["rate"], unit="pct", source=src, repro=repro),
+        _delta("wordchar_typo", wordchar_typo),
+        _delta("word_only_typo", word_typo),
+        _cs_number("char_shield_share", f"{shield * 100:.0f}%", shield, unit="pct",
+                   basis="derived", evidence_class="derived", source=src, repro=repro,
+                   note="1 - delta(word+char, typo) / delta(word-only, typo); the "
+                        "artifact's own methods_notes.char_shield warns that a joint CI "
+                        "for this difference-of-differences was NOT computed, so this is "
+                        "directional only"),
+        _cs_number("wordchar_case", _fmt_ci(
+            ci_block_from_delta(wordchar_case["metrics"]["macro_f1"]), signed=True),
+            ci_block_from_delta(wordchar_case["metrics"]["macro_f1"]), unit="raw",
+            source=src, run_ids=[wordchar_case["perturbed_run_id"]], repro=repro,
+            note="predicted structural zero: both TF-IDF blocks lowercase their input"),
+        _delta("haiku_typo", haiku_typo),
+        _delta("haiku_ocr", haiku_ocr),
+        _delta("haiku_case", haiku_case),
+        _cs_number("n_tier_c_perturb", _fmt_count(haiku_typo["n_rows"]),
+                   haiku_typo["n_rows"], unit="count", source=src, repro=repro),
+        _inflation("inflation_typo", "typo"),
+        _inflation("inflation_ocr", "ocr"),
+        _inflation("inflation_case", "case"),
+    ]
+    d = {e["label"]: e["display"] for e in numbers}
+    return _cs_section(
+        "robustness", "narrative", "Robustness has a price even when quality holds",
+        paragraphs=[
+            (f"Under {d['perturb_rate']} character corruption on TEST-IID, the word+char "
+             f"Tier A model loses {d['wordchar_typo']} macro-F1 to typos while the "
+             f"word-only sensitivity arm loses {d['word_only_typo']}. The char-n-gram "
+             f"block therefore absorbs roughly {d['char_shield_share']} of the typo damage "
+             f"— a directional read only: the two arms are different fitted models with "
+             f"independently bootstrapped intervals and no joint CI was computed. The case "
+             f"family is an exact structural zero for Tier A, {d['wordchar_case']}, "
+             f"because both TF-IDF blocks lowercase their input; it is reported as an "
+             f"end-to-end control on the plumbing, not as a robustness finding."),
+            (f"Haiku loses least. On the same {d['n_tier_c_perturb']} paired rows its typo "
+             f"delta is {d['haiku_typo']}, while ocr {d['haiku_ocr']} and case "
+             f"{d['haiku_case']} are both null — their intervals contain zero. The "
+             f"cross-tier ranking under character noise is LLM at least as robust as "
+             f"word+char TF-IDF, and both ahead of word-only TF-IDF."),
+            (f"Robustness carries a serving-cost tax that quality metrics do not show. On "
+             f"those same rows, corrupted text inflates Haiku's prompt tokens by "
+             f"{d['inflation_typo']} (typo), {d['inflation_ocr']} (ocr) and "
+             f"{d['inflation_case']} (case). The case family has the largest inflation and "
+             "no measurable quality effect at all — noisy inputs make escalation more "
+             "expensive exactly when Tier A is least reliable."),
+        ],
+        numbers=numbers,
+        repro=[repro, "make perturb-tier-c"],
+    )
+
+
+def _cs_negatives(resolved: dict, oov_summary: dict, cfg: cost_model.CostConfig, *,
+                  frontier_dir, router_dir, tier_c_compare_dir) -> dict:
+    ablation = tier_c_compare_artifact(TIER_C_COMPARE_FEWSHOT, tier_c_compare_dir)
+    oov_src = _rel(DEFAULT_OOV_SUMMARY)
+    oov_repro = "make oov"
+    train_tok = _oov(oov_summary, "train", "model_vocab_oov_token_rate")
+    year_tok = _oov(oov_summary, "test_drift_2026h1", "model_vocab_oov_token_rate")
+    dist_2025 = _oov(oov_summary, "test_drift_2025", "tfidf_centroid_cosine_distance")
+    dist_2026 = _oov(oov_summary, "test_drift_2026h1", "tfidf_centroid_cosine_distance")
+    year_type = _oov(oov_summary, "test_drift_2026h1", "model_vocab_oov_type_rate")
+
+    fewshot = record_for(resolved, "tier_c_haiku_ablation_fewshot_cal", CAL)
+    zeroshot = record_for(resolved, "tier_c_haiku_ablation_zeroshot_cal", CAL)
+    runs_src = _rel(DEFAULT_RESULTS_PATH)
+
+    frontier_path = primary_frontier_path(cfg, frontier_dir)
+    claims = json.loads(frontier_path.read_text(encoding="utf-8"))
+    summary_path = Path(router_dir) / router_sim.result_filename(
+        "summary", cfg, OP_VERSION)
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    cascade_vs_a = _frontier_claim(claims, "a_to_c_parsefail_human", "a_only",
+                                   router_sim.EVAL_PAIRED)
+    cross_family = summary["owner_decision_1_cross_family"]
+
+    numbers = [
+        _cs_number("oov_train", _fmt_pct(train_tok["point"], 3), train_tok["point"],
+                   unit="pct", source=oov_src, repro=oov_repro),
+        _cs_number("oov_2026", _fmt_pct(year_tok["point"], 3), year_tok["point"],
+                   unit="pct", source=oov_src, repro=oov_repro),
+        _cs_number("centroid_2025", _fmt_ci(ci_block(dist_2025)), ci_block(dist_2025),
+                   unit="raw", source=oov_src, repro=oov_repro),
+        _cs_number("centroid_2026", _fmt_ci(ci_block(dist_2026)), ci_block(dist_2026),
+                   unit="raw", source=oov_src, repro=oov_repro),
+        _cs_number("oov_type_2026", _fmt_pct(year_type["point"], 1), year_type["point"],
+                   unit="pct", source=oov_src, repro=oov_repro),
+        _cs_number("k_fewshot", str(int(fewshot["extra"]["num_exemplars"])),
+                   int(fewshot["extra"]["num_exemplars"]), unit="count",
+                   source=runs_src, run_ids=[fewshot["run_id"]]),
+        _cs_number("k_zeroshot", str(int(zeroshot["extra"]["num_exemplars"])),
+                   int(zeroshot["extra"]["num_exemplars"]), unit="count",
+                   source=runs_src, run_ids=[zeroshot["run_id"]]),
+        _cs_number("fewshot_f1", _fmt_ci(metric_from_record(fewshot, "macro_f1")),
+                   metric_from_record(fewshot, "macro_f1"), unit="raw", source=runs_src,
+                   run_ids=[fewshot["run_id"]]),
+        _cs_number("zeroshot_f1", _fmt_ci(metric_from_record(zeroshot, "macro_f1")),
+                   metric_from_record(zeroshot, "macro_f1"), unit="raw", source=runs_src,
+                   run_ids=[zeroshot["run_id"]]),
+        _cs_number("fewshot_spend", _fmt_usd(fewshot["cost_usd"]), fewshot["cost_usd"],
+                   unit="usd", source=runs_src, run_ids=[fewshot["run_id"]]),
+        _cs_number("zeroshot_spend", _fmt_usd(zeroshot["cost_usd"]), zeroshot["cost_usd"],
+                   unit="usd", source=runs_src, run_ids=[zeroshot["run_id"]]),
+        _cs_number("n_ablation", _fmt_count(fewshot["extra"]["n_examples"]),
+                   fewshot["extra"]["n_examples"], unit="count", source=runs_src,
+                   run_ids=[fewshot["run_id"]]),
+        *_tier_c_delta_numbers(ablation, "fewshot_minus_zeroshot"),
+        _cs_number("cascade_vs_a_cost",
+                   _fmt_usd_ci(ci_block_from_delta(cascade_vs_a["delta_cost_per_1k"]),
+                               signed=True),
+                   ci_block_from_delta(cascade_vs_a["delta_cost_per_1k"]), unit="usd",
+                   source=_rel(frontier_path), repro="make tier-b-frontier"),
+        _cs_number("cascade_vs_a_f1",
+                   _fmt_ci(ci_block_from_delta(cascade_vs_a["delta_macro_f1_system"]),
+                           signed=True),
+                   ci_block_from_delta(cascade_vs_a["delta_macro_f1_system"]), unit="raw",
+                   source=_rel(frontier_path), repro="make tier-b-frontier"),
+        _cs_number("cross_family_cost",
+                   _fmt_usd_ci(ci_block_from_delta(cross_family["delta_cost_per_1k"]),
+                               signed=True),
+                   ci_block_from_delta(cross_family["delta_cost_per_1k"]), unit="usd",
+                   source=_rel(summary_path), repro="make router-sim"),
+        _cs_number("cross_family_n", _fmt_count(cross_family["n_examples"]),
+                   cross_family["n_examples"], unit="count", source=_rel(summary_path),
+                   repro="make router-sim"),
+    ]
+    d = {e["label"]: e["display"] for e in numbers}
+    return _cs_section(
+        "negatives", "narrative", "Honest negatives",
+        paragraphs=[
+            (f"The out-of-vocabulary explanation was REFUTED. Model-vocabulary token OOV "
+             f"moves only from {d['oov_train']} on TRAIN to {d['oov_2026']} at 2026-H1, "
+             f"and the TF-IDF centroid distance PEAKS in 2025 at {d['centroid_2025']} and "
+             f"FALLS at 2026-H1 to {d['centroid_2026']} — disjoint intervals. Lexical "
+             f"drift is ruled out; the cliff is prior shift. Types and tokens tell opposite "
+             f"stories: {d['oov_type_2026']} of TYPES at 2026-H1 are outside the model "
+             f"vocabulary, against {d['oov_2026']} of TOKENS."),
+            (f"The few-shot hypothesis was REFUTED. On the same {d['n_ablation']} CAL rows, "
+             f"Haiku with k={d['k_fewshot']} exemplars scores {d['fewshot_f1']} against "
+             f"{d['zeroshot_f1']} at k={d['k_zeroshot']}, for double the measured spend "
+             f"({d['fewshot_spend']} against {d['zeroshot_spend']}). Paired on those rows "
+             f"the delta is {d['fewshot_minus_zeroshot_delta']} macro-F1, McNemar "
+             f"p={d['fewshot_minus_zeroshot_p']} — an interval containing zero. The "
+             f"exemplars bought no measurable quality for twice the money, so every Tier "
+             f"C final in the study is zero-shot."),
+            (f"The LLM cascade does not pay. Under the primary operating point the "
+             f"Haiku-terminal cascade is cheaper than Tier A alone, "
+             f"{d['cascade_vs_a_cost']} per 1k, but it buys no established quality: "
+             f"macro-F1 {d['cascade_vs_a_f1']}, an interval containing zero, so the "
+             f"two-axis claim is not certified. Head to head against the gate-to-human "
+             f"router on the same {d['cross_family_n']} rows it resolves AGAINST the "
+             f"cascade: {d['cross_family_cost']} per 1k, more expensive with the interval "
+             f"excluding zero."),
+        ],
+        numbers=numbers,
+        repro=[oov_repro, "make tier-b-frontier", "make router-sim",
+               ablation["repro_command"]],
+        gaps=[
+            ("An earlier cost generation recorded the cascade-vs-Tier-A cost comparison as "
+             "directional (interval containing zero). The figures above are the primary "
+             "operating point and cost generation the rest of this page uses; mixing "
+             "generations inside one paragraph is exactly what the artifact naming "
+             "prevents."),
+        ],
+    )
+
+
+def _cs_verification(records: list[dict], resolved: dict, manifest: dict, drift: dict,
+                     parity: dict, live: dict, receipts: dict) -> dict:
+    boot = drift["bootstrap"]
+    ci_lo_pct, ci_hi_pct = boot["ci_pct"]
+    b2 = record_for(resolved, TIER_B2_SAMPLE_CONFIG, TEST_IID)
+    haiku = record_for(resolved, HAIKU_TEST, TEST_IID)
+
+    provider_counts: Counter = Counter()
+    for entry in receipts["runs"].values():
+        provider_counts.update(entry["provider_mix"])
+    total_calls = sum(provider_counts.values())
+    bedrock_share = provider_counts["Amazon Bedrock"] / total_calls
+
+    runs_src = _rel(DEFAULT_RESULTS_PATH)
+    numbers = [
+        _cs_number("snapshot_bytes", _fmt_count(manifest["size_bytes"]),
+                   manifest["size_bytes"], unit="count",
+                   source=_rel(DEFAULT_SNAPSHOT_MANIFEST), repro="make data"),
+        _cs_number("n_run_records", _fmt_count(len(records)), len(records), unit="count",
+                   source=runs_src, basis="derived",
+                   note="len(results/runs.jsonl) at build time"),
+        _cs_number("ci_level", f"{ci_hi_pct - ci_lo_pct:.0f}%",
+                   float(ci_hi_pct - ci_lo_pct), unit="pctpoint",
+                   source=_rel(DEFAULT_DRIFT_SUMMARY), basis="derived",
+                   note="bootstrap.ci_pct[1] - bootstrap.ci_pct[0]"),
+        _cs_number("bootstrap_resamples", _fmt_count(boot["n_resamples"]),
+                   boot["n_resamples"], unit="count", source=_rel(DEFAULT_DRIFT_SUMMARY)),
+        _cs_number("bootstrap_seed", str(int(boot["seed"])), int(boot["seed"]),
+                   unit="count", source=_rel(DEFAULT_DRIFT_SUMMARY)),
+        _cs_number("bedrock_share", _fmt_pct(bedrock_share, 2), bedrock_share,
+                   unit="pct", basis="derived", evidence_class="derived",
+                   source="results/tier_c_raw/**/calls.jsonl",
+                   note="Amazon Bedrock calls / all committed Tier C receipt calls"),
+        _cs_number("n_tier_c_calls", _fmt_count(total_calls), total_calls, unit="count",
+                   basis="derived", evidence_class="derived",
+                   source="results/tier_c_raw/**/calls.jsonl"),
+        _cs_number("max_concurrency", str(int(haiku["extra"]["max_concurrency"])),
+                   int(haiku["extra"]["max_concurrency"]), unit="count", source=runs_src,
+                   run_ids=[haiku["run_id"]]),
+        _cs_number("int8_agreement", _fmt_f(parity["agreement"]["int8_vs_pytorch_fp32"]),
+                   parity["agreement"]["int8_vs_pytorch_fp32"], unit="raw",
+                   source=_rel(DEFAULT_ONNX_PARITY), run_ids=[b2["run_id"]],
+                   repro="uv run python scripts/export_onnx_distilbert.py"),
+        _cs_number("fp32_agreement", _fmt_f(parity["agreement"]["onnx_fp32_vs_pytorch"]),
+                   parity["agreement"]["onnx_fp32_vs_pytorch"], unit="raw",
+                   source=_rel(DEFAULT_ONNX_PARITY), run_ids=[b2["run_id"]],
+                   repro="uv run python scripts/export_onnx_distilbert.py"),
+        _cs_number("parity_n", _fmt_count(parity["n_samples"]), parity["n_samples"],
+                   unit="count", source=_rel(DEFAULT_ONNX_PARITY)),
+        _cs_number("live_tier_a_agreement",
+                   _fmt_pct(live["tier_a"]["label_agreement_vs_official"], 1),
+                   live["tier_a"]["label_agreement_vs_official"], unit="pct",
+                   source=_rel(DEFAULT_LIVE_AGREEMENT)),
+        _cs_number("live_n", _fmt_count(live["tier_a"]["n"]), live["tier_a"]["n"],
+                   unit="count", source=_rel(DEFAULT_LIVE_AGREEMENT)),
+        _cs_number("live_tier_b2_agreement",
+                   _fmt_pct(live["tier_b2"]["vs_official_fp32"]
+                            ["label_agreement_vs_official"], 1),
+                   live["tier_b2"]["vs_official_fp32"]["label_agreement_vs_official"],
+                   unit="pct", source=_rel(DEFAULT_LIVE_AGREEMENT)),
+        _cs_number("suite_passed", _fmt_count(SUITE_RESULT["passed"]),
+                   SUITE_RESULT["passed"], unit="count", basis="declared",
+                   source="src/triage_lab/demo_build.py", repro=SUITE_RESULT["command"],
+                   note=SUITE_RESULT["note"]),
+        _cs_number("suite_skipped", _fmt_count(SUITE_RESULT["skipped"]),
+                   SUITE_RESULT["skipped"], unit="count", basis="declared",
+                   source="src/triage_lab/demo_build.py", repro=SUITE_RESULT["command"],
+                   note=SUITE_RESULT["note"]),
+        _cs_number("suite_failed", _fmt_count(SUITE_RESULT["failed"]),
+                   SUITE_RESULT["failed"], unit="count", basis="declared",
+                   source="src/triage_lab/demo_build.py", repro=SUITE_RESULT["command"],
+                   note=SUITE_RESULT["note"]),
+    ]
+    d = {e["label"]: e["display"] for e in numbers}
+    items = [
+        {"n": 1, "title": "Frozen dataset snapshot",
+         "text": (f"CFPB complaints.csv.zip, downloaded {manifest['download_date']}, "
+                  f"SHA-256 {manifest['sha256']}, {d['snapshot_bytes']} bytes. The splits "
+                  f"reproduce byte-identically from that snapshot under `make data`."),
+         "source": _rel(DEFAULT_SNAPSHOT_MANIFEST), "run_ids": [],
+         "evidence_class": "measured"},
+        {"n": 2, "title": "Locked environment",
+         "text": ("A committed uv lockfile; `uv sync --frozen` is the only supported "
+                  "install path. Tier B was trained on an NVIDIA RTX A6000 in bf16 "
+                  "(bundle chain-of-custody verified) and evaluated locally on MPS; the "
+                  "hardware is recorded in each run record."),
+         "source": runs_src, "run_ids": [b2["run_id"]], "evidence_class": "measured"},
+        {"n": 3, "title": "One config per run, one append-only log",
+         "text": (f"One YAML config per run, one JSONL record appended to "
+                  f"results/runs.jsonl — {d['n_run_records']} records, never edited. Every "
+                  f"record carries its git SHA, dataset snapshot hash, config or prompt "
+                  f"hash, wall-clock and cost."),
+         "source": runs_src, "run_ids": [], "evidence_class": "measured"},
+        {"n": 4, "title": "Uncertainty on every headline number",
+         "text": (f"{d['ci_level']} bootstrap confidence intervals "
+                  f"({d['bootstrap_resamples']} resamples, fixed seed "
+                  f"{d['bootstrap_seed']}) on every headline number; every comparison "
+                  f"claim uses a paired bootstrap plus McNemar on the shared rows."),
+         "source": _rel(DEFAULT_DRIFT_SUMMARY), "run_ids": [],
+         "evidence_class": "measured"},
+        {"n": 5, "title": "Tier C cost receipts",
+         "text": (f"Raw per-call logs are retained and committed. Costs are actual token "
+                  f"usage multiplied by published per-MTok prices — never estimated from "
+                  f"characters or averages — and the upstream provider is recorded per "
+                  f"call: {d['bedrock_share']} of {d['n_tier_c_calls']} calls were served "
+                  f"by Amazon Bedrock."),
+         "source": "results/tier_c_raw/**/calls.jsonl", "run_ids": [],
+         "evidence_class": "measured"},
+        {"n": 6, "title": "Latency methodology, stated as a limit",
+         "text": (f"Latency is client-side wall-clock through OpenRouter with no provider "
+                  f"pinning at max_concurrency {d['max_concurrency']}. The figures "
+                  f"characterize the OpenRouter-to-Bedrock route, NOT the Anthropic "
+                  f"first-party API."),
+         "source": runs_src, "run_ids": [haiku["run_id"]], "evidence_class": "measured"},
+        {"n": 7, "title": "ONNX parity for the in-browser model",
+         "text": (f"Argmax agreement between the int8 export (per-channel QInt8) and "
+                  f"PyTorch fp32 is {d['int8_agreement']} on a held-out CAL sample of "
+                  f"{d['parity_n']} rows; the fp32 ONNX export is exact at "
+                  f"{d['fp32_agreement']}. A stock "
+                  f"per-tensor quantization was measured first and REJECTED: the export "
+                  f"config was fixed, the acceptance threshold was not relaxed. Official "
+                  f"numbers remain the harness fp32 runs."),
+         "source": _rel(DEFAULT_ONNX_PARITY), "run_ids": [b2["run_id"]],
+         "evidence_class": "measured"},
+        {"n": 8, "title": "Live in-browser agreement, frozen and disclosed in the UI",
+         "text": (f"Tier A agrees with its official run on {d['live_tier_a_agreement']} "
+                  f"of {d['live_n']} curated rows (a bit-identical export); the B2 int8 "
+                  f"browser model agrees on {d['live_tier_b2_agreement']} against the "
+                  f"official fp32 run. Both rates are frozen in the payload and shown in "
+                  f"the playground panel."),
+         "source": _rel(DEFAULT_LIVE_AGREEMENT), "run_ids": [], "evidence_class":
+             "measured"},
+        {"n": 9, "title": "Tests, including the one that guards this page",
+         "text": (f"A smoke eval runs in CI; the full suite is {d['suite_passed']} "
+                  f"passed / {d['suite_skipped']} skipped / {d['suite_failed']} failed. "
+                  f"The demo's traceability is test-enforced: every run id under "
+                  f"demo/data must exist in the results log, every copied number must "
+                  f"equal its source, and every numeric token in this page's prose must "
+                  f"be a declared, sourced value."),
+         "source": "tests/test_demo_build.py", "run_ids": [],
+         "evidence_class": "measured"},
+        {"n": 10, "title": "Dev/test hygiene",
+         "text": ("TEST-* slices are frozen and were touched only for final reported "
+                  "runs; all iteration happened on CAL. EXPERIMENT_LOG.md is published "
+                  "including the failed hypotheses."),
+         "source": "EXPERIMENT_LOG.md", "run_ids": [], "evidence_class": "measured"},
+        {"n": 11, "title": "One-command headline reproduction",
+         "text": ("A single `make reproduce-headline` target that re-derives every "
+                  "headline number on this page from the committed artifacts."),
+         "source": "Makefile", "run_ids": [], "evidence_class": "pending",
+         "pending": pending_slot(CASE_STUDY_PENDING[0]["slot"],
+                                 CASE_STUDY_PENDING[0]["label"])},
+    ]
+    return _cs_section(
+        "verification", "verification", "How this was verified",
+        numbers=numbers, items=items,
+        repro=["uv run pytest -q", "make data"],
+    )
+
+
+CASE_STUDY_LIMITS = (
+    ("Not a production serving system. There are no SLA, throughput or uptime claims; "
+     "latency was bench-measured (and through OpenRouter), never fleet-measured."),
+    ("Single-domain and English-only: US consumer-finance complaints. Generalization to "
+     "other triage domains is not demonstrated."),
+    ("Tier C costs are point-in-time prices for specific model IDs, recorded per call. "
+     "Forward cost claims are projected, and the frontier is a method, not a leaderboard."),
+    ("The business cost-model parameters — misroute cost, human-review cost and the Tier B "
+     "amortized compute price — are ESTIMATED defaults, not measurements. Their sensitivity "
+     "is exposed in the policy-builder panel rather than asserted away."),
+    ("LLM contamination on pre-cutoff data is possible. It is mitigated by TEST-POSTCUTOFF "
+     "(a boundary strictly after the latest Tier C training cutoff), not eliminated."),
+    ("CFPB narratives are opt-in and CFPB-scrubbed, so there is selection bias against the "
+     "full complaint population; the scrubbing artifacts are in-distribution quirks the "
+     "models learn from."),
+    ("No online learning and no human-in-the-loop feedback were measured, and the "
+     "escalation arm assumes humans are always right — a modeling choice, stated as one."),
+    ("The coursework seed scores that motivated this lab are self-reported class results: "
+     "provenance, not evidence. The group NER project was collaborative, so role "
+     "attribution there is biographical context, not a measured claim."),
+)
+
+
+def _cs_limits() -> dict:
+    return _cs_section(
+        "limits", "limits", "What this does not prove",
+        items=[{"text": text} for text in CASE_STUDY_LIMITS],
+    )
+
+
+def _cs_provenance() -> dict:
+    slot = CASE_STUDY_PENDING[1]
+    return _cs_section(
+        "provenance", "pending", "Provenance — coursework seeds",
+        paragraphs=[("The provenance section links this lab's exhibits back to the "
+                    "coursework artifacts that motivated them. It is a separate task and "
+                    "is shown as a labeled pending slot rather than omitted, because "
+                    "“not built yet” and “nothing to show” are "
+                    "different claims.")],
+        pending=pending_slot(slot["slot"], slot["label"]),
+    )
+
+
+def build_case_study(records: list[dict], resolved: dict, cfg: cost_model.CostConfig, *,
+                     receipts: dict, frontier_dir=DEFAULT_FRONTIER_DIR,
+                     router_dir=DEFAULT_ROUTER_DIR, cost_dir=DEFAULT_COST_DIR,
+                     drift_summary=DEFAULT_DRIFT_SUMMARY,
+                     prior_shift_summary=DEFAULT_PRIOR_SHIFT_SUMMARY,
+                     paired_within=DEFAULT_PAIRED_WITHIN,
+                     tier_b_compare=DEFAULT_TIER_B_COMPARE,
+                     perturbation_summary=DEFAULT_PERTURBATION_SUMMARY,
+                     oov_summary=DEFAULT_OOV_SUMMARY,
+                     onnx_parity=DEFAULT_ONNX_PARITY,
+                     live_agreement=DEFAULT_LIVE_AGREEMENT,
+                     snapshot_manifest=DEFAULT_SNAPSHOT_MANIFEST,
+                     tier_c_compare_dir=DEFAULT_TIER_C_COMPARE_DIR) -> dict:
+    """The narrative page, assembled from copied numbers (see the header comment)."""
+    def _json(path):
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+
+    drift = _json(drift_summary)
+    sections = [
+        _cs_intro(records, drift),
+        _cs_tiers(resolved, _json(tier_b_compare), cost_dir, tier_c_compare_dir),
+        _cs_drift(resolved, drift, _json(prior_shift_summary), _json(paired_within),
+                  tier_c_compare_dir),
+        _cs_thresholds(drift),
+        _cs_router(cfg, frontier_dir=frontier_dir, router_dir=router_dir),
+        _cs_robustness(resolved, _json(perturbation_summary)),
+        _cs_negatives(resolved, _json(oov_summary), cfg, frontier_dir=frontier_dir,
+                      router_dir=router_dir, tier_c_compare_dir=tier_c_compare_dir),
+        _cs_verification(records, resolved,
+                         yaml.safe_load(Path(snapshot_manifest).read_text("utf-8")),
+                         drift, _json(onnx_parity), _json(live_agreement), receipts),
+        _cs_limits(),
+        _cs_provenance(),
+    ]
+    return {
+        "schema_version": CASE_STUDY_SCHEMA,
+        "title": CASE_STUDY_TITLE,
+        "source_note": CASE_STUDY_SOURCE_NOTE,
+        "sections": sections,
+        "pending": [pending_slot(slot["slot"], slot["label"])
+                    for slot in CASE_STUDY_PENDING],
+        "evidence_classes": EVIDENCE_LEGEND,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Build
 # ---------------------------------------------------------------------------
 
@@ -1321,7 +2597,7 @@ def build_all(out_dir=DEFAULT_OUT_DIR, *, results_path=DEFAULT_RESULTS_PATH,
               frontier_dir=DEFAULT_FRONTIER_DIR, router_dir=DEFAULT_ROUTER_DIR,
               cost_dir=DEFAULT_COST_DIR,
               drift_summary=DEFAULT_DRIFT_SUMMARY) -> list[Path]:
-    """Write all nine contract files. Everything is computed before anything is written."""
+    """Write all ten contract files. Everything is computed before anything is written."""
     out_dir = Path(out_dir)
     cfg = cost_model.load_cost_config(cost_config_path)
     if not cost_model.prices_tier_b(cfg):
@@ -1366,6 +2642,7 @@ def build_all(out_dir=DEFAULT_OUT_DIR, *, results_path=DEFAULT_RESULTS_PATH,
     curated = freeze_check(build_curated_ids(pool, y_true_by_id),
                            out_dir / "curated_ids.json")
 
+    receipts = build_receipts(records)
     payload = {
         "meta.json": build_meta(records, cfg),
         "runs_index.json": build_runs_index(records),
@@ -1378,7 +2655,10 @@ def build_all(out_dir=DEFAULT_OUT_DIR, *, results_path=DEFAULT_RESULTS_PATH,
         "curated_ids.json": curated,
         "samples.json": build_samples(curated, resolved=resolved, inputs=inputs,
                                       cal_thresholds=cal_thresholds, splits_dir=splits_dir),
-        "receipts.json": build_receipts(records),
+        "receipts.json": receipts,
+        "case_study.json": build_case_study(
+            records, resolved, cfg, receipts=receipts, frontier_dir=frontier_dir,
+            router_dir=router_dir, cost_dir=cost_dir, drift_summary=drift_summary),
     }
     return [write_json(obj, out_dir / name) for name, obj in sorted(payload.items())]
 

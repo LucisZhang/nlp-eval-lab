@@ -752,3 +752,138 @@ pre.raw-json {
 .live-error {
   margin-top: 8px;
 }
+
+/* ---- panel 7: case study ---- */
+/* Everything here reuses the existing variables, so light and dark come for free. */
+
+.cs-section {
+  margin-bottom: 16px;
+}
+
+.cs-heading {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.cs-para {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  line-height: 1.62;
+  max-width: 74ch;
+}
+
+.cs-gap {
+  border-left-color: var(--warn);
+  max-width: 74ch;
+}
+
+.cs-receipts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  margin-top: 4px;
+}
+
+.cs-receipts-label {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.cs-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cs-repro {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cs-cmd {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cs-numbers {
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.cs-numbers > summary {
+  cursor: pointer;
+  color: var(--text-dim);
+  padding: 3px 0;
+}
+
+.cs-numbers-table td {
+  border-top: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.cs-numbers-table tr:first-child td {
+  border-top: none;
+}
+
+.cs-display {
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+.cs-basis {
+  margin-left: 5px;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.cs-note {
+  color: var(--text-dim);
+  font-size: 11.5px;
+  margin-top: 3px;
+  max-width: 60ch;
+}
+
+.cs-check-list,
+.cs-limit-list {
+  margin: 0;
+  padding-left: 20px;
+  max-width: 78ch;
+}
+
+.cs-check-list li,
+.cs-limit-list li {
+  margin-bottom: 10px;
+  font-size: 13px;
+  line-height: 1.58;
+}
+
+.cs-check-title {
+  font-weight: 600;
+}
+
+.cs-check-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.cs-pending-label {
+  font-size: 12.5px;
+  margin-top: 5px;
+  color: var(--text-dim);
+}

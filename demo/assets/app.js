@@ -216,7 +216,7 @@ function closeDrawer() {
 // nav / tabs
 // ----------------------------------------------------------------------------
 
-const PANEL_ORDER = ["playground", "frontier", "policy", "drift", "calibration", "receipts"];
+const PANEL_ORDER = ["playground", "frontier", "policy", "drift", "calibration", "receipts", "casestudy"];
 const PANEL_LABELS = {
   playground: "1. Playground",
   frontier: "2. Frontier",
@@ -224,6 +224,7 @@ const PANEL_LABELS = {
   drift: "4. Drift",
   calibration: "5. Calibration",
   receipts: "6. Receipts",
+  casestudy: "7. Case study",
 };
 
 function showPanel(name) {
@@ -1363,6 +1364,166 @@ function renderReceiptsTable() {
 }
 
 // ----------------------------------------------------------------------------
+// panel 7: case study
+// ----------------------------------------------------------------------------
+//
+// Pure rendering. Every string and every number comes out of case_study.json, which the
+// build produced by copying from results/ — the page has no formatting opinions of its
+// own, so a number cannot differ here from the artifact it was copied from. `display`
+// strings are already embedded in the paragraphs; the `numbers` array is rendered as the
+// per-section provenance table behind a disclosure, so a reader can go from a sentence to
+// its source path, run chip and repro command without leaving the page.
+
+function reproLine(commands) {
+  if (!commands || !commands.length) return null;
+  const wrap = el("div", "cs-repro");
+  commands.forEach((cmd) => wrap.appendChild(el("code", "cs-cmd", cmd)));
+  return wrap;
+}
+
+function receiptsLine(section) {
+  const ids = section.run_ids || [];
+  const cmds = section.repro || [];
+  if (!ids.length && !cmds.length) return null;
+  const wrap = el("div", "cs-receipts");
+  wrap.appendChild(el("span", "cs-receipts-label", "receipts"));
+  if (ids.length) {
+    const chips = el("span", "cs-chips");
+    ids.forEach((id) => {
+      const chip = runChip(id);
+      if (chip) chips.appendChild(chip);
+    });
+    wrap.appendChild(chips);
+  }
+  const repro = reproLine(cmds);
+  if (repro) wrap.appendChild(repro);
+  return wrap;
+}
+
+function numbersTable(numbers) {
+  if (!numbers || !numbers.length) return null;
+  const details = el("details", "cs-numbers");
+  details.appendChild(el("summary", null, `${numbers.length} declared numbers — source, run, repro`));
+  const table = el("table", "kv-table cs-numbers-table");
+  const head = el("tr", null, [
+    el("td", "k", "display"), el("td", "k", "what"), el("td", "k", "basis"),
+    el("td", "k", "source"),
+  ]);
+  table.appendChild(head);
+  numbers.forEach((n) => {
+    const srcCell = el("td");
+    const src = sourceChip(n.source);
+    if (src) srcCell.appendChild(src);
+    (n.run_ids || []).forEach((id) => {
+      const chip = runChip(id);
+      if (chip) srcCell.appendChild(chip);
+    });
+    if (n.repro) srcCell.appendChild(el("code", "cs-cmd", n.repro));
+    if (n.note) srcCell.appendChild(el("div", "cs-note", n.note));
+    table.appendChild(el("tr", null, [
+      el("td", "cs-display", n.display),
+      el("td", null, n.label),
+      el("td", null, [evidenceBadge(n.evidence_class), el("span", "cs-basis", n.basis)]),
+      srcCell,
+    ]));
+  });
+  details.appendChild(table);
+  return details;
+}
+
+function pendingCard(pending) {
+  const card = el("div", "card pending");
+  card.appendChild(el("span", "evidence-badge derived", "pending"));
+  card.appendChild(el("div", "cs-pending-label", pending.label || pending.slot));
+  return card;
+}
+
+function renderNarrativeSection(section) {
+  const card = el("div", "card cs-section");
+  card.appendChild(el("h3", "cs-heading", section.title));
+  (section.paragraphs || []).forEach((p) => card.appendChild(el("p", "cs-para", p)));
+  (section.gaps || []).forEach((g) => {
+    card.appendChild(el("div", "info-card cs-gap", [
+      el("strong", null, "not shown here: "), g,
+    ]));
+  });
+  const receipts = receiptsLine(section);
+  if (receipts) card.appendChild(receipts);
+  const numbers = numbersTable(section.numbers);
+  if (numbers) card.appendChild(numbers);
+  if (section.pending) card.appendChild(pendingCard(section.pending));
+  return card;
+}
+
+function renderVerificationSection(section) {
+  const card = el("div", "card cs-section");
+  card.appendChild(el("h3", "cs-heading", section.title));
+  const list = el("ol", "cs-check-list");
+  (section.items || []).forEach((item) => {
+    const li = el("li");
+    li.appendChild(el("span", "cs-check-title", item.title));
+    li.appendChild(el("span", "cs-check-text", " " + item.text));
+    const meta = el("div", "cs-check-meta");
+    if (item.pending) meta.appendChild(el("span", "evidence-badge derived", "pending"));
+    const src = sourceChip(item.source);
+    if (src) meta.appendChild(src);
+    (item.run_ids || []).forEach((id) => {
+      const chip = runChip(id);
+      if (chip) meta.appendChild(chip);
+    });
+    li.appendChild(meta);
+    list.appendChild(li);
+  });
+  card.appendChild(list);
+  const receipts = receiptsLine(section);
+  if (receipts) card.appendChild(receipts);
+  const numbers = numbersTable(section.numbers);
+  if (numbers) card.appendChild(numbers);
+  return card;
+}
+
+function renderLimitsSection(section) {
+  const card = el("div", "card cs-section cs-limits");
+  card.appendChild(el("h3", "cs-heading", section.title));
+  const list = el("ul", "cs-limit-list");
+  (section.items || []).forEach((item) => list.appendChild(el("li", null, item.text)));
+  card.appendChild(list);
+  return card;
+}
+
+async function initCaseStudy() {
+  const bannerSlot = document.getElementById("casestudy-banner-slot");
+  const body = document.getElementById("casestudy-body");
+  bannerSlot.innerHTML = "";
+  body.innerHTML = "";
+
+  const data = await loadJSON("case_study.json");
+  if (isMissing(data) || !Array.isArray(data.sections)) {
+    bannerSlot.appendChild(missingBanner("case_study.json"));
+    return;
+  }
+
+  if (data.title) document.getElementById("casestudy-title").textContent = data.title;
+  document.getElementById("casestudy-source-note").textContent = data.source_note || "";
+
+  data.sections.forEach((section) => {
+    if (section.kind === "verification") body.appendChild(renderVerificationSection(section));
+    else if (section.kind === "limits") body.appendChild(renderLimitsSection(section));
+    else body.appendChild(renderNarrativeSection(section));
+  });
+
+  const pending = data.pending || [];
+  if (pending.length) {
+    const wrap = el("div", "cs-section");
+    wrap.appendChild(el("h3", "cs-heading", "Pending slots"));
+    pending.forEach((p) => wrap.appendChild(pendingCard(p)));
+    body.appendChild(wrap);
+  }
+
+  body.style.display = "";
+}
+
+// ----------------------------------------------------------------------------
 // boot
 // ----------------------------------------------------------------------------
 
@@ -1384,6 +1545,7 @@ async function boot() {
     initDrift(),
     initCalibration(),
     initReceiptsPanel(),
+    initCaseStudy(),
   ]);
 }
 

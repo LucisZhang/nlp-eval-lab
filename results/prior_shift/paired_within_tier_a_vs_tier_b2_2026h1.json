@@ -1,0 +1,660 @@
+{
+  "bootstrap": {
+    "ci_pct": [
+      2.5,
+      97.5
+    ],
+    "ci_valid": true,
+    "draw_order": "ref_then_year",
+    "method": "percentile",
+    "n_resamples": 1000,
+    "note": "delta replicates are differences taken WITHIN each replicate: both tiers are scored on the same resampled complaints, so the shared slice-sampling error cancels. This is why the paired interval can exclude 0 while the two marginal intervals overlap.",
+    "pairing": "shared_index_vectors_per_replicate",
+    "pairing_basis": "the index stream depends only on (seed, n_ref, n_year); both tiers have identical sizes, so replicate i uses byte-identical idx_ref/idx_year vectors",
+    "resample": "both_slices_independent",
+    "seed": 20260805
+  },
+  "ci_excludes_zero": true,
+  "ci_hi": 0.0276165437,
+  "ci_lo": 0.0057520559,
+  "ci_valid": true,
+  "claim_under_test": "tier_b2's within-class damage is smaller than tier_a's (test_drift_2026h1 vs test_drift_2023)",
+  "class_labels": [
+    "card",
+    "credit_reporting",
+    "debt_collection",
+    "deposit_account",
+    "money_service",
+    "mortgage",
+    "payday_personal_loan",
+    "student_loan",
+    "vehicle_loan"
+  ],
+  "component": "within::path_p",
+  "cost_note": "derivation only: no model was run and results/runs.jsonl is untouched",
+  "cost_usd": 0.0,
+  "delta": {
+    "ci_hi": 0.0276165437,
+    "ci_lo": 0.0057520559,
+    "ci_valid": true,
+    "excludes_zero": true,
+    "frac_replicates_gt_zero": 0.999,
+    "point": 0.0167736014,
+    "replicate_mean": 0.0167045953,
+    "replicate_std": 0.0054844478
+  },
+  "delta_sensitivity": {
+    "balanced_accuracy_delta": {
+      "ci_hi": 0.0342378967,
+      "ci_lo": 0.0118743014,
+      "ci_valid": true,
+      "excludes_zero": true,
+      "frac_replicates_gt_zero": 1.0,
+      "point": 0.0234865825,
+      "replicate_mean": 0.0233849117,
+      "replicate_std": 0.0056397229
+    },
+    "interaction": {
+      "ci_hi": 0.0067468009,
+      "ci_lo": -0.0144266583,
+      "ci_valid": true,
+      "excludes_zero": false,
+      "frac_replicates_gt_zero": 0.228,
+      "point": -0.0040918159,
+      "replicate_mean": -0.004036403,
+      "replicate_std": 0.0054558189
+    },
+    "total": {
+      "ci_hi": 0.0382844537,
+      "ci_lo": 0.017765967,
+      "ci_valid": true,
+      "excludes_zero": true,
+      "frac_replicates_gt_zero": 1.0,
+      "point": 0.0284823955,
+      "replicate_mean": 0.0284079833,
+      "replicate_std": 0.0052725165
+    },
+    "within::path_q": {
+      "ci_hi": 0.0345479991,
+      "ci_lo": 0.0061538695,
+      "ci_valid": true,
+      "excludes_zero": true,
+      "frac_replicates_gt_zero": 0.998,
+      "point": 0.0208654172,
+      "replicate_mean": 0.0207409984,
+      "replicate_std": 0.0076247986
+    },
+    "within::shapley": {
+      "ci_hi": 0.0301593265,
+      "ci_lo": 0.0068939154,
+      "ci_valid": true,
+      "excludes_zero": true,
+      "frac_replicates_gt_zero": 1.0,
+      "point": 0.0188195093,
+      "replicate_mean": 0.0187227969,
+      "replicate_std": 0.0060553175
+    },
+    "within_main::anova": {
+      "ci_hi": 0.0345479991,
+      "ci_lo": 0.0061538695,
+      "ci_valid": true,
+      "excludes_zero": true,
+      "frac_replicates_gt_zero": 0.998,
+      "point": 0.0208654172,
+      "replicate_mean": 0.0207409984,
+      "replicate_std": 0.0076247986
+    }
+  },
+  "estimand": "within::path_p(tier_a) - within::path_p(tier_b2)",
+  "generated_at": "2026-08-13T10:50:36.549638Z",
+  "git_sha": "018ec5114985d4d2a3572d1f4f960b95177c537c",
+  "id_alignment": {
+    "checked": true,
+    "exact_row_order_match_all_slices": true,
+    "on_mismatch": "same set, different order -> both tiers re-sorted by complaint_id (the recorded per-tier CIs would then no longer be reproduced, and this flag says so); different sets -> refuse",
+    "reproduces_recorded_per_tier_replicates": true,
+    "rule": "positional bootstrap indices pair complaints only if both artifacts carry the same complaint_ids in the same row order",
+    "slices": {
+      "ref": {
+        "ascending": {
+          "tier_a": true,
+          "tier_b2": true
+        },
+        "exact_row_order_match": true,
+        "ids_sha256": "0d7481fd0bae04289d7afb04ea8b36f93a73fc4a6debc49bff698b33ed2e62c0",
+        "n": 20000,
+        "realigned_by_complaint_id": false,
+        "same_id_set": true,
+        "slice": "test_drift_2023"
+      },
+      "year": {
+        "ascending": {
+          "tier_a": true,
+          "tier_b2": true
+        },
+        "exact_row_order_match": true,
+        "ids_sha256": "2eb951756a0286f6dfed7466bd193608246270d196025d76b19425fb78fa9fa9",
+        "n": 20000,
+        "realigned_by_complaint_id": false,
+        "same_id_set": true,
+        "slice": "test_drift_2026h1"
+      }
+    }
+  },
+  "kind": "paired_component_delta",
+  "marginal_intervals": {
+    "note": "marginal (unpaired) intervals; their overlap is NOT a test of the difference and must never be quoted as one",
+    "overlap": true,
+    "tier_a": {
+      "ci_hi": 0.0625327466,
+      "ci_lo": 0.0384978295,
+      "point": 0.0503407811
+    },
+    "tier_b2": {
+      "ci_hi": 0.0450742732,
+      "ci_lo": 0.0234051813,
+      "point": 0.0335671797
+    }
+  },
+  "n_resamples": 1000,
+  "path": "P_prior_first",
+  "per_tier": {
+    "tier_a": {
+      "balanced_accuracy": {
+        "ref": 0.7531929623,
+        "year": 0.6810605942
+      },
+      "cells": {
+        "A_ref_mix_ref_behavior": 0.757909508,
+        "B_year_mix_ref_behavior": 0.715898168,
+        "C_ref_mix_year_behavior": 0.6693367169,
+        "D_year_mix_year_behavior": 0.6655573869
+      },
+      "ci_valid": true,
+      "components": {
+        "balanced_accuracy_delta": {
+          "ci_hi": 0.0842658176,
+          "ci_lo": 0.0590413399,
+          "ci_valid": true,
+          "point": 0.0721323681
+        },
+        "interaction": {
+          "ci_hi": -0.0262659498,
+          "ci_lo": -0.0490160733,
+          "ci_valid": true,
+          "point": -0.03823201
+        },
+        "total": {
+          "ci_hi": 0.1041722526,
+          "ci_lo": 0.0801966905,
+          "ci_valid": true,
+          "point": 0.0923521211
+        },
+        "within::path_p": {
+          "ci_hi": 0.0625327466,
+          "ci_lo": 0.0384978295,
+          "ci_valid": true,
+          "point": 0.0503407811
+        },
+        "within::path_q": {
+          "ci_hi": 0.103511042,
+          "ci_lo": 0.0715202419,
+          "ci_valid": true,
+          "point": 0.0885727911
+        },
+        "within::shapley": {
+          "ci_hi": 0.0816128818,
+          "ci_lo": 0.0562132778,
+          "ci_valid": true,
+          "point": 0.0694567861
+        },
+        "within_main::anova": {
+          "ci_hi": 0.103511042,
+          "ci_lo": 0.0715202419,
+          "ci_valid": true,
+          "point": 0.0885727911
+        }
+      },
+      "identity_check": {
+        "checks": [
+          {
+            "abs_delta": 0.0,
+            "applicable": true,
+            "computed": 0.757909508,
+            "logged": 0.757909508,
+            "name": "cell_A_vs_logged_macro_f1",
+            "ok": true
+          },
+          {
+            "abs_delta": 0.0,
+            "applicable": true,
+            "computed": 0.6655573869,
+            "logged": 0.6655573869,
+            "name": "cell_D_vs_logged_macro_f1",
+            "ok": true
+          },
+          {
+            "abs_delta": 0.0,
+            "applicable": true,
+            "computed": 0.7531929623,
+            "logged": 0.7531929623,
+            "name": "balanced_accuracy_ref_vs_logged",
+            "ok": true
+          },
+          {
+            "abs_delta": 0.0,
+            "applicable": true,
+            "computed": 0.6810605942,
+            "logged": 0.6810605942,
+            "name": "balanced_accuracy_year_vs_logged",
+            "ok": true
+          }
+        ],
+        "tol": 0.0
+      },
+      "n_ref": 20000,
+      "n_year": 20000,
+      "recorded_cross_check": {
+        "balanced_accuracy_delta": {
+          "abs_delta": {
+            "ci_hi": 0.0,
+            "ci_lo": 0.0,
+            "point": 0.0
+          },
+          "available": true,
+          "matches": true,
+          "recorded": {
+            "ci_hi": 0.0842658176,
+            "ci_lo": 0.0590413399,
+            "ci_valid": true,
+            "point": 0.0721323681
+          },
+          "tol": 1e-10
+        },
+        "interaction": {
+          "abs_delta": {
+            "ci_hi": 0.0,
+            "ci_lo": 0.0,
+            "point": 0.0
+          },
+          "available": true,
+          "matches": true,
+          "recorded": {
+            "ci_hi": -0.0262659498,
+            "ci_lo": -0.0490160733,
+            "ci_valid": true,
+            "point": -0.03823201
+          },
+          "tol": 1e-10
+        },
+        "total": {
+          "abs_delta": {
+            "ci_hi": 0.0,
+            "ci_lo": 0.0,
+            "point": 0.0
+          },
+          "available": true,
+          "matches": true,
+          "recorded": {
+            "ci_hi": 0.1041722526,
+            "ci_lo": 0.0801966905,
+            "ci_valid": true,
+            "point": 0.0923521211
+          },
+          "tol": 1e-10
+        },
+        "within::path_p": {
+          "abs_delta": {
+            "ci_hi": 0.0,
+            "ci_lo": 0.0,
+            "point": 0.0
+          },
+          "available": true,
+          "matches": true,
+          "recorded": {
+            "ci_hi": 0.0625327466,
+            "ci_lo": 0.0384978295,
+            "ci_valid": true,
+            "point": 0.0503407811
+          },
+          "tol": 1e-10
+        },
+        "within::path_q": {
+          "abs_delta": {
+            "ci_hi": 0.0,
+            "ci_lo": 0.0,
+            "point": 0.0
+          },
+          "available": true,
+          "matches": true,
+          "recorded": {
+            "ci_hi": 0.103511042,
+            "ci_lo": 0.0715202419,
+            "ci_valid": true,
+            "point": 0.0885727911
+          },
+          "tol": 1e-10
+        },
+        "within::shapley": {
+          "abs_delta": {
+            "ci_hi": 0.0,
+            "ci_lo": 0.0,
+            "point": 0.0
+          },
+          "available": true,
+          "matches": true,
+          "recorded": {
+            "ci_hi": 0.0816128818,
+            "ci_lo": 0.0562132778,
+            "ci_valid": true,
+            "point": 0.0694567861
+          },
+          "tol": 1e-10
+        },
+        "within_main::anova": {
+          "abs_delta": {
+            "ci_hi": 0.0,
+            "ci_lo": 0.0,
+            "point": 0.0
+          },
+          "available": true,
+          "matches": true,
+          "recorded": {
+            "ci_hi": 0.103511042,
+            "ci_lo": 0.0715202419,
+            "ci_valid": true,
+            "point": 0.0885727911
+          },
+          "tol": 1e-10
+        }
+      },
+      "runs": {
+        "ref": {
+          "config_name": "tier_a_logreg_test_drift_2023",
+          "config_sha256": "68ea22911c1792a763c1ecd6afc9054a824863d6e6bdf5352712d03376f93102",
+          "git_sha": "831ac6e521d83e5e6e367b96f36db6378d67d415",
+          "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+          "n_artifact": 20000,
+          "n_used": 20000,
+          "predictions_path": "data/preds/389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1.parquet",
+          "run_id": "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+          "split": "test_drift_2023",
+          "split_sha256": "debbd70416a816faa04b51cac994697b07bc70914e1f3e9d49b27b443a5a5475"
+        },
+        "year": {
+          "config_name": "tier_a_logreg_test_drift_2026h1",
+          "config_sha256": "8f71b1290461c9aab4fcb7afc2332cf949edf928eeaf8e46af46587ad6c6e89e",
+          "git_sha": "831ac6e521d83e5e6e367b96f36db6378d67d415",
+          "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+          "n_artifact": 20000,
+          "n_used": 20000,
+          "predictions_path": "data/preds/2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb.parquet",
+          "run_id": "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb",
+          "split": "test_drift_2026h1",
+          "split_sha256": "c0cecbdb41aa24b29dba171f42ad593441af9fe355d358e4367596468901a264"
+        }
+      },
+      "tier": "tier_a"
+    },
+    "tier_b2": {
+      "balanced_accuracy": {
+        "ref": 0.7909271508,
+        "year": 0.7422813652
+      },
+      "cells": {
+        "A_ref_mix_ref_behavior": 0.7900635653,
+        "B_year_mix_ref_behavior": 0.7597610194,
+        "C_ref_mix_year_behavior": 0.7223561914,
+        "D_year_mix_year_behavior": 0.7261938397
+      },
+      "ci_valid": true,
+      "components": {
+        "balanced_accuracy_delta": {
+          "ci_hi": 0.0609381014,
+          "ci_lo": 0.0369371107,
+          "ci_valid": true,
+          "point": 0.0486457856
+        },
+        "interaction": {
+          "ci_hi": -0.0224845647,
+          "ci_lo": -0.045462684,
+          "ci_valid": true,
+          "point": -0.0341401941
+        },
+        "total": {
+          "ci_hi": 0.0751054736,
+          "ci_lo": 0.0536147222,
+          "ci_valid": true,
+          "point": 0.0638697256
+        },
+        "within::path_p": {
+          "ci_hi": 0.0450742732,
+          "ci_lo": 0.0234051813,
+          "ci_valid": true,
+          "point": 0.0335671797
+        },
+        "within::path_q": {
+          "ci_hi": 0.0839086413,
+          "ci_lo": 0.0500180454,
+          "ci_valid": true,
+          "point": 0.0677073739
+        },
+        "within::shapley": {
+          "ci_hi": 0.0634654922,
+          "ci_lo": 0.0374778277,
+          "ci_valid": true,
+          "point": 0.0506372768
+        },
+        "within_main::anova": {
+          "ci_hi": 0.0839086413,
+          "ci_lo": 0.0500180454,
+          "ci_valid": true,
+          "point": 0.0677073739
+        }
+      },
+      "identity_check": {
+        "checks": [
+          {
+            "abs_delta": 0.0,
+            "applicable": true,
+            "computed": 0.7900635653,
+            "logged": 0.7900635653,
+            "name": "cell_A_vs_logged_macro_f1",
+            "ok": true
+          },
+          {
+            "abs_delta": 0.0,
+            "applicable": true,
+            "computed": 0.7261938397,
+            "logged": 0.7261938397,
+            "name": "cell_D_vs_logged_macro_f1",
+            "ok": true
+          },
+          {
+            "abs_delta": 0.0,
+            "applicable": true,
+            "computed": 0.7909271508,
+            "logged": 0.7909271508,
+            "name": "balanced_accuracy_ref_vs_logged",
+            "ok": true
+          },
+          {
+            "abs_delta": 0.0,
+            "applicable": true,
+            "computed": 0.7422813652,
+            "logged": 0.7422813652,
+            "name": "balanced_accuracy_year_vs_logged",
+            "ok": true
+          }
+        ],
+        "tol": 0.0
+      },
+      "n_ref": 20000,
+      "n_year": 20000,
+      "recorded_cross_check": {
+        "balanced_accuracy_delta": {
+          "abs_delta": {
+            "ci_hi": 0.0,
+            "ci_lo": 0.0,
+            "point": 0.0
+          },
+          "available": true,
+          "matches": true,
+          "recorded": {
+            "ci_hi": 0.0609381014,
+            "ci_lo": 0.0369371107,
+            "ci_valid": true,
+            "point": 0.0486457856
+          },
+          "tol": 1e-10
+        },
+        "interaction": {
+          "abs_delta": {
+            "ci_hi": 0.0,
+            "ci_lo": 0.0,
+            "point": 0.0
+          },
+          "available": true,
+          "matches": true,
+          "recorded": {
+            "ci_hi": -0.0224845647,
+            "ci_lo": -0.045462684,
+            "ci_valid": true,
+            "point": -0.0341401941
+          },
+          "tol": 1e-10
+        },
+        "total": {
+          "abs_delta": {
+            "ci_hi": 0.0,
+            "ci_lo": 0.0,
+            "point": 0.0
+          },
+          "available": true,
+          "matches": true,
+          "recorded": {
+            "ci_hi": 0.0751054736,
+            "ci_lo": 0.0536147222,
+            "ci_valid": true,
+            "point": 0.0638697256
+          },
+          "tol": 1e-10
+        },
+        "within::path_p": {
+          "abs_delta": {
+            "ci_hi": 0.0,
+            "ci_lo": 0.0,
+            "point": 0.0
+          },
+          "available": true,
+          "matches": true,
+          "recorded": {
+            "ci_hi": 0.0450742732,
+            "ci_lo": 0.0234051813,
+            "ci_valid": true,
+            "point": 0.0335671797
+          },
+          "tol": 1e-10
+        },
+        "within::path_q": {
+          "abs_delta": {
+            "ci_hi": 0.0,
+            "ci_lo": 0.0,
+            "point": 0.0
+          },
+          "available": true,
+          "matches": true,
+          "recorded": {
+            "ci_hi": 0.0839086413,
+            "ci_lo": 0.0500180454,
+            "ci_valid": true,
+            "point": 0.0677073739
+          },
+          "tol": 1e-10
+        },
+        "within::shapley": {
+          "abs_delta": {
+            "ci_hi": 0.0,
+            "ci_lo": 0.0,
+            "point": 0.0
+          },
+          "available": true,
+          "matches": true,
+          "recorded": {
+            "ci_hi": 0.0634654922,
+            "ci_lo": 0.0374778277,
+            "ci_valid": true,
+            "point": 0.0506372768
+          },
+          "tol": 1e-10
+        },
+        "within_main::anova": {
+          "abs_delta": {
+            "ci_hi": 0.0,
+            "ci_lo": 0.0,
+            "point": 0.0
+          },
+          "available": true,
+          "matches": true,
+          "recorded": {
+            "ci_hi": 0.0839086413,
+            "ci_lo": 0.0500180454,
+            "ci_valid": true,
+            "point": 0.0677073739
+          },
+          "tol": 1e-10
+        }
+      },
+      "runs": {
+        "ref": {
+          "config_name": "tier_b2_distilbert_s0_test_drift_2023",
+          "config_sha256": "e61906881b8a88d282d4c63d723bc0da0547ff9cb466794c7c7e3a886bdcacd4",
+          "git_sha": "8e3ad4ba9cf3f36decb9c6ba37c2769d21a5817d",
+          "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+          "n_artifact": 20000,
+          "n_used": 20000,
+          "predictions_path": "data/preds/7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d.parquet",
+          "run_id": "7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d",
+          "split": "test_drift_2023",
+          "split_sha256": "debbd70416a816faa04b51cac994697b07bc70914e1f3e9d49b27b443a5a5475"
+        },
+        "year": {
+          "config_name": "tier_b2_distilbert_s0_test_drift_2026h1",
+          "config_sha256": "0e1d05ca27ad1746fe84ddc901f28c20341f4a237b2c191a36432b93b5d9e907",
+          "git_sha": "8e3ad4ba9cf3f36decb9c6ba37c2769d21a5817d",
+          "input_sha256": "170f66cd95f8ba2ff47929d3cbe903030400a960e3d1657df53484290a22d89f",
+          "n_artifact": 20000,
+          "n_used": 20000,
+          "predictions_path": "data/preds/59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323.parquet",
+          "run_id": "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323",
+          "split": "test_drift_2026h1",
+          "split_sha256": "c0cecbdb41aa24b29dba171f42ad593441af9fe355d358e4367596468901a264"
+        }
+      },
+      "tier": "tier_b2"
+    }
+  },
+  "pi_source": "artifact",
+  "point": 0.0167736014,
+  "primary_path": "P_prior_first",
+  "ref_year": "2023",
+  "repro_command": "uv run python -m triage_lab.prior_shift --paired-within tier_a tier_b2 --year 2026h1",
+  "run_ids": {
+    "tier_a": {
+      "ref": "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+      "year": "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb"
+    },
+    "tier_b2": {
+      "ref": "7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d",
+      "year": "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+    }
+  },
+  "schema_version": 1,
+  "scope": "native",
+  "seed": 20260805,
+  "sign_convention": "components are positive = degradation vs ref_year, so a POSITIVE delta means tier_a suffers more within-class degradation than tier_b2",
+  "tier_x": "tier_a",
+  "tier_y": "tier_b2",
+  "verdict": "certified: paired 95% CI excludes 0",
+  "year": "2026h1"
+}

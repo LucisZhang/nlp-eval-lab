@@ -20,6 +20,7 @@
       <li><a class="nav-link" data-panel="drift" href="#drift">4. Drift timeline</a></li>
       <li><a class="nav-link" data-panel="calibration" href="#calibration">5. Calibration</a></li>
       <li><a class="nav-link" data-panel="receipts" href="#receipts">6. Receipts / all runs</a></li>
+      <li><a class="nav-link" data-panel="casestudy" href="#casestudy">7. Case study</a></li>
     </ul>
   </nav>
 
@@ -229,6 +230,24 @@
           <tbody id="receipts-table-body"></tbody>
         </table>
       </div>
+
+      <div class="panel-footer">
+        Every number traces to results/runs.jsonl — append-only, committed. Tier B panels
+        backfilled 2026-08-12; the one remaining pending slot (Tier B1 yearly drift
+        series) was descoped by owner and stays labeled.
+      </div>
+    </section>
+
+    <!-- ================= 7. CASE STUDY ================= -->
+    <section class="panel" id="panel-casestudy" data-panel="casestudy">
+      <div class="panel-header">
+        <h2 id="casestudy-title">Case study</h2>
+        <span class="evidence-badge measured" id="casestudy-evidence-badge">measured</span>
+      </div>
+      <p class="panel-desc" id="casestudy-source-note"></p>
+      <div id="casestudy-banner-slot"></div>
+
+      <div id="casestudy-body" style="display:none;"></div>
 
       <div class="panel-footer">
         Every number traces to results/runs.jsonl — append-only, committed. Tier B panels

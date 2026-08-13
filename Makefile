@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier tier-b-frontier prior-shift oov perturb perturb-tier-c perturb-report drift-charts demo-data demo-live
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier tier-b-frontier prior-shift prior-shift-paired oov perturb perturb-tier-c perturb-report drift-charts demo-data demo-live
 
 setup:
 	uv sync --frozen
@@ -158,6 +158,15 @@ tier-b-frontier:
 # appends nothing to results/runs.jsonl.
 prior-shift:
 	uv run python -m triage_lab.prior_shift --all
+
+# The between-tier claim "B2's within-class damage is smaller than Tier A's" on the 2026-H1
+# slice. The two per-tier within::path_p intervals OVERLAP, so their separation is not a
+# test; this recomputes both tiers' replicates with the frozen seed — identical index
+# vectors, asserted-identical complaint_id sequences, so the shared slice-sampling error
+# cancels — and reports the CI on the difference. Derivation only: $0, no new runs, and it
+# rewrites neither the per-tier decompositions nor summary.json.
+prior-shift-paired:
+	uv run python -m triage_lab.prior_shift --paired-within tier_a tier_b2 --year 2026h1
 
 # OOV / covariate tracking (Phase 5 task 4): yearly OOV rate against the frozen TRAIN
 # vocabulary under two definitions — model-vocab (post min_df/max_features pruning, the

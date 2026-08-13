@@ -1,0 +1,2204 @@
+{
+  "evidence_classes": {
+    "derived": "arithmetic over measured inputs with no free parameters (calibration bins, the CAL threshold sweep, per-sample router paths under a frozen tau)",
+    "estimated": "a modeling assumption the reader is invited to move (c_misroute, c_human, the Tier A amortized-zero compute charge) — never a measurement",
+    "measured": "read off a real observation: a logged run metric, a per-call receipt, or a deterministic derivation from a frozen per-example artifact",
+    "projected": "an extrapolation to conditions not evaluated (e.g. cost at a volume no run reached); carries the assumption that produced it"
+  },
+  "pending": [
+    {
+      "label": "`make reproduce-headline` — pending (next Phase 6 task): a single target that re-derives every headline number on this page from the committed artifacts",
+      "pending": true,
+      "slot": "reproduce_headline"
+    },
+    {
+      "label": "Provenance links to coursework seeds — pending (docs/seed-evidence/, read-only)",
+      "pending": true,
+      "slot": "provenance_seeds"
+    }
+  ],
+  "schema_version": "case-study-v1",
+  "sections": [
+    {
+      "gaps": [],
+      "id": "intro",
+      "items": [],
+      "kind": "narrative",
+      "numbers": [
+        {
+          "basis": "derived",
+          "display": "55",
+          "evidence_class": "measured",
+          "label": "n_run_records",
+          "note": "len(results/runs.jsonl) at build time",
+          "repro": "wc -l results/runs.jsonl",
+          "run_ids": [],
+          "source": "results/runs.jsonl",
+          "unit": "count",
+          "value": 55
+        },
+        {
+          "basis": "derived",
+          "display": "95%",
+          "evidence_class": "measured",
+          "label": "ci_level",
+          "note": "bootstrap.ci_pct[1] - bootstrap.ci_pct[0]",
+          "run_ids": [],
+          "source": "results/drift/summary.json",
+          "unit": "pctpoint",
+          "value": 95.0
+        },
+        {
+          "basis": "copied",
+          "display": "1,000",
+          "evidence_class": "measured",
+          "label": "bootstrap_resamples",
+          "run_ids": [],
+          "source": "results/drift/summary.json",
+          "unit": "count",
+          "value": 1000
+        },
+        {
+          "basis": "copied",
+          "display": "20260805",
+          "evidence_class": "measured",
+          "label": "bootstrap_seed",
+          "run_ids": [],
+          "source": "results/drift/summary.json",
+          "unit": "count",
+          "value": 20260805
+        }
+      ],
+      "paragraphs": [
+        "A three-tier consumer-complaint triage lab on the CFPB Consumer Complaint Database: TF-IDF linear models (Tier A), fine-tuned transformers (Tier B) and Claude LLMs via OpenRouter (Tier C), combined into a confidence-cascade router optimized against an explicit business cost model and stress-tested against measured 2015 to 2026 distribution drift.",
+        "55 append-only run records back this page. Every headline number carries a 95% bootstrap confidence interval (1,000 resamples, fixed seed 20260805) and a reproduction command, and traces to results/runs.jsonl or to a committed derived artifact."
+      ],
+      "repro": [
+        "uv run python -m triage_lab.demo_build --all"
+      ],
+      "run_ids": [],
+      "title": "Case study — what was measured, how it was verified, and what it does not prove"
+    },
+    {
+      "gaps": [],
+      "id": "tiers",
+      "items": [],
+      "kind": "narrative",
+      "numbers": [
+        {
+          "basis": "copied",
+          "display": "0.7605 [0.7564, 0.7643]",
+          "evidence_class": "measured",
+          "label": "tier_a_macro_f1",
+          "repro": "uv run python -m triage_lab.harness configs/tier_a_logreg_test_iid.yaml",
+          "run_ids": [
+            "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.7643278636952343,
+            "ci_lo": 0.7563731957302973,
+            "point": 0.7605270747101476
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "104,443",
+          "evidence_class": "measured",
+          "label": "n_test_iid",
+          "run_ids": [
+            "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7"
+          ],
+          "source": "results/cost_model/8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7.json",
+          "unit": "count",
+          "value": 104443
+        },
+        {
+          "basis": "copied",
+          "display": "0.7878",
+          "evidence_class": "measured",
+          "label": "b1_sa_macro_f1",
+          "repro": "uv run python scripts/compare_tier_b.py",
+          "run_ids": [
+            "8071d31db244e4dc67ca134ac60517718ac512ff1fe8d0740acd559feb92c270"
+          ],
+          "source": "results/tier_b_compare/summary.json",
+          "unit": "raw",
+          "value": 0.7878427991951781
+        },
+        {
+          "basis": "copied",
+          "display": "0.7878",
+          "evidence_class": "measured",
+          "label": "b1_sb_macro_f1",
+          "repro": "uv run python scripts/compare_tier_b.py",
+          "run_ids": [
+            "adb96307e2e08f701d88f6f1ed0d66314d55489f9f411da7bc588eaa93dfa9d0"
+          ],
+          "source": "results/tier_b_compare/summary.json",
+          "unit": "raw",
+          "value": 0.7877966954408686
+        },
+        {
+          "basis": "copied",
+          "display": "0.7863",
+          "evidence_class": "measured",
+          "label": "b1_sc_macro_f1",
+          "repro": "uv run python scripts/compare_tier_b.py",
+          "run_ids": [
+            "a523049a7ea5ec4d920f41e838e326c65518e5cb68b4cc96904f12cb8a3e4206"
+          ],
+          "source": "results/tier_b_compare/summary.json",
+          "unit": "raw",
+          "value": 0.7862791482480612
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0273 [+0.0234, +0.0312]",
+          "evidence_class": "measured",
+          "label": "b1_minus_a_macro_f1",
+          "repro": "uv run python scripts/compare_tier_b.py",
+          "run_ids": [
+            "8071d31db244e4dc67ca134ac60517718ac512ff1fe8d0740acd559feb92c270",
+            "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7"
+          ],
+          "source": "results/tier_b_compare/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.03124275272353604,
+            "ci_lo": 0.023375812026473007,
+            "point": 0.0273157244850305
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "0.7950 [0.7909, 0.7988]",
+          "evidence_class": "measured",
+          "label": "b2_macro_f1",
+          "repro": "uv run python scripts/compare_tier_b.py",
+          "run_ids": [
+            "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.7987971027397366,
+            "ci_lo": 0.7909116483872632,
+            "point": 0.7950390987746369
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "-0.0072 [-0.0106, -0.0038]",
+          "evidence_class": "measured",
+          "label": "b1_minus_b2_macro_f1",
+          "repro": "uv run python scripts/compare_tier_b.py",
+          "run_ids": [
+            "8071d31db244e4dc67ca134ac60517718ac512ff1fe8d0740acd559feb92c270",
+            "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687"
+          ],
+          "source": "results/tier_b_compare/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": -0.00377773045818553,
+            "ci_lo": -0.0105799779391627,
+            "point": -0.007196299579458776
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "6.3e-08",
+          "evidence_class": "measured",
+          "label": "b1_minus_b2_mcnemar_p",
+          "repro": "uv run python scripts/compare_tier_b.py",
+          "run_ids": [
+            "8071d31db244e4dc67ca134ac60517718ac512ff1fe8d0740acd559feb92c270",
+            "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687"
+          ],
+          "source": "results/tier_b_compare/summary.json",
+          "unit": "pvalue",
+          "value": 6.30593364159821e-08
+        },
+        {
+          "basis": "copied",
+          "display": "0.7697 [0.7499, 0.7886]",
+          "evidence_class": "measured",
+          "label": "haiku_macro_f1",
+          "repro": "uv run --extra tierc python -m triage_lab.harness configs/tier_c_haiku_zeroshot_test_iid.yaml",
+          "run_ids": [
+            "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.7886063647867524,
+            "ci_lo": 0.7499398191332423,
+            "point": 0.7697019857981471
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "$1.315",
+          "evidence_class": "measured",
+          "label": "haiku_cost_per_1k",
+          "repro": "make cost-model",
+          "run_ids": [
+            "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e"
+          ],
+          "source": "results/cost_model/70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e.json",
+          "unit": "usd",
+          "value": 1.3150172
+        },
+        {
+          "basis": "copied",
+          "display": "0.7418 [0.7015, 0.7730]",
+          "evidence_class": "measured",
+          "label": "sonnet_macro_f1",
+          "repro": "uv run --extra tierc python -m triage_lab.harness configs/tier_c_sonnet_zeroshot_test_iid.yaml",
+          "run_ids": [
+            "e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.773000127499801,
+            "ci_lo": 0.7014555324131826,
+            "point": 0.7417927864921684
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "$3.659",
+          "evidence_class": "measured",
+          "label": "sonnet_cost_per_1k",
+          "repro": "make cost-model",
+          "run_ids": [
+            "e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a"
+          ],
+          "source": "results/cost_model/e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a.json",
+          "unit": "usd",
+          "value": 3.658716
+        },
+        {
+          "basis": "copied",
+          "display": "1,500",
+          "evidence_class": "measured",
+          "label": "n_sonnet_paired",
+          "run_ids": [
+            "e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a"
+          ],
+          "source": "results/cost_model/e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a.json",
+          "unit": "count",
+          "value": 1500
+        },
+        {
+          "basis": "copied",
+          "display": "-0.0073 [-0.0427, +0.0263]",
+          "evidence_class": "measured",
+          "label": "sonnet_minus_haiku_iid_delta",
+          "note": "paired macro_f1 delta, A_minus_B, slice test_iid, pairing shared",
+          "repro": "uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_sonnet_zeroshot_test_iid/20260807T015725Z/calls.jsonl results/tier_c_raw/tier_c_haiku_zeroshot_test_iid/20260807T004109Z/calls.jsonl --split test_iid --pair-on shared --role-a 'Claude Sonnet 5 zero-shot (TEST-IID final)' --role-b 'Claude Haiku 4.5 zero-shot (TEST-IID final)' --out results/tier_c_compare/sonnet_minus_haiku__test_iid.json",
+          "run_ids": [
+            "e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a",
+            "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e"
+          ],
+          "source": "results/tier_c_compare/sonnet_minus_haiku__test_iid.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.026304210516739982,
+            "ci_lo": -0.04271658562188962,
+            "point": -0.0072715208935451026
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "1.00",
+          "evidence_class": "measured",
+          "label": "sonnet_minus_haiku_iid_p",
+          "repro": "uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_sonnet_zeroshot_test_iid/20260807T015725Z/calls.jsonl results/tier_c_raw/tier_c_haiku_zeroshot_test_iid/20260807T004109Z/calls.jsonl --split test_iid --pair-on shared --role-a 'Claude Sonnet 5 zero-shot (TEST-IID final)' --role-b 'Claude Haiku 4.5 zero-shot (TEST-IID final)' --out results/tier_c_compare/sonnet_minus_haiku__test_iid.json",
+          "run_ids": [
+            "e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a",
+            "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e"
+          ],
+          "source": "results/tier_c_compare/sonnet_minus_haiku__test_iid.json",
+          "unit": "pvalue",
+          "value": 1.0
+        },
+        {
+          "basis": "copied",
+          "display": "1,500",
+          "evidence_class": "measured",
+          "label": "sonnet_minus_haiku_iid_n",
+          "repro": "uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_sonnet_zeroshot_test_iid/20260807T015725Z/calls.jsonl results/tier_c_raw/tier_c_haiku_zeroshot_test_iid/20260807T004109Z/calls.jsonl --split test_iid --pair-on shared --role-a 'Claude Sonnet 5 zero-shot (TEST-IID final)' --role-b 'Claude Haiku 4.5 zero-shot (TEST-IID final)' --out results/tier_c_compare/sonnet_minus_haiku__test_iid.json",
+          "run_ids": [
+            "e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a",
+            "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e"
+          ],
+          "source": "results/tier_c_compare/sonnet_minus_haiku__test_iid.json",
+          "unit": "count",
+          "value": 1500
+        }
+      ],
+      "paragraphs": [
+        "Tier A is a word+char TF-IDF logistic regression with isotonic calibration: macro-F1 0.7605 [0.7564, 0.7643] on the frozen TEST-IID slice, n=104,443.",
+        "Fine-tuning buys a certified but modest gain. ModernBERT-base scores 0.7878 / 0.7878 / 0.7863 macro-F1 across the three frozen seeds, and the paired B1 minus A delta is +0.0273 [+0.0234, +0.0312] — an interval that excludes zero.",
+        "The pre-registered surprise was CONFIRMED. DistilBERT — the smaller, cheaper deployment point — reaches 0.7950 [0.7909, 0.7988] and tops every ModernBERT seed: the paired B1 minus B2 delta is -0.0072 [-0.0106, -0.0038] with McNemar p=6.3e-08.",
+        "Zero-shot LLMs land between the two learned tiers on quality and far above both on price. Haiku 4.5 scores 0.7697 [0.7499, 0.7886] on TEST-IID at a measured $1.315/1k calls; Sonnet 5 scores 0.7418 [0.7015, 0.7730] on its paired 1,500-row subsample at $3.659/1k. Supports differ by point and are not comparable as populations.",
+        "On the rows both LLMs scored, the bigger model buys nothing in distribution. Paired on the same 1,500 TEST-IID complaints, Sonnet minus Haiku is -0.0073 [-0.0427, +0.0263] macro-F1 with McNemar p=1.00 — statistically tied, at nearly three times the measured price per call. That tie does not survive drift; the next section is where it breaks."
+      ],
+      "repro": [
+        "uv run python -m triage_lab.harness configs/tier_a_logreg_test_iid.yaml",
+        "uv run python scripts/compare_tier_b.py",
+        "make cost-model",
+        "uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_sonnet_zeroshot_test_iid/20260807T015725Z/calls.jsonl results/tier_c_raw/tier_c_haiku_zeroshot_test_iid/20260807T004109Z/calls.jsonl --split test_iid --pair-on shared --role-a 'Claude Sonnet 5 zero-shot (TEST-IID final)' --role-b 'Claude Haiku 4.5 zero-shot (TEST-IID final)' --out results/tier_c_compare/sonnet_minus_haiku__test_iid.json"
+      ],
+      "run_ids": [
+        "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+        "8071d31db244e4dc67ca134ac60517718ac512ff1fe8d0740acd559feb92c270",
+        "adb96307e2e08f701d88f6f1ed0d66314d55489f9f411da7bc588eaa93dfa9d0",
+        "a523049a7ea5ec4d920f41e838e326c65518e5cb68b4cc96904f12cb8a3e4206",
+        "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687",
+        "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e",
+        "e1503146b74d90cb91d521e43382710715bdb3ca20ff720b412465480bf6c48a"
+      ],
+      "title": "Three tiers on frozen IID data"
+    },
+    {
+      "gaps": [],
+      "id": "drift",
+      "items": [],
+      "kind": "narrative",
+      "numbers": [
+        {
+          "basis": "copied",
+          "display": "0.7579",
+          "evidence_class": "measured",
+          "label": "a_2023",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.757909508
+        },
+        {
+          "basis": "copied",
+          "display": "0.7478",
+          "evidence_class": "measured",
+          "label": "a_2024",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.7478134297
+        },
+        {
+          "basis": "copied",
+          "display": "0.7295",
+          "evidence_class": "measured",
+          "label": "a_2025",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "cef3a58caf5261da12e083e33712480a10dee3d09667985646bb484e5fadcf47"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.729477821
+        },
+        {
+          "basis": "copied",
+          "display": "0.6656 [0.6585, 0.6729]",
+          "evidence_class": "measured",
+          "label": "a_2026",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.6728713604,
+            "ci_lo": 0.6584781441,
+            "point": 0.6655573869
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "20,000",
+          "evidence_class": "measured",
+          "label": "n_drift_slice",
+          "repro": "make drift-charts",
+          "run_ids": [],
+          "source": "results/drift/summary.json",
+          "unit": "count",
+          "value": 20000
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0924 [+0.0802, +0.1042]",
+          "evidence_class": "measured",
+          "label": "a_total",
+          "repro": "make prior-shift",
+          "run_ids": [
+            "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+            "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb"
+          ],
+          "source": "results/prior_shift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.1041722526,
+            "ci_lo": 0.0801966905,
+            "point": 0.0923521211
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0420 [+0.0385, +0.0454]",
+          "evidence_class": "measured",
+          "label": "a_prior",
+          "repro": "make prior-shift",
+          "run_ids": [
+            "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+            "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb"
+          ],
+          "source": "results/prior_shift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0454384064,
+            "ci_lo": 0.0384612602,
+            "point": 0.04201134
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0503 [+0.0385, +0.0625]",
+          "evidence_class": "measured",
+          "label": "a_within",
+          "repro": "make prior-shift",
+          "run_ids": [
+            "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+            "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb"
+          ],
+          "source": "results/prior_shift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0625327466,
+            "ci_lo": 0.0384978295,
+            "point": 0.0503407811
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "0.9000",
+          "evidence_class": "measured",
+          "label": "a_credit_2023",
+          "run_ids": [
+            "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "raw",
+          "value": 0.9000412201154163
+        },
+        {
+          "basis": "copied",
+          "display": "0.2147",
+          "evidence_class": "measured",
+          "label": "a_credit_2026",
+          "run_ids": [
+            "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "raw",
+          "value": 0.21469465648854963
+        },
+        {
+          "basis": "copied",
+          "display": "0.7901",
+          "evidence_class": "measured",
+          "label": "b2_2023",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.7900635653
+        },
+        {
+          "basis": "copied",
+          "display": "0.7262 [0.7193, 0.7326]",
+          "evidence_class": "measured",
+          "label": "b2_2026_ci",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.7325549287,
+            "ci_lo": 0.7192911016,
+            "point": 0.7261938397
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0639 [+0.0536, +0.0751]",
+          "evidence_class": "measured",
+          "label": "b2_total",
+          "repro": "make prior-shift",
+          "run_ids": [
+            "7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d",
+            "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+          ],
+          "source": "results/prior_shift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0751054736,
+            "ci_lo": 0.0536147222,
+            "point": 0.0638697256
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0303 [+0.0266, +0.0337]",
+          "evidence_class": "measured",
+          "label": "b2_prior",
+          "repro": "make prior-shift",
+          "run_ids": [
+            "7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d",
+            "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+          ],
+          "source": "results/prior_shift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0336826979,
+            "ci_lo": 0.0266424277,
+            "point": 0.0303025459
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0336 [+0.0234, +0.0451]",
+          "evidence_class": "measured",
+          "label": "b2_within",
+          "repro": "make prior-shift",
+          "run_ids": [
+            "7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d",
+            "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+          ],
+          "source": "results/prior_shift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0450742732,
+            "ci_lo": 0.0234051813,
+            "point": 0.0335671797
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "0.4744 [0.3876, 0.5689]",
+          "evidence_class": "measured",
+          "label": "b2_share_prior",
+          "repro": "make prior-shift",
+          "run_ids": [
+            "7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d",
+            "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+          ],
+          "source": "results/prior_shift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.5689368175,
+            "ci_lo": 0.3875676191,
+            "point": 0.4744430257
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "0.4549 [0.3950, 0.5237]",
+          "evidence_class": "measured",
+          "label": "a_share_prior",
+          "repro": "make prior-shift",
+          "run_ids": [
+            "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+            "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb"
+          ],
+          "source": "results/prior_shift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.523709915,
+            "ci_lo": 0.3950135143,
+            "point": 0.4549038992
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "0.9082",
+          "evidence_class": "measured",
+          "label": "b2_credit_2023",
+          "run_ids": [
+            "7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "raw",
+          "value": 0.9082335487972872
+        },
+        {
+          "basis": "copied",
+          "display": "0.2853",
+          "evidence_class": "measured",
+          "label": "b2_credit_2026",
+          "run_ids": [
+            "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "raw",
+          "value": 0.28525641025641024
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0168 [+0.0058, +0.0276]",
+          "evidence_class": "measured",
+          "label": "paired_within_delta",
+          "note": "paired component delta: within::path_p(tier_a) − within::path_p(tier_b2), identical bootstrap draws",
+          "repro": "make prior-shift-paired",
+          "run_ids": [
+            "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+            "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb",
+            "7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d",
+            "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+          ],
+          "source": "results/prior_shift/paired_within_tier_a_vs_tier_b2_2026h1.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0276165437,
+            "ci_lo": 0.0057520559,
+            "point": 0.0167736014
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0209 [+0.0062, +0.0345]",
+          "evidence_class": "measured",
+          "label": "paired_within_path_q",
+          "note": "decomposition-path sensitivity; cited as robustness, not in prose",
+          "repro": "make prior-shift-paired",
+          "run_ids": [
+            "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+            "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb",
+            "7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d",
+            "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+          ],
+          "source": "results/prior_shift/paired_within_tier_a_vs_tier_b2_2026h1.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0345479991,
+            "ci_lo": 0.0061538695,
+            "point": 0.0208654172
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0188 [+0.0069, +0.0302]",
+          "evidence_class": "measured",
+          "label": "paired_within_shapley",
+          "note": "decomposition-path sensitivity; cited as robustness, not in prose",
+          "repro": "make prior-shift-paired",
+          "run_ids": [
+            "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+            "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb",
+            "7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d",
+            "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+          ],
+          "source": "results/prior_shift/paired_within_tier_a_vs_tier_b2_2026h1.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0301593265,
+            "ci_lo": 0.0068939154,
+            "point": 0.0188195093
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0305 [+0.0145, +0.0438]",
+          "evidence_class": "measured",
+          "label": "haiku_prior",
+          "repro": "make prior-shift",
+          "run_ids": [
+            "cf190ce25eceb5a6d149e932dfe3e82fb5fe0d882730efaeec8718a604eb6911",
+            "aa2bc9a0ea889fbb058f1ad3eec943937ad0af025be0dd2462e78f1b4282e072"
+          ],
+          "source": "results/prior_shift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0438455605,
+            "ci_lo": 0.0144875841,
+            "point": 0.030461185
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "-0.0227 [-0.0651, +0.0193]",
+          "evidence_class": "measured",
+          "label": "haiku_within",
+          "repro": "make prior-shift",
+          "run_ids": [
+            "cf190ce25eceb5a6d149e932dfe3e82fb5fe0d882730efaeec8718a604eb6911",
+            "aa2bc9a0ea889fbb058f1ad3eec943937ad0af025be0dd2462e78f1b4282e072"
+          ],
+          "source": "results/prior_shift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.019295563,
+            "ci_lo": -0.0651312788,
+            "point": -0.0226504502
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "0.7278",
+          "evidence_class": "measured",
+          "label": "haiku_2026",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "aa2bc9a0ea889fbb058f1ad3eec943937ad0af025be0dd2462e78f1b4282e072"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.7278480316
+        },
+        {
+          "basis": "copied",
+          "display": "0.7821",
+          "evidence_class": "measured",
+          "label": "sonnet_2026",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "55cffcbe955034ee72ef4c65432cacd2d513b31df3c4498970c9f1f53ab7b825"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.7820744482
+        },
+        {
+          "basis": "copied",
+          "display": "0.6656",
+          "evidence_class": "measured",
+          "label": "a_2026_point",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.6655573869
+        },
+        {
+          "basis": "copied",
+          "display": "0.7262",
+          "evidence_class": "measured",
+          "label": "b2_2026_point",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.7261938397
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0458 [+0.0282, +0.0663]",
+          "evidence_class": "measured",
+          "label": "sonnet_minus_haiku_pc_delta",
+          "note": "paired macro_f1 delta, A_minus_B, slice test_postcutoff, pairing shared",
+          "repro": "uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_sonnet_zeroshot_test_postcutoff/20260807T020907Z/calls.jsonl results/tier_c_raw/tier_c_haiku_zeroshot_test_postcutoff/20260807T005820Z/calls.jsonl --split test_postcutoff --pair-on shared --role-a 'Claude Sonnet 5 zero-shot (TEST-POSTCUTOFF final)' --role-b 'Claude Haiku 4.5 zero-shot (TEST-POSTCUTOFF final)' --out results/tier_c_compare/sonnet_minus_haiku__test_postcutoff.json",
+          "run_ids": [
+            "d1c42d7d977d80bcd4e1958f9cbe3fc2e37858814fa27eaf08f742420dedf0a1",
+            "82af4e01cf6ed6cb628f719fe3d7d2d3cebb0abe0f334c8cce71312a2f6666f1"
+          ],
+          "source": "results/tier_c_compare/sonnet_minus_haiku__test_postcutoff.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0663081584091933,
+            "ci_lo": 0.028196860469722737,
+            "point": 0.04577990643192231
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "2.0e-10",
+          "evidence_class": "measured",
+          "label": "sonnet_minus_haiku_pc_p",
+          "repro": "uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_sonnet_zeroshot_test_postcutoff/20260807T020907Z/calls.jsonl results/tier_c_raw/tier_c_haiku_zeroshot_test_postcutoff/20260807T005820Z/calls.jsonl --split test_postcutoff --pair-on shared --role-a 'Claude Sonnet 5 zero-shot (TEST-POSTCUTOFF final)' --role-b 'Claude Haiku 4.5 zero-shot (TEST-POSTCUTOFF final)' --out results/tier_c_compare/sonnet_minus_haiku__test_postcutoff.json",
+          "run_ids": [
+            "d1c42d7d977d80bcd4e1958f9cbe3fc2e37858814fa27eaf08f742420dedf0a1",
+            "82af4e01cf6ed6cb628f719fe3d7d2d3cebb0abe0f334c8cce71312a2f6666f1"
+          ],
+          "source": "results/tier_c_compare/sonnet_minus_haiku__test_postcutoff.json",
+          "unit": "pvalue",
+          "value": 2.037181784037369e-10
+        },
+        {
+          "basis": "copied",
+          "display": "1,500",
+          "evidence_class": "measured",
+          "label": "sonnet_minus_haiku_pc_n",
+          "repro": "uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_sonnet_zeroshot_test_postcutoff/20260807T020907Z/calls.jsonl results/tier_c_raw/tier_c_haiku_zeroshot_test_postcutoff/20260807T005820Z/calls.jsonl --split test_postcutoff --pair-on shared --role-a 'Claude Sonnet 5 zero-shot (TEST-POSTCUTOFF final)' --role-b 'Claude Haiku 4.5 zero-shot (TEST-POSTCUTOFF final)' --out results/tier_c_compare/sonnet_minus_haiku__test_postcutoff.json",
+          "run_ids": [
+            "d1c42d7d977d80bcd4e1958f9cbe3fc2e37858814fa27eaf08f742420dedf0a1",
+            "82af4e01cf6ed6cb628f719fe3d7d2d3cebb0abe0f334c8cce71312a2f6666f1"
+          ],
+          "source": "results/tier_c_compare/sonnet_minus_haiku__test_postcutoff.json",
+          "unit": "count",
+          "value": 1500
+        }
+      ],
+      "paragraphs": [
+        "Tier A walks down and then falls off a cliff. Its yearly macro-F1 goes 0.7579 to 0.7478 to 0.7295 to 0.6656 [0.6585, 0.6729] from 2023 to 2026-H1, on frozen slices of n=20,000 each.",
+        "It dies of both wounds. Against the 2023 reference the loss decomposes as total +0.0924 [+0.0802, +0.1042] = prior shift +0.0420 [+0.0385, +0.0454] plus within-class degradation +0.0503 [+0.0385, +0.0625]. The credit_reporting F1 goes 0.9000 to 0.2147.",
+        "Tier B2 has the same shape at a smaller magnitude: 0.7901 to 0.7262 [0.7193, 0.7326] yearly; total +0.0639 [+0.0536, +0.0751] = prior +0.0303 [+0.0266, +0.0337] + within +0.0336 [+0.0234, +0.0451]; the prior share is 0.4744 [0.3876, 0.5689] against Tier A's 0.4549 [0.3950, 0.5237], intervals that overlap. Its credit_reporting F1 goes 0.9082 to 0.2853. The pre-registered “B2 behaves like an LLM under drift” hypothesis is REFUTED: fine-tuning bought loss magnitude, not loss shape.",
+        "One comparison is certified rather than directional. B2's within-class damage is smaller than Tier A's: the paired within_A minus within_B2 delta is +0.0168 [+0.0058, +0.0276] on the same n=20,000 rows with identical bootstrap draws, and the interval excludes zero (robust across decomposition paths). The certification covers evaluation-sample uncertainty only — Tier B2 is a single fine-tune from one seed, so this is a statement about these two fitted systems, not about the model families.",
+        "The LLMs pay only the prior penalty. Haiku's prior component is +0.0305 [+0.0145, +0.0438] while its within-class component is -0.0227 [-0.0651, +0.0193], an interval containing zero. At the cliff the four points are Tier A 0.6656, Tier B2 0.7262, Haiku 0.7278 and Sonnet 0.7821.",
+        "That last gap is where the two LLMs stop being interchangeable, and the paired evidence for it comes from a different frozen slice — TEST-POSTCUTOFF, whose boundary sits strictly after both models' training cutoffs. On the same 1,500 rows there, Sonnet minus Haiku is +0.0458 [+0.0282, +0.0663] macro-F1 with McNemar p=2.0e-10, after the two were statistically tied on TEST-IID. The capability gap only shows up off the training distribution: in distribution you are paying for it and not collecting it. (The 2026-H1 points above are un-paired slice metrics, not that comparison — different slice, different claim.)"
+      ],
+      "repro": [
+        "make drift-charts",
+        "make prior-shift",
+        "make prior-shift-paired",
+        "uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_sonnet_zeroshot_test_postcutoff/20260807T020907Z/calls.jsonl results/tier_c_raw/tier_c_haiku_zeroshot_test_postcutoff/20260807T005820Z/calls.jsonl --split test_postcutoff --pair-on shared --role-a 'Claude Sonnet 5 zero-shot (TEST-POSTCUTOFF final)' --role-b 'Claude Haiku 4.5 zero-shot (TEST-POSTCUTOFF final)' --out results/tier_c_compare/sonnet_minus_haiku__test_postcutoff.json"
+      ],
+      "run_ids": [
+        "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+        "c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e",
+        "cef3a58caf5261da12e083e33712480a10dee3d09667985646bb484e5fadcf47",
+        "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb",
+        "7224d2c1f4fcd0407a131504a0830ee2b660716d8cf21ed0f526fa9a6dfab61d",
+        "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323",
+        "cf190ce25eceb5a6d149e932dfe3e82fb5fe0d882730efaeec8718a604eb6911",
+        "aa2bc9a0ea889fbb058f1ad3eec943937ad0af025be0dd2462e78f1b4282e072",
+        "55cffcbe955034ee72ef4c65432cacd2d513b31df3c4498970c9f1f53ab7b825",
+        "d1c42d7d977d80bcd4e1958f9cbe3fc2e37858814fa27eaf08f742420dedf0a1",
+        "82af4e01cf6ed6cb628f719fe3d7d2d3cebb0abe0f334c8cce71312a2f6666f1"
+      ],
+      "title": "Drift: one cliff, three different autopsies"
+    },
+    {
+      "gaps": [],
+      "id": "thresholds",
+      "items": [],
+      "kind": "narrative",
+      "numbers": [
+        {
+          "basis": "copied",
+          "display": "0.0947",
+          "evidence_class": "measured",
+          "label": "human_2022",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.0946545005
+        },
+        {
+          "basis": "copied",
+          "display": "0.1032",
+          "evidence_class": "measured",
+          "label": "human_2023",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.10315
+        },
+        {
+          "basis": "copied",
+          "display": "0.0993",
+          "evidence_class": "measured",
+          "label": "human_2024",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.0993
+        },
+        {
+          "basis": "copied",
+          "display": "0.1003",
+          "evidence_class": "measured",
+          "label": "human_2025",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "cef3a58caf5261da12e083e33712480a10dee3d09667985646bb484e5fadcf47"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.1003
+        },
+        {
+          "basis": "copied",
+          "display": "0.0994",
+          "evidence_class": "measured",
+          "label": "human_cal_op",
+          "note": "CAL cost-argmin operating point the frozen tau was fitted at",
+          "repro": "make thresholds",
+          "run_ids": [],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.099365313
+        },
+        {
+          "basis": "copied",
+          "display": "0.1674 [0.1623, 0.1724]",
+          "evidence_class": "measured",
+          "label": "human_2026",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.1724,
+            "ci_lo": 0.16229875,
+            "point": 0.1674
+          }
+        },
+        {
+          "basis": "derived",
+          "display": "67%",
+          "evidence_class": "measured",
+          "label": "human_rise",
+          "note": "escalation_rate(2026-H1) / escalation_rate(2025) - 1, a_to_human full-slice arm",
+          "repro": "make drift-charts",
+          "run_ids": [],
+          "source": "results/drift/summary.json",
+          "unit": "pct",
+          "value": 0.6689930209371884
+        },
+        {
+          "basis": "copied",
+          "display": "0.2962",
+          "evidence_class": "measured",
+          "label": "b_2022",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.2962285649
+        },
+        {
+          "basis": "copied",
+          "display": "0.3161",
+          "evidence_class": "measured",
+          "label": "b_2023",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.3161
+        },
+        {
+          "basis": "copied",
+          "display": "0.3034",
+          "evidence_class": "measured",
+          "label": "b_2024",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.30345
+        },
+        {
+          "basis": "copied",
+          "display": "0.3292",
+          "evidence_class": "measured",
+          "label": "b_2025",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "cef3a58caf5261da12e083e33712480a10dee3d09667985646bb484e5fadcf47"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": 0.32925
+        },
+        {
+          "basis": "copied",
+          "display": "0.4849 [0.4780, 0.4921]",
+          "evidence_class": "measured",
+          "label": "b_2026",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb",
+            "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.49205125,
+            "ci_lo": 0.47804875,
+            "point": 0.48485
+          }
+        },
+        {
+          "basis": "derived",
+          "display": "47%",
+          "evidence_class": "measured",
+          "label": "b_rise",
+          "note": "escalation_rate(2026-H1) / escalation_rate(2025) - 1, a_to_b full-slice arm",
+          "repro": "make drift-charts",
+          "run_ids": [],
+          "source": "results/drift/summary.json",
+          "unit": "pct",
+          "value": 0.47258921791951414
+        },
+        {
+          "basis": "copied",
+          "display": "0.7436 [0.7365, 0.7502]",
+          "evidence_class": "measured",
+          "label": "answered_acc_2026",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.750194959,
+            "ci_lo": 0.7364710456,
+            "point": 0.7436343983
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "0.6918 [0.6858, 0.6982]",
+          "evidence_class": "measured",
+          "label": "full_slice_acc_2026",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.6982,
+            "ci_lo": 0.68579875,
+            "point": 0.69185
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "0.7550 [0.7488, 0.7610]",
+          "evidence_class": "measured",
+          "label": "cascade_acc_2026",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb",
+            "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.76100125,
+            "ci_lo": 0.74884875,
+            "point": 0.75495
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "0.7584 [0.7526, 0.7647]",
+          "evidence_class": "measured",
+          "label": "b2_only_acc_2026",
+          "repro": "make drift-charts",
+          "run_ids": [
+            "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+          ],
+          "source": "results/drift/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.76465125,
+            "ci_lo": 0.75255,
+            "point": 0.75845
+          }
+        }
+      ],
+      "paragraphs": [
+        "The escalate-to-human rate under the frozen CAL threshold is flat for four years — 0.0947, 0.1032, 0.0993, 0.1003 from 2022-H2 through 2025, against a CAL operating point of 0.0994 — and then jumps to 0.1674 [0.1623, 0.1724] at 2026-H1, a relative rise of 67%.",
+        "The escalate-to-DistilBERT arm under the same frozen gate moves 0.2962, 0.3161, 0.3034, 0.3292 over the same slices and then 0.4849 [0.4780, 0.4921], a rise of 47%.",
+        "The gate is doing real work exactly where it is needed: at 2026-H1 the answered set scores accuracy 0.7436 [0.7365, 0.7502] against 0.6918 [0.6858, 0.6982] on the full slice.",
+        "But the frozen-threshold cascade slightly trails the un-gated DistilBERT at the same cliff — system accuracy 0.7550 [0.7488, 0.7610] against 0.7584 [0.7526, 0.7647]. That is threshold staleness: a gate fitted on CAL self-adjusts late and abruptly rather than degrading gracefully, which is a monitoring requirement, not a tuning bug."
+      ],
+      "repro": [
+        "make drift-charts",
+        "make thresholds"
+      ],
+      "run_ids": [
+        "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+        "389d3e69050a22bebf4bd96e3dda7fc7807b95fde10b3853d60cffab31234fd1",
+        "c1c810e20be79de94c48f571705c67630793adafda48a93826cf361c6b0c163e",
+        "cef3a58caf5261da12e083e33712480a10dee3d09667985646bb484e5fadcf47",
+        "2ae5d8ea9fab01208ec1f5aef89fa9443d6cb53d57250a635ed43bfedf2873cb",
+        "59a8115369aaa3212db52bd217be150d67647b7dde5f5778b31ccc45c352d323"
+      ],
+      "title": "Frozen thresholds go stale late and abruptly"
+    },
+    {
+      "gaps": [],
+      "id": "router",
+      "items": [],
+      "kind": "narrative",
+      "numbers": [
+        {
+          "basis": "copied",
+          "display": "-$21.49 [-$26.14, -$16.66]",
+          "evidence_class": "measured",
+          "label": "a_to_b_vs_b2_cost",
+          "repro": "make tier-b-frontier",
+          "run_ids": [],
+          "source": "results/frontier/frontier__opv2__cost-2c969255.json",
+          "unit": "usd",
+          "value": {
+            "ci_hi": -16.6637717413,
+            "ci_lo": -26.1426240264,
+            "point": -21.4893625174
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0025 [+0.0010, +0.0042]",
+          "evidence_class": "measured",
+          "label": "a_to_b_vs_b2_f1",
+          "repro": "make tier-b-frontier",
+          "run_ids": [],
+          "source": "results/frontier/frontier__opv2__cost-2c969255.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0042050689,
+            "ci_lo": 0.0009892604,
+            "point": 0.0025359182
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "$812.83 [$800.94, $824.90]",
+          "evidence_class": "measured",
+          "label": "a_to_b_cost",
+          "repro": "make router-sim",
+          "run_ids": [],
+          "source": "results/router_sim/full_test_iid__opv2__cost-2c969255.json",
+          "unit": "usd",
+          "value": {
+            "ci_hi": 824.8961028761,
+            "ci_lo": 800.9361465135,
+            "point": 812.8278012337
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "0.7976",
+          "evidence_class": "measured",
+          "label": "a_to_b_system_f1",
+          "repro": "make router-sim",
+          "run_ids": [],
+          "source": "results/router_sim/full_test_iid__opv2__cost-2c969255.json",
+          "unit": "raw",
+          "value": 0.797575017
+        },
+        {
+          "basis": "copied",
+          "display": "$933.41",
+          "evidence_class": "measured",
+          "label": "a_only_cost",
+          "repro": "make router-sim",
+          "run_ids": [],
+          "source": "results/router_sim/full_test_iid__opv2__cost-2c969255.json",
+          "unit": "usd",
+          "value": 933.4086535239
+        },
+        {
+          "basis": "copied",
+          "display": "$862.60",
+          "evidence_class": "measured",
+          "label": "b1_only_cost",
+          "repro": "make router-sim",
+          "run_ids": [],
+          "source": "results/router_sim/full_test_iid__opv2__cost-2c969255.json",
+          "unit": "usd",
+          "value": 862.5959120265
+        },
+        {
+          "basis": "copied",
+          "display": "$834.32",
+          "evidence_class": "measured",
+          "label": "b2_only_cost",
+          "repro": "make router-sim",
+          "run_ids": [],
+          "source": "results/router_sim/full_test_iid__opv2__cost-2c969255.json",
+          "unit": "usd",
+          "value": 834.3171637511
+        },
+        {
+          "basis": "copied",
+          "display": "-$60.60 [-$66.79, -$54.88]",
+          "evidence_class": "measured",
+          "label": "a_to_human_vs_a_cost",
+          "repro": "make tier-b-frontier",
+          "run_ids": [],
+          "source": "results/frontier/frontier__opv2__cost-2c969255.json",
+          "unit": "usd",
+          "value": {
+            "ci_hi": -54.8811313348,
+            "ci_lo": -66.7933705466,
+            "point": -60.5976465632
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0870 [+0.0841, +0.0899]",
+          "evidence_class": "measured",
+          "label": "a_to_human_vs_a_f1",
+          "repro": "make tier-b-frontier",
+          "run_ids": [],
+          "source": "results/frontier/frontier__opv2__cost-2c969255.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0899459144,
+            "ci_lo": 0.084083102,
+            "point": 0.0869538571
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "$786.10 [$729.67, $843.74]",
+          "evidence_class": "measured",
+          "label": "a_to_b_to_c_cost",
+          "repro": "make router-sim",
+          "run_ids": [],
+          "source": "results/router_sim/paired_subset__opv2__cost-2c969255.json",
+          "unit": "usd",
+          "value": {
+            "ci_hi": 843.7440290853,
+            "ci_lo": 729.6701333881,
+            "point": 786.1049853681
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "5,000",
+          "evidence_class": "measured",
+          "label": "n_paired_subset",
+          "repro": "make router-sim",
+          "run_ids": [],
+          "source": "results/router_sim/paired_subset__opv2__cost-2c969255.json",
+          "unit": "count",
+          "value": 5000
+        },
+        {
+          "basis": "copied",
+          "display": "-$25.10 [-$53.94, +$4.93]",
+          "evidence_class": "measured",
+          "label": "a_to_b_to_c_vs_b2_cost",
+          "repro": "make tier-b-frontier",
+          "run_ids": [],
+          "source": "results/frontier/frontier__opv2__cost-2c969255.json",
+          "unit": "usd",
+          "value": {
+            "ci_hi": 4.9328614392,
+            "ci_lo": -53.939024903,
+            "point": -25.1006400319
+          }
+        }
+      ],
+      "paragraphs": [
+        "The headline router is a confidence gate in front of Tier A with DistilBERT as the terminal, evaluated on the full TEST-IID slice under cost-model v2 (Tier B priced by an amortized ESTIMATE, not a measurement). It is the only certified two-axis win in the study: against a DistilBERT-only baseline it is both cheaper, -$21.49 [-$26.14, -$16.66] per 1k complaints, and better, macro-F1 +0.0025 [+0.0010, +0.0042] — both paired intervals exclude zero.",
+        "In absolute terms it runs at $812.83 [$800.94, $824.90] per 1k at system macro-F1 0.7976, dominating Tier A alone ($933.41), ModernBERT alone ($862.60) and DistilBERT alone ($834.32).",
+        "The same gate in front of Tier A alone buys -$60.60 [-$66.79, -$54.88] per 1k and +0.0870 [+0.0841, +0.0899] system macro-F1 against un-gated Tier A. The gate is certified in front of DistilBERT too, but it is worth far less per 1k there. What pays is not the gate; it is routing to cheap capacity.",
+        "The cheapest policy measured is the two-gate cascade that ends at Haiku: $786.10 [$729.67, $843.74] per 1k on the paired 5,000-row subset. But its edge over DistilBERT alone is NOT established: -$25.10 [-$53.94, +$4.93], an interval containing zero."
+      ],
+      "repro": [
+        "make tier-b-frontier",
+        "make router-sim"
+      ],
+      "run_ids": [],
+      "title": "What pays is routing to cheap capacity, not the LLM"
+    },
+    {
+      "gaps": [],
+      "id": "robustness",
+      "items": [],
+      "kind": "narrative",
+      "numbers": [
+        {
+          "basis": "copied",
+          "display": "10%",
+          "evidence_class": "measured",
+          "label": "perturb_rate",
+          "repro": "make perturb && make perturb-report",
+          "run_ids": [],
+          "source": "results/perturbation/summary.json",
+          "unit": "pct",
+          "value": 0.1
+        },
+        {
+          "basis": "copied",
+          "display": "-0.0436 [-0.0469, -0.0403]",
+          "evidence_class": "measured",
+          "label": "wordchar_typo",
+          "repro": "make perturb && make perturb-report",
+          "run_ids": [
+            "0c9308be2c9e3f9008ace06f99dfb51e40c56744df3a67a934f6dff695c772ea",
+            "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7"
+          ],
+          "source": "results/perturbation/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": -0.0403016281,
+            "ci_lo": -0.0469339657,
+            "point": -0.0435901599
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "-0.0661 [-0.0697, -0.0626]",
+          "evidence_class": "measured",
+          "label": "word_only_typo",
+          "repro": "make perturb && make perturb-report",
+          "run_ids": [
+            "dcfb1beefd13d98934ceaca6c103c92a968d54ce8aa2e6ef8c33d2170bf69d5f",
+            "8dacc1b9a8966530ff3ec011f8ef6516b47fca07bb7d45a3dfe5704a15162071"
+          ],
+          "source": "results/perturbation/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": -0.0626211611,
+            "ci_lo": -0.0697241623,
+            "point": -0.0661393019
+          }
+        },
+        {
+          "basis": "derived",
+          "display": "34%",
+          "evidence_class": "derived",
+          "label": "char_shield_share",
+          "note": "1 - delta(word+char, typo) / delta(word-only, typo); the artifact's own methods_notes.char_shield warns that a joint CI for this difference-of-differences was NOT computed, so this is directional only",
+          "repro": "make perturb && make perturb-report",
+          "run_ids": [],
+          "source": "results/perturbation/summary.json",
+          "unit": "pct",
+          "value": 0.3409340793178224
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0000 [+0.0000, +0.0000]",
+          "evidence_class": "measured",
+          "label": "wordchar_case",
+          "note": "predicted structural zero: both TF-IDF blocks lowercase their input",
+          "repro": "make perturb && make perturb-report",
+          "run_ids": [
+            "96a13428a039c9f65c30365196bfaf54a6f18996d42985fa91b68a6b503aa1fc"
+          ],
+          "source": "results/perturbation/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0,
+            "ci_lo": 0.0,
+            "point": 0.0
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "-0.0310 [-0.0480, -0.0161]",
+          "evidence_class": "measured",
+          "label": "haiku_typo",
+          "repro": "make perturb && make perturb-report",
+          "run_ids": [
+            "182774b6977de8625c08a7a351c6eca98cf72aa51aedcaae0c3eb6f1596b301a",
+            "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e"
+          ],
+          "source": "results/perturbation/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": -0.0160966388,
+            "ci_lo": -0.0479870481,
+            "point": -0.0310028272
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0115 [-0.0081, +0.0317]",
+          "evidence_class": "measured",
+          "label": "haiku_ocr",
+          "repro": "make perturb && make perturb-report",
+          "run_ids": [
+            "237bffae43f102aa11be8f85f349c5666b22fdbd9f99cfefa267d11fc8bcbe47",
+            "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e"
+          ],
+          "source": "results/perturbation/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0317450322,
+            "ci_lo": -0.0080755077,
+            "point": 0.0115328358
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0031 [-0.0188, +0.0258]",
+          "evidence_class": "measured",
+          "label": "haiku_case",
+          "repro": "make perturb && make perturb-report",
+          "run_ids": [
+            "c7e53e2a9c31a0b7019697569ec5e9d07b41b1059eaacd01155cc07830cdcd35",
+            "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e"
+          ],
+          "source": "results/perturbation/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0258036687,
+            "ci_lo": -0.0187733453,
+            "point": 0.0030606743
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "1,500",
+          "evidence_class": "measured",
+          "label": "n_tier_c_perturb",
+          "repro": "make perturb && make perturb-report",
+          "run_ids": [],
+          "source": "results/perturbation/summary.json",
+          "unit": "count",
+          "value": 1500
+        },
+        {
+          "basis": "derived",
+          "display": "7.9%",
+          "evidence_class": "derived",
+          "label": "inflation_typo",
+          "note": "sum(prompt_tokens) perturbed / clean - 1, over the perturbed run's own complaint ids (a pairing: the perturbed rows are a byte-identical subset of the clean run under the same cap_seed)",
+          "repro": "make perturb-tier-c",
+          "run_ids": [
+            "182774b6977de8625c08a7a351c6eca98cf72aa51aedcaae0c3eb6f1596b301a",
+            "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e"
+          ],
+          "source": "results/tier_c_raw/**/calls.jsonl",
+          "unit": "pct",
+          "value": 0.07881953032349709
+        },
+        {
+          "basis": "derived",
+          "display": "2.8%",
+          "evidence_class": "derived",
+          "label": "inflation_ocr",
+          "note": "sum(prompt_tokens) perturbed / clean - 1, over the perturbed run's own complaint ids (a pairing: the perturbed rows are a byte-identical subset of the clean run under the same cap_seed)",
+          "repro": "make perturb-tier-c",
+          "run_ids": [
+            "237bffae43f102aa11be8f85f349c5666b22fdbd9f99cfefa267d11fc8bcbe47",
+            "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e"
+          ],
+          "source": "results/tier_c_raw/**/calls.jsonl",
+          "unit": "pct",
+          "value": 0.028151417717826366
+        },
+        {
+          "basis": "derived",
+          "display": "8.8%",
+          "evidence_class": "derived",
+          "label": "inflation_case",
+          "note": "sum(prompt_tokens) perturbed / clean - 1, over the perturbed run's own complaint ids (a pairing: the perturbed rows are a byte-identical subset of the clean run under the same cap_seed)",
+          "repro": "make perturb-tier-c",
+          "run_ids": [
+            "c7e53e2a9c31a0b7019697569ec5e9d07b41b1059eaacd01155cc07830cdcd35",
+            "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e"
+          ],
+          "source": "results/tier_c_raw/**/calls.jsonl",
+          "unit": "pct",
+          "value": 0.08815524395992802
+        }
+      ],
+      "paragraphs": [
+        "Under 10% character corruption on TEST-IID, the word+char Tier A model loses -0.0436 [-0.0469, -0.0403] macro-F1 to typos while the word-only sensitivity arm loses -0.0661 [-0.0697, -0.0626]. The char-n-gram block therefore absorbs roughly 34% of the typo damage — a directional read only: the two arms are different fitted models with independently bootstrapped intervals and no joint CI was computed. The case family is an exact structural zero for Tier A, +0.0000 [+0.0000, +0.0000], because both TF-IDF blocks lowercase their input; it is reported as an end-to-end control on the plumbing, not as a robustness finding.",
+        "Haiku loses least. On the same 1,500 paired rows its typo delta is -0.0310 [-0.0480, -0.0161], while ocr +0.0115 [-0.0081, +0.0317] and case +0.0031 [-0.0188, +0.0258] are both null — their intervals contain zero. The cross-tier ranking under character noise is LLM at least as robust as word+char TF-IDF, and both ahead of word-only TF-IDF.",
+        "Robustness carries a serving-cost tax that quality metrics do not show. On those same rows, corrupted text inflates Haiku's prompt tokens by 7.9% (typo), 2.8% (ocr) and 8.8% (case). The case family has the largest inflation and no measurable quality effect at all — noisy inputs make escalation more expensive exactly when Tier A is least reliable."
+      ],
+      "repro": [
+        "make perturb && make perturb-report",
+        "make perturb-tier-c"
+      ],
+      "run_ids": [
+        "0c9308be2c9e3f9008ace06f99dfb51e40c56744df3a67a934f6dff695c772ea",
+        "8e4d6345b849a186dcd0e34367641239c235a7b3a48cdbfb4a574e37318abea7",
+        "dcfb1beefd13d98934ceaca6c103c92a968d54ce8aa2e6ef8c33d2170bf69d5f",
+        "8dacc1b9a8966530ff3ec011f8ef6516b47fca07bb7d45a3dfe5704a15162071",
+        "96a13428a039c9f65c30365196bfaf54a6f18996d42985fa91b68a6b503aa1fc",
+        "182774b6977de8625c08a7a351c6eca98cf72aa51aedcaae0c3eb6f1596b301a",
+        "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e",
+        "237bffae43f102aa11be8f85f349c5666b22fdbd9f99cfefa267d11fc8bcbe47",
+        "c7e53e2a9c31a0b7019697569ec5e9d07b41b1059eaacd01155cc07830cdcd35"
+      ],
+      "title": "Robustness has a price even when quality holds"
+    },
+    {
+      "gaps": [
+        "An earlier cost generation recorded the cascade-vs-Tier-A cost comparison as directional (interval containing zero). The figures above are the primary operating point and cost generation the rest of this page uses; mixing generations inside one paragraph is exactly what the artifact naming prevents."
+      ],
+      "id": "negatives",
+      "items": [],
+      "kind": "narrative",
+      "numbers": [
+        {
+          "basis": "copied",
+          "display": "0.545%",
+          "evidence_class": "measured",
+          "label": "oov_train",
+          "repro": "make oov",
+          "run_ids": [],
+          "source": "results/oov/summary.json",
+          "unit": "pct",
+          "value": 0.0054500697
+        },
+        {
+          "basis": "copied",
+          "display": "0.773%",
+          "evidence_class": "measured",
+          "label": "oov_2026",
+          "repro": "make oov",
+          "run_ids": [],
+          "source": "results/oov/summary.json",
+          "unit": "pct",
+          "value": 0.0077259932
+        },
+        {
+          "basis": "copied",
+          "display": "0.0926 [0.0909, 0.0951]",
+          "evidence_class": "measured",
+          "label": "centroid_2025",
+          "repro": "make oov",
+          "run_ids": [],
+          "source": "results/oov/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0951142416,
+            "ci_lo": 0.0908539813,
+            "point": 0.0926111044
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "0.0815 [0.0801, 0.0833]",
+          "evidence_class": "measured",
+          "label": "centroid_2026",
+          "repro": "make oov",
+          "run_ids": [],
+          "source": "results/oov/summary.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0832695481,
+            "ci_lo": 0.0801001196,
+            "point": 0.0814737164
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "53.4%",
+          "evidence_class": "measured",
+          "label": "oov_type_2026",
+          "repro": "make oov",
+          "run_ids": [],
+          "source": "results/oov/summary.json",
+          "unit": "pct",
+          "value": 0.5338973362
+        },
+        {
+          "basis": "copied",
+          "display": "9",
+          "evidence_class": "measured",
+          "label": "k_fewshot",
+          "run_ids": [
+            "c7598f8489a93a0e36f7b2c9fe8fa1313bdb9ce76c630fc4c29e8e4353e21541"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "count",
+          "value": 9
+        },
+        {
+          "basis": "copied",
+          "display": "0",
+          "evidence_class": "measured",
+          "label": "k_zeroshot",
+          "run_ids": [
+            "3f3109515f37c1f30de9436d39f271d36d5e4497e050b2de9e9788708df686e5"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "count",
+          "value": 0
+        },
+        {
+          "basis": "copied",
+          "display": "0.7674 [0.7351, 0.7986]",
+          "evidence_class": "measured",
+          "label": "fewshot_f1",
+          "run_ids": [
+            "c7598f8489a93a0e36f7b2c9fe8fa1313bdb9ce76c630fc4c29e8e4353e21541"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.7986364835689408,
+            "ci_lo": 0.7350708952946521,
+            "point": 0.7673821171835956
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "0.7567 [0.7217, 0.7891]",
+          "evidence_class": "measured",
+          "label": "zeroshot_f1",
+          "run_ids": [
+            "3f3109515f37c1f30de9436d39f271d36d5e4497e050b2de9e9788708df686e5"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.7890828568329866,
+            "ci_lo": 0.7217384276715065,
+            "point": 0.7567206062321739
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "$3.92",
+          "evidence_class": "measured",
+          "label": "fewshot_spend",
+          "run_ids": [
+            "c7598f8489a93a0e36f7b2c9fe8fa1313bdb9ce76c630fc4c29e8e4353e21541"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "usd",
+          "value": 3.9217780000000064
+        },
+        {
+          "basis": "copied",
+          "display": "$1.96",
+          "evidence_class": "measured",
+          "label": "zeroshot_spend",
+          "run_ids": [
+            "3f3109515f37c1f30de9436d39f271d36d5e4497e050b2de9e9788708df686e5"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "usd",
+          "value": 1.962928
+        },
+        {
+          "basis": "copied",
+          "display": "1,500",
+          "evidence_class": "measured",
+          "label": "n_ablation",
+          "run_ids": [
+            "c7598f8489a93a0e36f7b2c9fe8fa1313bdb9ce76c630fc4c29e8e4353e21541"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "count",
+          "value": 1500
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0107 [-0.0054, +0.0266]",
+          "evidence_class": "measured",
+          "label": "fewshot_minus_zeroshot_delta",
+          "note": "paired macro_f1 delta, A_minus_B, slice cal, pairing exact",
+          "repro": "uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_haiku_ablation_fewshot_cal/20260806T160011Z/calls.jsonl results/tier_c_raw/tier_c_haiku_ablation_zeroshot_cal/20260806T160510Z/calls.jsonl --split cal --role-a 'Claude Haiku 4.5 few-shot k=9 (CAL ablation)' --role-b 'Claude Haiku 4.5 zero-shot k=0 (CAL ablation)' --out results/tier_c_compare/haiku_fewshot_minus_zeroshot__cal.json",
+          "run_ids": [
+            "c7598f8489a93a0e36f7b2c9fe8fa1313bdb9ce76c630fc4c29e8e4353e21541",
+            "3f3109515f37c1f30de9436d39f271d36d5e4497e050b2de9e9788708df686e5"
+          ],
+          "source": "results/tier_c_compare/haiku_fewshot_minus_zeroshot__cal.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0265584551158669,
+            "ci_lo": -0.005370654476098746,
+            "point": 0.01066151095142176
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "0.41",
+          "evidence_class": "measured",
+          "label": "fewshot_minus_zeroshot_p",
+          "repro": "uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_haiku_ablation_fewshot_cal/20260806T160011Z/calls.jsonl results/tier_c_raw/tier_c_haiku_ablation_zeroshot_cal/20260806T160510Z/calls.jsonl --split cal --role-a 'Claude Haiku 4.5 few-shot k=9 (CAL ablation)' --role-b 'Claude Haiku 4.5 zero-shot k=0 (CAL ablation)' --out results/tier_c_compare/haiku_fewshot_minus_zeroshot__cal.json",
+          "run_ids": [
+            "c7598f8489a93a0e36f7b2c9fe8fa1313bdb9ce76c630fc4c29e8e4353e21541",
+            "3f3109515f37c1f30de9436d39f271d36d5e4497e050b2de9e9788708df686e5"
+          ],
+          "source": "results/tier_c_compare/haiku_fewshot_minus_zeroshot__cal.json",
+          "unit": "pvalue",
+          "value": 0.4095793959270717
+        },
+        {
+          "basis": "copied",
+          "display": "1,500",
+          "evidence_class": "measured",
+          "label": "fewshot_minus_zeroshot_n",
+          "repro": "uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_haiku_ablation_fewshot_cal/20260806T160011Z/calls.jsonl results/tier_c_raw/tier_c_haiku_ablation_zeroshot_cal/20260806T160510Z/calls.jsonl --split cal --role-a 'Claude Haiku 4.5 few-shot k=9 (CAL ablation)' --role-b 'Claude Haiku 4.5 zero-shot k=0 (CAL ablation)' --out results/tier_c_compare/haiku_fewshot_minus_zeroshot__cal.json",
+          "run_ids": [
+            "c7598f8489a93a0e36f7b2c9fe8fa1313bdb9ce76c630fc4c29e8e4353e21541",
+            "3f3109515f37c1f30de9436d39f271d36d5e4497e050b2de9e9788708df686e5"
+          ],
+          "source": "results/tier_c_compare/haiku_fewshot_minus_zeroshot__cal.json",
+          "unit": "count",
+          "value": 1500
+        },
+        {
+          "basis": "copied",
+          "display": "-$22.76 [-$41.96, -$2.37]",
+          "evidence_class": "measured",
+          "label": "cascade_vs_a_cost",
+          "repro": "make tier-b-frontier",
+          "run_ids": [],
+          "source": "results/frontier/frontier__opv2__cost-2c969255.json",
+          "unit": "usd",
+          "value": {
+            "ci_hi": -2.369634765,
+            "ci_lo": -41.964095295,
+            "point": -22.763613
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "+0.0070 [-0.0027, +0.0165]",
+          "evidence_class": "measured",
+          "label": "cascade_vs_a_f1",
+          "repro": "make tier-b-frontier",
+          "run_ids": [],
+          "source": "results/frontier/frontier__opv2__cost-2c969255.json",
+          "unit": "raw",
+          "value": {
+            "ci_hi": 0.0164714151,
+            "ci_lo": -0.0026921993,
+            "point": 0.0069721603
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "+$47.74 [+$22.53, +$74.74]",
+          "evidence_class": "measured",
+          "label": "cross_family_cost",
+          "repro": "make router-sim",
+          "run_ids": [],
+          "source": "results/router_sim/summary__opv2__cost-2c969255.json",
+          "unit": "usd",
+          "value": {
+            "ci_hi": 74.735041725,
+            "ci_lo": 22.531116195,
+            "point": 47.736387
+          }
+        },
+        {
+          "basis": "copied",
+          "display": "5,000",
+          "evidence_class": "measured",
+          "label": "cross_family_n",
+          "repro": "make router-sim",
+          "run_ids": [],
+          "source": "results/router_sim/summary__opv2__cost-2c969255.json",
+          "unit": "count",
+          "value": 5000
+        }
+      ],
+      "paragraphs": [
+        "The out-of-vocabulary explanation was REFUTED. Model-vocabulary token OOV moves only from 0.545% on TRAIN to 0.773% at 2026-H1, and the TF-IDF centroid distance PEAKS in 2025 at 0.0926 [0.0909, 0.0951] and FALLS at 2026-H1 to 0.0815 [0.0801, 0.0833] — disjoint intervals. Lexical drift is ruled out; the cliff is prior shift. Types and tokens tell opposite stories: 53.4% of TYPES at 2026-H1 are outside the model vocabulary, against 0.773% of TOKENS.",
+        "The few-shot hypothesis was REFUTED. On the same 1,500 CAL rows, Haiku with k=9 exemplars scores 0.7674 [0.7351, 0.7986] against 0.7567 [0.7217, 0.7891] at k=0, for double the measured spend ($3.92 against $1.96). Paired on those rows the delta is +0.0107 [-0.0054, +0.0266] macro-F1, McNemar p=0.41 — an interval containing zero. The exemplars bought no measurable quality for twice the money, so every Tier C final in the study is zero-shot.",
+        "The LLM cascade does not pay. Under the primary operating point the Haiku-terminal cascade is cheaper than Tier A alone, -$22.76 [-$41.96, -$2.37] per 1k, but it buys no established quality: macro-F1 +0.0070 [-0.0027, +0.0165], an interval containing zero, so the two-axis claim is not certified. Head to head against the gate-to-human router on the same 5,000 rows it resolves AGAINST the cascade: +$47.74 [+$22.53, +$74.74] per 1k, more expensive with the interval excluding zero."
+      ],
+      "repro": [
+        "make oov",
+        "make tier-b-frontier",
+        "make router-sim",
+        "uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_haiku_ablation_fewshot_cal/20260806T160011Z/calls.jsonl results/tier_c_raw/tier_c_haiku_ablation_zeroshot_cal/20260806T160510Z/calls.jsonl --split cal --role-a 'Claude Haiku 4.5 few-shot k=9 (CAL ablation)' --role-b 'Claude Haiku 4.5 zero-shot k=0 (CAL ablation)' --out results/tier_c_compare/haiku_fewshot_minus_zeroshot__cal.json"
+      ],
+      "run_ids": [
+        "c7598f8489a93a0e36f7b2c9fe8fa1313bdb9ce76c630fc4c29e8e4353e21541",
+        "3f3109515f37c1f30de9436d39f271d36d5e4497e050b2de9e9788708df686e5"
+      ],
+      "title": "Honest negatives"
+    },
+    {
+      "gaps": [],
+      "id": "verification",
+      "items": [
+        {
+          "evidence_class": "measured",
+          "n": 1,
+          "run_ids": [],
+          "source": "SNAPSHOT_MANIFEST.yaml",
+          "text": "CFPB complaints.csv.zip, downloaded 2026-08-05, SHA-256 b4d1eac8ef9f2e7710224848d321f355c480ff95baa742a2f6d1e3c704705600, 1,408,215,102 bytes. The splits reproduce byte-identically from that snapshot under `make data`.",
+          "title": "Frozen dataset snapshot"
+        },
+        {
+          "evidence_class": "measured",
+          "n": 2,
+          "run_ids": [
+            "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687"
+          ],
+          "source": "results/runs.jsonl",
+          "text": "A committed uv lockfile; `uv sync --frozen` is the only supported install path. Tier B was trained on an NVIDIA RTX A6000 in bf16 (bundle chain-of-custody verified) and evaluated locally on MPS; the hardware is recorded in each run record.",
+          "title": "Locked environment"
+        },
+        {
+          "evidence_class": "measured",
+          "n": 3,
+          "run_ids": [],
+          "source": "results/runs.jsonl",
+          "text": "One YAML config per run, one JSONL record appended to results/runs.jsonl — 55 records, never edited. Every record carries its git SHA, dataset snapshot hash, config or prompt hash, wall-clock and cost.",
+          "title": "One config per run, one append-only log"
+        },
+        {
+          "evidence_class": "measured",
+          "n": 4,
+          "run_ids": [],
+          "source": "results/drift/summary.json",
+          "text": "95% bootstrap confidence intervals (1,000 resamples, fixed seed 20260805) on every headline number; every comparison claim uses a paired bootstrap plus McNemar on the shared rows.",
+          "title": "Uncertainty on every headline number"
+        },
+        {
+          "evidence_class": "measured",
+          "n": 5,
+          "run_ids": [],
+          "source": "results/tier_c_raw/**/calls.jsonl",
+          "text": "Raw per-call logs are retained and committed. Costs are actual token usage multiplied by published per-MTok prices — never estimated from characters or averages — and the upstream provider is recorded per call: 99.81% of 34,050 calls were served by Amazon Bedrock.",
+          "title": "Tier C cost receipts"
+        },
+        {
+          "evidence_class": "measured",
+          "n": 6,
+          "run_ids": [
+            "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e"
+          ],
+          "source": "results/runs.jsonl",
+          "text": "Latency is client-side wall-clock through OpenRouter with no provider pinning at max_concurrency 8. The figures characterize the OpenRouter-to-Bedrock route, NOT the Anthropic first-party API.",
+          "title": "Latency methodology, stated as a limit"
+        },
+        {
+          "evidence_class": "measured",
+          "n": 7,
+          "run_ids": [
+            "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687"
+          ],
+          "source": "results/onnx_parity/tier_b2_s0_parity.json",
+          "text": "Argmax agreement between the int8 export (per-channel QInt8) and PyTorch fp32 is 0.9944 on a held-out CAL sample of 5,000 rows; the fp32 ONNX export is exact at 1.0000. A stock per-tensor quantization was measured first and REJECTED: the export config was fixed, the acceptance threshold was not relaxed. Official numbers remain the harness fp32 runs.",
+          "title": "ONNX parity for the in-browser model"
+        },
+        {
+          "evidence_class": "measured",
+          "n": 8,
+          "run_ids": [],
+          "source": "demo/live/agreement_report.json",
+          "text": "Tier A agrees with its official run on 100.0% of 200 curated rows (a bit-identical export); the B2 int8 browser model agrees on 99.0% against the official fp32 run. Both rates are frozen in the payload and shown in the playground panel.",
+          "title": "Live in-browser agreement, frozen and disclosed in the UI"
+        },
+        {
+          "evidence_class": "measured",
+          "n": 9,
+          "run_ids": [],
+          "source": "tests/test_demo_build.py",
+          "text": "A smoke eval runs in CI; the full suite is 644 passed / 1 skipped / 0 failed. The demo's traceability is test-enforced: every run id under demo/data must exist in the results log, every copied number must equal its source, and every numeric token in this page's prose must be a declared, sourced value.",
+          "title": "Tests, including the one that guards this page"
+        },
+        {
+          "evidence_class": "measured",
+          "n": 10,
+          "run_ids": [],
+          "source": "EXPERIMENT_LOG.md",
+          "text": "TEST-* slices are frozen and were touched only for final reported runs; all iteration happened on CAL. EXPERIMENT_LOG.md is published including the failed hypotheses.",
+          "title": "Dev/test hygiene"
+        },
+        {
+          "evidence_class": "pending",
+          "n": 11,
+          "pending": {
+            "label": "`make reproduce-headline` — pending (next Phase 6 task): a single target that re-derives every headline number on this page from the committed artifacts",
+            "pending": true,
+            "slot": "reproduce_headline"
+          },
+          "run_ids": [],
+          "source": "Makefile",
+          "text": "A single `make reproduce-headline` target that re-derives every headline number on this page from the committed artifacts.",
+          "title": "One-command headline reproduction"
+        }
+      ],
+      "kind": "verification",
+      "numbers": [
+        {
+          "basis": "copied",
+          "display": "1,408,215,102",
+          "evidence_class": "measured",
+          "label": "snapshot_bytes",
+          "repro": "make data",
+          "run_ids": [],
+          "source": "SNAPSHOT_MANIFEST.yaml",
+          "unit": "count",
+          "value": 1408215102
+        },
+        {
+          "basis": "derived",
+          "display": "55",
+          "evidence_class": "measured",
+          "label": "n_run_records",
+          "note": "len(results/runs.jsonl) at build time",
+          "run_ids": [],
+          "source": "results/runs.jsonl",
+          "unit": "count",
+          "value": 55
+        },
+        {
+          "basis": "derived",
+          "display": "95%",
+          "evidence_class": "measured",
+          "label": "ci_level",
+          "note": "bootstrap.ci_pct[1] - bootstrap.ci_pct[0]",
+          "run_ids": [],
+          "source": "results/drift/summary.json",
+          "unit": "pctpoint",
+          "value": 95.0
+        },
+        {
+          "basis": "copied",
+          "display": "1,000",
+          "evidence_class": "measured",
+          "label": "bootstrap_resamples",
+          "run_ids": [],
+          "source": "results/drift/summary.json",
+          "unit": "count",
+          "value": 1000
+        },
+        {
+          "basis": "copied",
+          "display": "20260805",
+          "evidence_class": "measured",
+          "label": "bootstrap_seed",
+          "run_ids": [],
+          "source": "results/drift/summary.json",
+          "unit": "count",
+          "value": 20260805
+        },
+        {
+          "basis": "derived",
+          "display": "99.81%",
+          "evidence_class": "derived",
+          "label": "bedrock_share",
+          "note": "Amazon Bedrock calls / all committed Tier C receipt calls",
+          "run_ids": [],
+          "source": "results/tier_c_raw/**/calls.jsonl",
+          "unit": "pct",
+          "value": 0.9980616740088105
+        },
+        {
+          "basis": "derived",
+          "display": "34,050",
+          "evidence_class": "derived",
+          "label": "n_tier_c_calls",
+          "run_ids": [],
+          "source": "results/tier_c_raw/**/calls.jsonl",
+          "unit": "count",
+          "value": 34050
+        },
+        {
+          "basis": "copied",
+          "display": "8",
+          "evidence_class": "measured",
+          "label": "max_concurrency",
+          "run_ids": [
+            "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e"
+          ],
+          "source": "results/runs.jsonl",
+          "unit": "count",
+          "value": 8
+        },
+        {
+          "basis": "copied",
+          "display": "0.9944",
+          "evidence_class": "measured",
+          "label": "int8_agreement",
+          "repro": "uv run python scripts/export_onnx_distilbert.py",
+          "run_ids": [
+            "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687"
+          ],
+          "source": "results/onnx_parity/tier_b2_s0_parity.json",
+          "unit": "raw",
+          "value": 0.9944
+        },
+        {
+          "basis": "copied",
+          "display": "1.0000",
+          "evidence_class": "measured",
+          "label": "fp32_agreement",
+          "repro": "uv run python scripts/export_onnx_distilbert.py",
+          "run_ids": [
+            "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687"
+          ],
+          "source": "results/onnx_parity/tier_b2_s0_parity.json",
+          "unit": "raw",
+          "value": 1.0
+        },
+        {
+          "basis": "copied",
+          "display": "5,000",
+          "evidence_class": "measured",
+          "label": "parity_n",
+          "run_ids": [],
+          "source": "results/onnx_parity/tier_b2_s0_parity.json",
+          "unit": "count",
+          "value": 5000
+        },
+        {
+          "basis": "copied",
+          "display": "100.0%",
+          "evidence_class": "measured",
+          "label": "live_tier_a_agreement",
+          "run_ids": [],
+          "source": "demo/live/agreement_report.json",
+          "unit": "pct",
+          "value": 1
+        },
+        {
+          "basis": "copied",
+          "display": "200",
+          "evidence_class": "measured",
+          "label": "live_n",
+          "run_ids": [],
+          "source": "demo/live/agreement_report.json",
+          "unit": "count",
+          "value": 200
+        },
+        {
+          "basis": "copied",
+          "display": "99.0%",
+          "evidence_class": "measured",
+          "label": "live_tier_b2_agreement",
+          "run_ids": [],
+          "source": "demo/live/agreement_report.json",
+          "unit": "pct",
+          "value": 0.99
+        },
+        {
+          "basis": "declared",
+          "display": "644",
+          "evidence_class": "measured",
+          "label": "suite_passed",
+          "note": "measured in this working tree at the git SHA meta.json records; a test run is not a logged experiment, so this is a declared constant in src/triage_lab/demo_build.py, not a copy from results/",
+          "repro": "uv run pytest -q",
+          "run_ids": [],
+          "source": "src/triage_lab/demo_build.py",
+          "unit": "count",
+          "value": 644
+        },
+        {
+          "basis": "declared",
+          "display": "1",
+          "evidence_class": "measured",
+          "label": "suite_skipped",
+          "note": "measured in this working tree at the git SHA meta.json records; a test run is not a logged experiment, so this is a declared constant in src/triage_lab/demo_build.py, not a copy from results/",
+          "repro": "uv run pytest -q",
+          "run_ids": [],
+          "source": "src/triage_lab/demo_build.py",
+          "unit": "count",
+          "value": 1
+        },
+        {
+          "basis": "declared",
+          "display": "0",
+          "evidence_class": "measured",
+          "label": "suite_failed",
+          "note": "measured in this working tree at the git SHA meta.json records; a test run is not a logged experiment, so this is a declared constant in src/triage_lab/demo_build.py, not a copy from results/",
+          "repro": "uv run pytest -q",
+          "run_ids": [],
+          "source": "src/triage_lab/demo_build.py",
+          "unit": "count",
+          "value": 0
+        }
+      ],
+      "paragraphs": [],
+      "repro": [
+        "uv run pytest -q",
+        "make data"
+      ],
+      "run_ids": [
+        "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e",
+        "5517ebf1dfaf2b093e50e22c294141e96b3cad947cad5a89dd3ddc7168184687"
+      ],
+      "title": "How this was verified"
+    },
+    {
+      "gaps": [],
+      "id": "limits",
+      "items": [
+        {
+          "text": "Not a production serving system. There are no SLA, throughput or uptime claims; latency was bench-measured (and through OpenRouter), never fleet-measured."
+        },
+        {
+          "text": "Single-domain and English-only: US consumer-finance complaints. Generalization to other triage domains is not demonstrated."
+        },
+        {
+          "text": "Tier C costs are point-in-time prices for specific model IDs, recorded per call. Forward cost claims are projected, and the frontier is a method, not a leaderboard."
+        },
+        {
+          "text": "The business cost-model parameters — misroute cost, human-review cost and the Tier B amortized compute price — are ESTIMATED defaults, not measurements. Their sensitivity is exposed in the policy-builder panel rather than asserted away."
+        },
+        {
+          "text": "LLM contamination on pre-cutoff data is possible. It is mitigated by TEST-POSTCUTOFF (a boundary strictly after the latest Tier C training cutoff), not eliminated."
+        },
+        {
+          "text": "CFPB narratives are opt-in and CFPB-scrubbed, so there is selection bias against the full complaint population; the scrubbing artifacts are in-distribution quirks the models learn from."
+        },
+        {
+          "text": "No online learning and no human-in-the-loop feedback were measured, and the escalation arm assumes humans are always right — a modeling choice, stated as one."
+        },
+        {
+          "text": "The coursework seed scores that motivated this lab are self-reported class results: provenance, not evidence. The group NER project was collaborative, so role attribution there is biographical context, not a measured claim."
+        }
+      ],
+      "kind": "limits",
+      "numbers": [],
+      "paragraphs": [],
+      "repro": [],
+      "run_ids": [],
+      "title": "What this does not prove"
+    },
+    {
+      "gaps": [],
+      "id": "provenance",
+      "items": [],
+      "kind": "pending",
+      "numbers": [],
+      "paragraphs": [
+        "The provenance section links this lab's exhibits back to the coursework artifacts that motivated them. It is a separate task and is shown as a labeled pending slot rather than omitted, because “not built yet” and “nothing to show” are different claims."
+      ],
+      "pending": {
+        "label": "Provenance links to coursework seeds — pending (docs/seed-evidence/, read-only)",
+        "pending": true,
+        "slot": "provenance_seeds"
+      },
+      "repro": [],
+      "run_ids": [],
+      "title": "Provenance — coursework seeds"
+    }
+  ],
+  "source_note": "Every numeric token in every paragraph below is declared in that section's `numbers` array and copied at build time from `results/runs.jsonl` or a committed derived artifact. Entries marked `derived` are arithmetic over copied values with no free parameters and carry their formula. The build fails if a paragraph contains a number no entry declares.",
+  "title": "Case study — what was measured, how it was verified, and what it does not prove"
+}

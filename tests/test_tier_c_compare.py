@@ -166,3 +166,147 @@ def test_main_end_to_end_reads_split_and_prints_report(tmp_path, capsys):
     assert report["split"] == "cal"
     assert report["deltas"]["accuracy"]["delta"] >= 0   # few-shot >= zero-shot here
     assert report["mcnemar"]["n_discordant"] >= 1
+
+
+# ---------------------------------------------------------------------------
+# The 2026-08-13 additions: --pair-on shared and the committed artifact (--out)
+# ---------------------------------------------------------------------------
+#
+# Both are opt-in. The test above still asserts the default invocation writes NOTHING, so
+# the "strictly read-only unless asked" property is pinned by that test, not by these.
+
+def _ablation_fixture(tmp_path, extra_b_ids=()):
+    """A tiny paired CAL ablation; `extra_b_ids` land only in arm B (unpaired rows)."""
+    ids = list(range(100, 108))
+    id_to_true = {i: LABELS[i % len(LABELS)] for i in [*ids, *extra_b_ids]}
+    splits_dir = tmp_path / "splits"
+    _synthetic_cal_parquet(splits_dir, id_to_true)
+    a, b = tmp_path / "few.jsonl", tmp_path / "zero.jsonl"
+    _write_receipts(a, [(i, json.dumps({"label": id_to_true[i]}), False) for i in ids])
+    _write_receipts(b, [
+        (i, json.dumps({"label": "card" if i == 105 else id_to_true[i]}), False)
+        for i in [*ids, *extra_b_ids]])
+    return splits_dir, a, b, ids
+
+
+def test_pair_on_shared_intersects_where_exact_refuses(tmp_path, capsys):
+    """Arm B carries rows arm A never scored: `exact` fails, `shared` drops them."""
+    splits_dir, a, b, ids = _ablation_fixture(tmp_path, extra_b_ids=(200, 201))
+    argv = [str(a), str(b), "--split", "cal", "--splits-dir", str(splits_dir)]
+
+    with pytest.raises(ValueError, match="id sets differ"):
+        tier_c_compare.main(argv)
+    capsys.readouterr()
+
+    assert tier_c_compare.main([*argv, "--pair-on", "shared"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["n_examples"] == len(ids)
+
+
+def test_pair_on_shared_matches_hand_filtering_the_receipts(tmp_path, capsys):
+    """The whole point: the flag reproduces the pre-2026-08-13 temp-file procedure.
+
+    That procedure is what produced the numbers EXPERIMENT_LOG records, so if these two
+    paths ever diverge the committed artifacts stop being the logged comparison.
+    """
+    splits_dir, a, b, ids = _ablation_fixture(tmp_path, extra_b_ids=(200, 201))
+    argv = [str(a), str(b), "--split", "cal", "--splits-dir", str(splits_dir)]
+    tier_c_compare.main([*argv, "--pair-on", "shared"])
+    via_flag = json.loads(capsys.readouterr().out)
+
+    filtered = tmp_path / "zero_filtered.jsonl"
+    keep = {str(i) for i in ids}
+    filtered.write_text("".join(
+        line + "\n" for line in b.read_text().splitlines()
+        if str(json.loads(line)["complaint_id"]) in keep))
+    tier_c_compare.main([str(a), str(filtered), "--split", "cal",
+                         "--splits-dir", str(splits_dir)])
+    via_filtering = json.loads(capsys.readouterr().out)
+
+    assert via_flag["deltas"] == via_filtering["deltas"]
+    assert via_flag["mcnemar"] == via_filtering["mcnemar"]
+    assert via_flag["n_examples"] == via_filtering["n_examples"]
+
+
+def test_out_writes_a_deterministic_artifact_with_provenance(tmp_path, capsys):
+    splits_dir, a, b, ids = _ablation_fixture(tmp_path)
+    out = tmp_path / "artifacts" / "demo_key.json"
+    argv = [str(a), str(b), "--split", "cal", "--splits-dir", str(splits_dir),
+            "--role-a", "arm A", "--role-b", "arm B", "--out", str(out)]
+
+    assert tier_c_compare.main(argv) == 0
+    stdout_first = capsys.readouterr().out
+    first = out.read_text(encoding="utf-8")
+    artifact = json.loads(first)
+
+    assert artifact["schema_version"] == tier_c_compare.SCHEMA_VERSION
+    assert artifact["analysis"] == "tier_c_paired_compare"
+    assert artifact["key"] == "demo_key"
+    assert artifact["pairing"] == "exact"
+    assert artifact["n_examples"] == len(ids)
+    assert artifact["cost_usd"] == 0.0
+    assert artifact["arm_a"]["role"] == "arm A" and artifact["arm_b"]["role"] == "arm B"
+    # Receipts outside the results log resolve to a null run id — honest, not invented.
+    assert artifact["arm_a"]["run_id"] is None
+    assert artifact["bootstrap"] == {
+        "method": "percentile", "n_resamples": 1000, "seed": 20260805,
+        "ci_pct": [2.5, 97.5], "pairing": "shared_index_vectors_per_replicate"}
+    for band in artifact["deltas"].values():
+        assert band["excludes_zero"] == (band["ci_lo"] > 0 or band["ci_hi"] < 0)
+    assert artifact["repro_command"].startswith(
+        "uv run python -m triage_lab.tier_c_compare ")
+    # Canonical serialization, same rule as every other committed JSON in the repo.
+    assert first == json.dumps(artifact, sort_keys=True, indent=2,
+                               ensure_ascii=False) + "\n"
+
+    # Determinism: identical modulo the two stamps every results/ artifact carries.
+    tier_c_compare.main(argv)
+    assert capsys.readouterr().out == stdout_first, "--out must not change stdout"
+    second = json.loads(out.read_text(encoding="utf-8"))
+    assert {k: v for k, v in second.items() if k != "generated_at"} == \
+        {k: v for k, v in artifact.items() if k != "generated_at"}
+    assert not list(out.parent.glob("*.tmp")), "atomic write left a temp file"
+
+
+def test_out_resolves_run_ids_from_the_committed_receipt_paths():
+    """A run id in the artifact is matched against runs.jsonl, never transcribed."""
+    from triage_lab import harness, predictions
+
+    records = predictions.load_records(harness.DEFAULT_RESULTS_PATH)
+    with_logs = [r for r in records if (r.get("extra") or {}).get("raw_log_path")]
+    assert with_logs, "no Tier C run logs receipts"
+    record = with_logs[0]
+    resolved = tier_c_compare.resolve_run_id(
+        harness.REPO_ROOT / record["extra"]["raw_log_path"], records)
+    assert resolved["run_id"] == record["run_id"]
+    assert resolved["model_slug"] == record["extra"]["model_slug"]
+    assert tier_c_compare.resolve_run_id("/nowhere/calls.jsonl", records)["run_id"] is None
+
+
+def test_committed_tier_c_compare_artifacts_are_the_logged_comparisons():
+    """The three artifacts the case study cites, checked against their own provenance.
+
+    Values are not re-derived here (that needs data/); what is pinned is that each file is
+    the comparison it claims to be, on the slice it claims, between two runs that exist.
+    """
+    from triage_lab import harness, predictions
+
+    known = {r["run_id"] for r in predictions.load_records(harness.DEFAULT_RESULTS_PATH)}
+    expected = {
+        "sonnet_minus_haiku__test_iid": ("test_iid", "shared", False),
+        "sonnet_minus_haiku__test_postcutoff": ("test_postcutoff", "shared", True),
+        "haiku_fewshot_minus_zeroshot__cal": ("cal", "exact", False),
+    }
+    for key, (split, pairing, excludes_zero) in expected.items():
+        path = tier_c_compare.DEFAULT_OUT_DIR / f"{key}.json"
+        assert path.is_file(), f"missing committed artifact {path}"
+        artifact = json.loads(path.read_text(encoding="utf-8"))
+        assert artifact["key"] == key
+        assert artifact["split"] == split
+        assert artifact["pairing"] == pairing
+        assert artifact["n_examples"] == 1500
+        assert artifact["deltas"]["macro_f1"]["excludes_zero"] is excludes_zero
+        for arm in ("arm_a", "arm_b"):
+            assert artifact[arm]["run_id"] in known, f"{key}.{arm} names an unknown run"
+        assert artifact["cost_usd"] == 0.0
+        assert "runs.jsonl is untouched" in artifact["cost_note"]

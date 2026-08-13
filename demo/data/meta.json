@@ -9,7 +9,7 @@
     "measured": "read off a real observation: a logged run metric, a per-call receipt, or a deterministic derivation from a frozen per-example artifact",
     "projected": "an extrapolation to conditions not evaluated (e.g. cost at a volume no run reached); carries the assumption that produced it"
   },
-  "git_sha": "508932b13ca0cc60f25db41052bcf6502af169a1",
+  "git_sha": "018ec5114985d4d2a3572d1f4f960b95177c537c",
   "headline_router": {
     "evaluation_set": "full_test_iid",
     "note": "Owner decision 2026-08-12: headline_router = a_to_b (full TEST-IID) — the only certified two-axis win (cost AND macro-F1 paired CIs excl. 0 vs b2_only), dominating 3 model baselines. a_to_c_parsefail_human is retained as the LLM-cascade contrast exhibit; the drift-chapter Sonnet-terminal variant is unchanged.",

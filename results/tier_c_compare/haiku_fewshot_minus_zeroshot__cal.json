@@ -1,0 +1,74 @@
+{
+  "analysis": "tier_c_paired_compare",
+  "arm_a": {
+    "config_name": "tier_c_haiku_ablation_fewshot_cal",
+    "model_slug": "anthropic/claude-haiku-4.5",
+    "n_dropped_unpaired": 0,
+    "receipts": "results/tier_c_raw/tier_c_haiku_ablation_fewshot_cal/20260806T160011Z/calls.jsonl",
+    "role": "Claude Haiku 4.5 few-shot k=9 (CAL ablation)",
+    "run_id": "c7598f8489a93a0e36f7b2c9fe8fa1313bdb9ce76c630fc4c29e8e4353e21541"
+  },
+  "arm_b": {
+    "config_name": "tier_c_haiku_ablation_zeroshot_cal",
+    "model_slug": "anthropic/claude-haiku-4.5",
+    "n_dropped_unpaired": 0,
+    "receipts": "results/tier_c_raw/tier_c_haiku_ablation_zeroshot_cal/20260806T160510Z/calls.jsonl",
+    "role": "Claude Haiku 4.5 zero-shot k=0 (CAL ablation)",
+    "run_id": "3f3109515f37c1f30de9436d39f271d36d5e4497e050b2de9e9788708df686e5"
+  },
+  "bootstrap": {
+    "ci_pct": [
+      2.5,
+      97.5
+    ],
+    "method": "percentile",
+    "n_resamples": 1000,
+    "pairing": "shared_index_vectors_per_replicate",
+    "seed": 20260805
+  },
+  "class_labels": [
+    "card",
+    "credit_reporting",
+    "debt_collection",
+    "deposit_account",
+    "money_service",
+    "mortgage",
+    "payday_personal_loan",
+    "student_loan",
+    "vehicle_loan"
+  ],
+  "comparison": "A_minus_B",
+  "cost_note": "derivation only: no model was run and results/runs.jsonl is untouched",
+  "cost_usd": 0.0,
+  "deltas": {
+    "accuracy": {
+      "ci_hi": 0.01666666666666672,
+      "ci_lo": -0.006000000000000005,
+      "delta": 0.005333333333333412,
+      "excludes_zero": false
+    },
+    "macro_f1": {
+      "ci_hi": 0.0265584551158669,
+      "ci_lo": -0.005370654476098746,
+      "delta": 0.01066151095142176,
+      "excludes_zero": false
+    }
+  },
+  "fallback_label": "card",
+  "generated_at": "2026-08-13T11:44:55.394027Z",
+  "git_sha": "018ec5114985d4d2a3572d1f4f960b95177c537c",
+  "key": "haiku_fewshot_minus_zeroshot__cal",
+  "mcnemar": {
+    "b": 40,
+    "c": 32,
+    "n_discordant": 72,
+    "p_value": 0.4095793959270717
+  },
+  "n_examples": 1500,
+  "pairing": "exact",
+  "prompt_version": "v1",
+  "protocol_note": "frozen protocol: a parse_failed call enters as the run's fallback label, exactly as the runner scored it; no row is dropped for failing to parse",
+  "repro_command": "uv run python -m triage_lab.tier_c_compare results/tier_c_raw/tier_c_haiku_ablation_fewshot_cal/20260806T160011Z/calls.jsonl results/tier_c_raw/tier_c_haiku_ablation_zeroshot_cal/20260806T160510Z/calls.jsonl --split cal --role-a 'Claude Haiku 4.5 few-shot k=9 (CAL ablation)' --role-b 'Claude Haiku 4.5 zero-shot k=0 (CAL ablation)' --out results/tier_c_compare/haiku_fewshot_minus_zeroshot__cal.json",
+  "schema_version": 1,
+  "split": "cal"
+}

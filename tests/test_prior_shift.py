@@ -521,3 +521,256 @@ def test_config_stem_resolution_and_unknown_tier():
         == "tier_c_sonnet_zeroshot_test_drift_2025"
     with pytest.raises(ValueError, match="unknown tier"):
         prior_shift.config_stem("tier_z", "2025")
+
+
+# ---------------------------------------------------------------------------
+# Between-tier paired within-component delta (--paired-within)
+# ---------------------------------------------------------------------------
+
+_PAIRED_FILE = prior_shift.DEFAULT_OUT_DIR / "paired_within_tier_a_vs_tier_b2_2026h1.json"
+_HAS_REAL = (
+    _PAIRED_FILE.exists()
+    and (prior_shift.DEFAULT_OUT_DIR / "summary.json").exists()
+    and prior_shift.DEFAULT_PREDS_DIR.exists()
+)
+_needs_real = pytest.mark.skipif(not _HAS_REAL, reason="real prior-shift artifacts not present")
+
+
+def test_paired_output_name_is_the_committed_one():
+    assert prior_shift.paired_output_name("tier_a", "tier_b2", "2026h1", "within::path_p") \
+        == "paired_within_tier_a_vs_tier_b2_2026h1.json"
+
+
+def test_id_alignment_accepts_identical_row_sequences():
+    ids = np.array([10, 20, 30, 40], dtype=np.int64)
+    report, take_x, take_y = prior_shift._id_alignment(
+        ids, ids.copy(), slice_name="s", tier_x="x", tier_y="y"
+    )
+    assert report["exact_row_order_match"] is True
+    assert report["realigned_by_complaint_id"] is False
+    assert take_x is None and take_y is None  # rows consumed in artifact order, untouched
+
+
+def test_id_alignment_realigns_a_permuted_but_equal_id_set():
+    """Same complaints, different row order: pairing is recoverable, but only by re-sorting
+    -- and the caller must be told, because the recorded per-tier replicates then move."""
+    ids_x = np.array([10, 20, 30], dtype=np.int64)
+    ids_y = np.array([30, 10, 20], dtype=np.int64)
+    report, take_x, take_y = prior_shift._id_alignment(
+        ids_x, ids_y, slice_name="s", tier_x="x", tier_y="y"
+    )
+    assert report["same_id_set"] is True
+    assert report["exact_row_order_match"] is False
+    assert report["realigned_by_complaint_id"] is True
+    np.testing.assert_array_equal(ids_x[take_x], ids_y[take_y])
+    # and the sorted-id fingerprint is order-invariant, as a shared-rows receipt
+    other, _, _ = prior_shift._id_alignment(
+        ids_y, ids_y.copy(), slice_name="s", tier_x="x", tier_y="y"
+    )
+    assert other["ids_sha256"] == report["ids_sha256"]
+
+
+def test_id_alignment_refuses_a_different_id_set():
+    with pytest.raises(ValueError, match="do not cover identical complaint_ids"):
+        prior_shift._id_alignment(
+            np.array([1, 2, 3], dtype=np.int64), np.array([1, 2, 99], dtype=np.int64),
+            slice_name="test_drift_2026h1", tier_x="tier_a", tier_y="tier_b2",
+        )
+
+
+def test_id_alignment_refuses_different_row_counts():
+    with pytest.raises(ValueError, match="a paired bootstrap needs one row set"):
+        prior_shift._id_alignment(
+            np.array([1, 2, 3], dtype=np.int64), np.array([1, 2], dtype=np.int64),
+            slice_name="s", tier_x="x", tier_y="y",
+        )
+
+
+def test_paired_delta_replicates_are_within_replicate_differences():
+    """The estimand: shared index vectors mean delta_i = comp_i(X) - comp_i(Y) on the SAME
+    resampled rows, which is strictly tighter than differencing two independent draws."""
+    t_ref, p_ref = _codes(300, seed=20, skew=[0.5, 0.25, 0.15, 0.1])
+    t_year, p_year = _codes(300, seed=21, skew=[0.1, 0.4, 0.3, 0.2])
+    # a second "tier" on the same rows: same truth, slightly different predictions
+    rng = np.random.default_rng(22)
+    p_ref2 = np.where(rng.random(len(p_ref)) < 0.1, t_ref, p_ref)
+    p_year2 = np.where(rng.random(len(p_year)) < 0.1, t_year, p_year)
+    kw = {"n_classes": K, "oat_index": 1, "n_resamples": 200}
+    a = prior_shift.bootstrap_components(t_ref, p_ref, t_year, p_year, **kw)
+    b = prior_shift.bootstrap_components(t_ref, p_ref2, t_year, p_year2, **kw)
+    key = prior_shift.PAIRED_COMPONENT
+    paired = a["replicates"][key] - b["replicates"][key]
+    # positively correlated marginals -> the paired spread is smaller than the naive
+    # independent-difference spread sqrt(var_a + var_b)
+    naive = np.sqrt(np.var(a["replicates"][key], ddof=1) + np.var(b["replicates"][key], ddof=1))
+    assert np.std(paired, ddof=1) < naive
+
+
+def test_recorded_component_row_missing_file_and_duplicates(tmp_path):
+    assert prior_shift.recorded_component_row(
+        tmp_path / "nope.json", "tier_a", "2026h1", "within::path_p"
+    ) is None
+    row = {"tier": "tier_a", "year": "2026h1", "scope": prior_shift.SCOPE_NATIVE,
+           "pi_source": prior_shift.PI_ARTIFACT, "component": "within::path_p",
+           "point": 0.05, "ci_lo": 0.04, "ci_hi": 0.06, "ci_valid": True}
+    dup = tmp_path / "summary.json"
+    dup.write_text(json.dumps({"rows": [row, dict(row)]}))
+    with pytest.raises(ValueError, match="the recorded value this recomputation"):
+        prior_shift.recorded_component_row(dup, "tier_a", "2026h1", "within::path_p")
+    single = tmp_path / "single.json"
+    single.write_text(json.dumps({"rows": [row]}))
+    assert prior_shift.recorded_component_row(
+        single, "tier_a", "2026h1", "within::path_p")["point"] == 0.05
+
+
+def test_recorded_check_hard_fails_on_a_drifted_value():
+    computed = {"point": 0.0503407811, "ci_lo": 0.0384978295, "ci_hi": 0.0625327466}
+    recorded = {**computed, "ci_valid": True, "point": 0.0503407811}
+    assert prior_shift._recorded_check(
+        computed, recorded, where="t", strict=True)["matches"] is True
+    drifted = {**recorded, "point": 0.0503407911}
+    with pytest.raises(ValueError, match="does not reproduce the recorded"):
+        prior_shift._recorded_check(computed, drifted, where="t", strict=True)
+    # non-strict reports instead of raising, so a fresh out-dir is still usable
+    assert prior_shift._recorded_check(
+        computed, drifted, where="t", strict=False)["matches"] is False
+
+
+def test_paired_within_delta_rejects_a_self_comparison_and_unknown_component():
+    with pytest.raises(ValueError, match="two different tiers"):
+        prior_shift.paired_within_delta("tier_a", "tier_a", "2026h1", records={})
+    with pytest.raises(ValueError, match="unknown component"):
+        prior_shift.paired_within_delta(
+            "tier_a", "tier_b2", "2026h1", records={}, component="within::nope"
+        )
+
+
+@_needs_real
+def test_paired_cli_artifact_is_deterministic_and_matches_the_committed_file(tmp_path):
+    """Re-running the CLI into a scratch dir reproduces the committed artifact exactly,
+    modulo generated_at (the repo's convention for every derived JSON)."""
+    rc = prior_shift.main([
+        "--paired-within", "tier_a", "tier_b2", "--year", "2026h1",
+        "--out-dir", str(tmp_path),
+    ])
+    assert rc == 0
+    fresh = json.loads((tmp_path / _PAIRED_FILE.name).read_text())
+    committed = json.loads(_PAIRED_FILE.read_text())
+    for obj in (fresh, committed):
+        obj.pop("generated_at")
+        obj.pop("git_sha")
+    assert json.dumps(fresh, sort_keys=True) == json.dumps(committed, sort_keys=True)
+    # ...and a second run is byte-identical to the first (no wall-clock leakage elsewhere)
+    again = tmp_path / "again"
+    prior_shift.main([
+        "--paired-within", "tier_a", "tier_b2", "--year", "2026h1",
+        "--out-dir", str(again),
+    ])
+    a = json.loads((again / _PAIRED_FILE.name).read_text())
+    a.pop("generated_at")
+    a.pop("git_sha")
+    assert json.dumps(a, sort_keys=True) == json.dumps(fresh, sort_keys=True)
+
+
+@_needs_real
+def test_committed_paired_artifact_matches_the_recorded_per_tier_summary_values():
+    """The certification: the per-tier points/CIs behind the delta ARE the published ones."""
+    obj = json.loads(_PAIRED_FILE.read_text())
+    summary = prior_shift.DEFAULT_OUT_DIR / "summary.json"
+    assert obj["id_alignment"]["exact_row_order_match_all_slices"] is True
+    assert obj["id_alignment"]["reproduces_recorded_per_tier_replicates"] is True
+    for tier in (obj["tier_x"], obj["tier_y"]):
+        for key, check in obj["per_tier"][tier]["recorded_cross_check"].items():
+            assert check["available"] is True and check["matches"] is True, (tier, key)
+            assert max(check["abs_delta"].values()) == 0.0, (tier, key)
+            row = prior_shift.recorded_component_row(summary, tier, obj["year"], key)
+            block = obj["per_tier"][tier]["components"][key]
+            for field in ("point", "ci_lo", "ci_hi"):
+                assert block[field] == row[field], (tier, key, field)
+    # the point delta is exactly the difference of the two published points
+    x = obj["marginal_intervals"][obj["tier_x"]]["point"]
+    y = obj["marginal_intervals"][obj["tier_y"]]["point"]
+    assert obj["point"] == pytest.approx(x - y, abs=10 ** -prior_shift.JSON_ROUND)
+    assert obj["ci_lo"] < obj["point"] < obj["ci_hi"]
+    assert obj["ci_excludes_zero"] is prior_shift.ci_excludes_zero(obj)
+    assert obj["seed"] == harness.BOOTSTRAP_SEED
+    assert obj["n_resamples"] == harness.N_RESAMPLES
+    assert obj["scope"] == prior_shift.SCOPE_NATIVE
+    assert obj["path"] == "P_prior_first"
+    assert obj["cost_usd"] == 0.0
+    assert obj["repro_command"] == (
+        "uv run python -m triage_lab.prior_shift --paired-within tier_a tier_b2 --year 2026h1"
+    )
+    assert len({rid for t in obj["run_ids"].values() for rid in t.values()}) == 4
+
+
+@_needs_real
+def test_paired_delta_reports_the_marginal_overlap_it_supersedes():
+    """The reason the artifact exists: the two marginal intervals DO overlap here, so the
+    paired interval is the only admissible test of the difference."""
+    obj = json.loads(_PAIRED_FILE.read_text())
+    assert obj["marginal_intervals"]["overlap"] is True
+    width_x = (obj["marginal_intervals"][obj["tier_x"]]["ci_hi"]
+               - obj["marginal_intervals"][obj["tier_x"]]["ci_lo"])
+    assert (obj["ci_hi"] - obj["ci_lo"]) < width_x  # pairing bought precision
+
+
+@_needs_real
+def test_paired_delta_is_robust_across_the_decomposition_paths():
+    """Path P's within-term absorbs the whole interaction, so a within-claim is only safe
+    if Path Q and Shapley agree; the artifact must carry them."""
+    obj = json.loads(_PAIRED_FILE.read_text())
+    for key in ("within::path_q", "within::shapley"):
+        assert key in obj["delta_sensitivity"]
+    if obj["ci_excludes_zero"]:
+        assert obj["delta_sensitivity"]["within::path_q"]["excludes_zero"] is True
+        assert obj["delta_sensitivity"]["within::shapley"]["excludes_zero"] is True
+
+
+def test_paired_cli_refuses_to_be_combined_with_the_per_tier_modes():
+    for extra in (["--all"], ["--tier", "tier_a"], ["--scope", "native"]):
+        with pytest.raises(SystemExit):
+            prior_shift.main(["--paired-within", "tier_a", "tier_b2", "--year", "2026h1", *extra])
+    with pytest.raises(SystemExit):  # needs exactly one --year
+        prior_shift.main(["--paired-within", "tier_a", "tier_b2"])
+    with pytest.raises(SystemExit):
+        prior_shift.main(["--paired-within", "tier_a", "tier_b2",
+                          "--year", "2025", "--year", "2026h1"])
+
+
+@_needs_real
+def test_misaligned_ids_are_caught_on_the_real_loading_path(tmp_path, monkeypatch):
+    """Synthetic misalignment on the real loading path: move ONE complaint_id in Tier B2's
+    2026-H1 artifact to an id Tier A does not carry. Row counts still match and every
+    aggregate metric is untouched, so only the id check can catch it -- and it must, because
+    positional bootstrap indices would otherwise silently pair two different complaints."""
+    from triage_lab import predictions
+
+    records = predictions.records_by_config()
+    real_loader = prior_shift._load_verified
+    victim_id = records[prior_shift.config_stem("tier_b2", "2026h1")]["run_id"]
+
+    class _Tampered:
+        """Same rows, same order, one id changed."""
+
+        def __init__(self, art):
+            self._art = art
+            ids = art.complaint_id.copy()
+            ids[7] = ids.max() + 1
+            self.complaint_id = ids
+
+        def __len__(self):
+            return len(self.complaint_id)
+
+        def __getattr__(self, name):
+            return getattr(self._art, name)
+
+    def _fake(record, preds_dir):
+        art = real_loader(record, preds_dir)
+        return _Tampered(art) if record["run_id"] == victim_id else art
+
+    monkeypatch.setattr(prior_shift, "_load_verified", _fake)
+    with pytest.raises(ValueError, match="do not cover identical complaint_ids"):
+        prior_shift.paired_within_delta(
+            "tier_a", "tier_b2", "2026h1", records=records, summary_path=tmp_path / "none.json"
+        )

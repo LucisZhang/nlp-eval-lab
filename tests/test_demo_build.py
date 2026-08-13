@@ -20,6 +20,7 @@ Three tiers of test, by what they need on disk:
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter
 from pathlib import Path
 
@@ -40,6 +41,7 @@ CONTRACT_FILES = (
     "samples.json",
     "curated_ids.json",
     "receipts.json",
+    "case_study.json",
 )
 
 _HAS_DEMO = DEMO_DIR.exists() and all((DEMO_DIR / n).exists() for n in CONTRACT_FILES)
@@ -122,7 +124,7 @@ def _receipts_by_id(raw_log_path) -> dict[int, dict]:
 # ---------------------------------------------------------------------------
 
 @_needs_demo
-def test_all_nine_contract_files_exist():
+def test_all_ten_contract_files_exist():
     for name in CONTRACT_FILES:
         assert (DEMO_DIR / name).is_file(), f"missing contract file {name}"
 
@@ -613,6 +615,491 @@ def test_freeze_check_rejects_a_changed_selection(tmp_path, payload):
     mutated = {**payload["curated_ids.json"], "seed": 1}
     with pytest.raises(ValueError, match="FROZEN SELECTION CHANGED"):
         demo_build.freeze_check(mutated, path)
+
+
+# ---------------------------------------------------------------------------
+# Case study: the page where prose and numbers share a sentence
+# ---------------------------------------------------------------------------
+#
+# The case study is the highest-risk exhibit in the repo: it is the one place a number is
+# written INSIDE a sentence, which is exactly where an unattributed or stale figure is
+# cheapest to produce and hardest to spot. So it gets four gates rather than one:
+#
+#   (a) every run id it names exists in the append-only log (shared with every other file);
+#   (b) every COPIED value appears, at exact float equality, among the numeric leaves of
+#       the artifact its `source` names — plus hand-written spot checks on the headlines,
+#       so the generic gate cannot be satisfied by a coincidentally-present float;
+#   (c) every `display` string reads back to its own `value` under its declared `unit`,
+#       component by component and at the display's own precision — the page cannot show
+#       "0.76" for a value of 0.7605270747 or drop a CI bound;
+#   (d) every numeric token in the PROSE is one of that section's declared displays.
+#
+# Gate (d) needs a tokenizer, and a tokenizer needs an exemption rule. The rule is:
+# **a numeric token is exempt only if it is an IDENTIFIER, never if it is a quantity.**
+# Concretely — calendar years and half-year slice labels (2015, 2026-H1, 2022-H2), ISO
+# dates, hex digests, the standard name SHA-256, the model names "Haiku 4.5" / "Sonnet 5",
+# the unit suffix "1k", and digits that are part of a word (A6000, bf16, int8, fp32, v2,
+# QInt8, B2), which fall out of the "not preceded by a letter or digit" lookbehind rather
+# than needing a list. Nothing that is a rate, count, dollar figure, CI bound or p-value is
+# exempt: those must be declared or the test fails.
+#
+# The known blind spot, stated rather than hidden: a genuine measurement that happens to
+# look like a bare calendar year (e.g. an unseparated "2000") would be silently exempted.
+# Every count on the page is thousands-separated, which keeps that case out of reach.
+
+_CS_IDENTIFIER_PATTERNS = (
+    r"\d{4}-\d{2}-\d{2}",                                   # ISO dates
+    r"\b(?:19|20)\d{2}(?:-H[12])?\b",                       # years / half-year slices
+    r"\b(?=[0-9a-f]{8,}\b)[0-9a-f]*[a-f][0-9a-f]*\b",       # hex digests
+    r"\bSHA-256\b",
+    r"\b(?:Claude\s+)?(?:Haiku\s+4\.5|Sonnet\s+5)\b",       # model product names
+    r"/1k\b|\b1k\b",                                        # the per-1k unit suffix
+)
+_CS_IDENTIFIER_RE = re.compile("|".join(_CS_IDENTIFIER_PATTERNS))
+# Not preceded by a letter or digit: "A6000", "bf16", "int8", "fp32", "v2", "B2" are words.
+_CS_NUMBER_RE = re.compile(r"(?<![0-9A-Za-z])\d[\d,]*(?:\.\d+)?(?:[eE][+-]?\d+)?")
+
+_CS_ARTIFACT_SOURCES = {  # sources the value gate can open and search
+    "results/runs.jsonl",
+    "SNAPSHOT_MANIFEST.yaml",
+}
+_CS_UNCHECKABLE_SOURCES = {  # derived-from-a-glob or declared-in-code; other gates cover
+    "results/tier_c_raw/**/calls.jsonl",
+    "src/triage_lab/demo_build.py",
+}
+
+
+def _cs_numeric_tokens(text: str) -> set[str]:
+    """Numeric tokens in prose, identifiers removed, commas normalized away."""
+    stripped = _CS_IDENTIFIER_RE.sub(" ", text)
+    return {m.group(0).replace(",", "") for m in _CS_NUMBER_RE.finditer(stripped)}
+
+
+def _cs_display_tokens(display: str) -> list[str]:
+    """Unsigned tokens, for the prose gate — signs live in the sentence, not the number."""
+    return [m.group(0).replace(",", "") for m in _CS_NUMBER_RE.finditer(display)]
+
+
+# Signed form, for the read-back gate only: a dropped or flipped minus is exactly the kind
+# of error the display gate exists to catch, so that one comparison is sign-aware.
+_CS_SIGNED_RE = re.compile(
+    r"(?P<sign>[-+]?)\$?(?P<num>\d[\d,]*(?:\.\d+)?(?:[eE][-+]?\d+)?)")
+
+
+def _cs_display_signed(display: str) -> list[str]:
+    return [m.group("sign") + m.group("num").replace(",", "")
+            for m in _CS_SIGNED_RE.finditer(display)]
+
+
+def _cs_numeric_leaves(obj) -> set[float]:
+    out: set[float] = set()
+    for _path, value in _walk(obj, ()):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            continue
+        out.add(float(value))
+    return out
+
+
+def _cs_source_leaves(entry: dict, records: list[dict]) -> set[float] | None:
+    """Numeric leaves of the artifact an entry's `source` names, or None if uncheckable."""
+    source = entry["source"]
+    if source in _CS_UNCHECKABLE_SOURCES:
+        return None
+    path = demo_build.REPO_ROOT / source
+    if source == "results/runs.jsonl":
+        by_run = {r["run_id"]: r for r in records}
+        named = [by_run[rid] for rid in entry["run_ids"]]
+        assert named, f"{entry['label']}: sources runs.jsonl but names no run id"
+        return set().union(*[_cs_numeric_leaves(r) for r in named])
+    assert path.is_file(), f"{entry['label']}: source {source} does not exist"
+    if path.suffix == ".yaml":
+        import yaml
+        return _cs_numeric_leaves(yaml.safe_load(path.read_text(encoding="utf-8")))
+    return _cs_numeric_leaves(json.loads(path.read_text(encoding="utf-8")))
+
+
+def _cs_value_components(value) -> list[float]:
+    if isinstance(value, dict):
+        return [float(value["point"]), float(value["ci_lo"]), float(value["ci_hi"])]
+    return [float(value)]
+
+
+@pytest.fixture(scope="module")
+def case_study(payload) -> dict:
+    return payload["case_study.json"]
+
+
+@pytest.fixture(scope="module")
+def cs_sections(case_study) -> dict:
+    return {s["id"]: s for s in case_study["sections"]}
+
+
+@_needs_demo
+def test_case_study_shape(case_study, cs_sections):
+    assert case_study["schema_version"] == "case-study-v1"
+    assert case_study["title"] == demo_build.CASE_STUDY_TITLE
+    assert case_study["source_note"]
+    assert set(case_study["evidence_classes"]) == set(demo_build.EVIDENCE_LEGEND)
+    assert list(cs_sections) == [
+        "intro", "tiers", "drift", "thresholds", "router", "robustness", "negatives",
+        "verification", "limits", "provenance",
+    ]
+    allowed_evidence = set(demo_build.EVIDENCE_LEGEND) | {"pending"}
+    for section in case_study["sections"]:
+        assert section["kind"] in {"narrative", "verification", "limits", "pending"}
+        assert section["title"]
+        assert isinstance(section["paragraphs"], list)
+        assert isinstance(section["numbers"], list)
+        assert isinstance(section["items"], list)
+        assert isinstance(section["gaps"], list)
+        labels = [n["label"] for n in section["numbers"]]
+        assert len(labels) == len(set(labels)), f"{section['id']}: duplicate number labels"
+        for entry in section["numbers"]:
+            assert entry["unit"] in {"raw", "usd", "pct", "pctpoint", "count", "pvalue"}
+            assert entry["basis"] in {"copied", "derived", "declared"}
+            assert entry["evidence_class"] in allowed_evidence
+            assert entry["source"]
+            assert entry["display"]
+        # The section's chips are exactly the ordered union of its numbers' run ids.
+        expected: list[str] = []
+        for entry in section["numbers"]:
+            for run_id in entry["run_ids"]:
+                if run_id not in expected:
+                    expected.append(run_id)
+        assert section["run_ids"] == expected
+
+
+@_needs_demo
+def test_case_study_pending_slots_are_labeled_objects(case_study, cs_sections):
+    slots = {p["slot"] for p in case_study["pending"]}
+    assert slots == {"reproduce_headline", "provenance_seeds"}
+    for slot in case_study["pending"]:
+        assert slot["pending"] is True and slot["label"]
+    # ...and both are visible where the reader meets them, not only in the footer.
+    verification_pending = [i for i in cs_sections["verification"]["items"] if i.get("pending")]
+    assert [i["pending"]["slot"] for i in verification_pending] == ["reproduce_headline"]
+    assert cs_sections["provenance"]["pending"]["slot"] == "provenance_seeds"
+
+
+@_needs_demo
+def test_case_study_run_ids_all_trace_to_the_results_log(case_study, records):
+    known = {r["run_id"] for r in records}
+    seen: set[str] = set()
+    for section in case_study["sections"]:
+        for entry in section["numbers"]:
+            for run_id in entry["run_ids"]:
+                assert run_id in known, f"{entry['label']}: unknown run id {run_id}"
+                seen.add(run_id)
+        for item in section["items"]:
+            for run_id in item.get("run_ids", []):
+                assert run_id in known, f"item {item.get('n')}: unknown run id {run_id}"
+                seen.add(run_id)
+    assert len(seen) >= 15, "case study cites suspiciously few runs"
+
+
+@_needs_demo
+def test_case_study_copied_values_exist_in_their_source_artifact(case_study, records):
+    """Generic gate (b): a copied number must literally be in the file it names."""
+    checked = 0
+    for section in case_study["sections"]:
+        for entry in section["numbers"]:
+            if entry["basis"] != "copied":
+                continue
+            leaves = _cs_source_leaves(entry, records)
+            if leaves is None:
+                continue
+            for component in _cs_value_components(entry["value"]):
+                assert component in leaves, (
+                    f"{section['id']}.{entry['label']}: {component!r} is not a value in "
+                    f"{entry['source']} — the page is not copying, it is asserting")
+                checked += 1
+    assert checked >= 100, "value gate covered suspiciously few components"
+
+
+@_needs_demo
+def test_case_study_headline_values_match_a_hand_written_lookup(case_study, cs_sections,
+                                                                resolved):
+    """Targeted gate (b): the numbers a reader would quote, looked up independently.
+
+    Deliberately not driven by `source`/`label`: this table is written from the artifacts,
+    so a build that renamed a source or picked the wrong row still fails here.
+    """
+    def _num(section_id, label):
+        return {n["label"]: n for n in cs_sections[section_id]["numbers"]}[label]
+
+    def _artifact(rel):
+        return json.loads((demo_build.REPO_ROOT / rel).read_text(encoding="utf-8"))
+
+    logreg = demo_build.record_for(resolved, demo_build.TIER_A_LOGREG_TEST, "test_iid")
+    b2 = demo_build.record_for(resolved, demo_build.TIER_B2_SAMPLE_CONFIG, "test_iid")
+    for label, record in (("tier_a_macro_f1", logreg), ("b2_macro_f1", b2)):
+        logged = record["metrics"]["macro_f1"]
+        assert _num("tiers", label)["value"] == {
+            "point": logged["point"], "ci_lo": logged["ci_lo"], "ci_hi": logged["ci_hi"]}
+
+    compare = _artifact("results/tier_b_compare/summary.json")
+    b1_vs_b2 = next(c for c in compare["comparisons"]
+                    if c["a"] == "b1_sa" and c["b"] == "b2")
+    assert _num("tiers", "b1_minus_b2_macro_f1")["value"] == {
+        "point": b1_vs_b2["macro_f1"]["delta"],
+        "ci_lo": b1_vs_b2["macro_f1"]["ci_lo"],
+        "ci_hi": b1_vs_b2["macro_f1"]["ci_hi"]}
+    assert _num("tiers", "b1_sa_macro_f1")["value"] == \
+        compare["provenance"]["b1_sa"]["macro_f1_point"]
+
+    paired = _artifact("results/prior_shift/paired_within_tier_a_vs_tier_b2_2026h1.json")
+    assert paired["ci_excludes_zero"] is True, "the certified phrasing needs an excl-0 CI"
+    assert _num("drift", "paired_within_delta")["value"] == {
+        "point": paired["delta"]["point"], "ci_lo": paired["delta"]["ci_lo"],
+        "ci_hi": paired["delta"]["ci_hi"]}
+
+    frontier_doc = _artifact(
+        demo_build._rel(demo_build.primary_frontier_path(
+            cost_model.load_cost_config(demo_build.DEMO_COST_CONFIG))))
+    claim = next(c for c in frontier_doc["claims"]
+                 if c.get("router") == "a_to_b" and c.get("baseline") == "b2_only"
+                 and c.get("evaluation_set") == router_sim.EVAL_FULL)
+    assert claim["gate"]["certified"] is True, "the headline two-axis claim must be certified"
+    for label, key in (("a_to_b_vs_b2_cost", "delta_cost_per_1k"),
+                       ("a_to_b_vs_b2_f1", "delta_macro_f1_system")):
+        band = claim[key]
+        assert _num("router", label)["value"] == {
+            "point": band["point"], "ci_lo": band["ci_lo"], "ci_hi": band["ci_hi"]}
+
+    drift = _artifact("results/drift/summary.json")
+    cliff = next(r for r in drift["series"]["logged"]
+                 if r["tier"] == "tier_a" and r["slice"] == "test_drift_2026h1")
+    assert _num("drift", "a_2026")["value"] == {
+        "point": cliff["macro_f1"]["point"], "ci_lo": cliff["macro_f1"]["ci_lo"],
+        "ci_hi": cliff["macro_f1"]["ci_hi"]}
+
+    oov = _artifact("results/oov/summary.json")
+    peak = next(r for r in oov["rows"] if r["slice"] == "test_drift_2025"
+                and r["metric"] == "tfidf_centroid_cosine_distance")
+    year = next(r for r in oov["rows"] if r["slice"] == "test_drift_2026h1"
+                and r["metric"] == "tfidf_centroid_cosine_distance")
+    assert _num("negatives", "centroid_2025")["value"]["point"] == peak["point"]
+    assert _num("negatives", "centroid_2026")["value"]["point"] == year["point"]
+    # The prose says the intervals are DISJOINT; if they ever overlap, the claim is wrong.
+    assert year["ci_hi"] < peak["ci_lo"], "OOV prose claims disjoint intervals"
+
+
+@_needs_demo
+def test_case_study_display_reads_back_to_its_value(case_study):
+    """Gate (c): the digits shown are the value, at the precision shown."""
+    for section in case_study["sections"]:
+        for entry in section["numbers"]:
+            tokens = _cs_display_signed(entry["display"])
+            components = _cs_value_components(entry["value"])
+            where = f"{section['id']}.{entry['label']}"
+            assert len(tokens) == len(components), (
+                f"{where}: display {entry['display']!r} has {len(tokens)} numeric tokens "
+                f"for {len(components)} value component(s)")
+            for token, component in zip(tokens, components, strict=True):
+                shown = float(token)
+                if entry["unit"] == "pct":
+                    component = component * 100.0
+                if entry["unit"] == "pvalue":
+                    assert component == pytest.approx(shown, rel=0.05), where
+                    continue
+                digits = len(token.split(".")[1]) if "." in token else 0
+                assert shown == pytest.approx(round(component, digits), abs=10 ** -9), (
+                    f"{where}: display shows {token!r} but the value is {component!r}")
+
+
+@_needs_demo
+def test_every_numeric_token_in_the_prose_is_a_declared_number(case_study):
+    """Gate (d): no number reaches a sentence without a source behind it."""
+    total_tokens = 0
+    for section in case_study["sections"]:
+        declared: set[str] = set()
+        for entry in section["numbers"]:
+            declared.update(_cs_display_tokens(entry["display"]))
+        texts = list(section["paragraphs"])
+        texts += [item["text"] for item in section["items"] if "text" in item]
+        for text in texts:
+            tokens = _cs_numeric_tokens(text)
+            total_tokens += len(tokens)
+            undeclared = tokens - declared
+            assert not undeclared, (
+                f"{section['id']}: prose contains number(s) {sorted(undeclared)} that no "
+                f"`numbers` entry declares (declared: {sorted(declared)}) — either copy "
+                f"them from an artifact or take them out of the sentence.\n{text}")
+    assert total_tokens >= 60, "prose gate matched suspiciously few tokens"
+
+
+@_needs_demo
+def test_case_study_tokenizer_still_catches_an_undeclared_number():
+    """The gate above is only worth its runtime if it can fail. Prove it can."""
+    assert _cs_numeric_tokens("macro-F1 0.7605 on 2026-H1 with SHA-256 deadbeefcafe") == \
+        {"0.7605"}
+    # identifiers, not quantities: exempt
+    assert _cs_numeric_tokens("Haiku 4.5 and Sonnet 5 on an A6000 in bf16, int8 v2") == set()
+    assert _cs_numeric_tokens("downloaded 2026-08-05 across 2015 to 2026") == set()
+    assert _cs_numeric_tokens("$1.315/1k calls") == {"1.315"}
+    # quantities: never exempt
+    assert _cs_numeric_tokens("n=104,443 rows at 99.81% and p=6.3e-08") == \
+        {"104443", "99.81", "6.3e-08"}
+
+
+@_needs_demo
+def test_case_study_derived_numbers_recompute_from_their_sources(cs_sections, records,
+                                                                 resolved, payload):
+    """Gate for `basis: derived`: recomputed here from the artifacts, not from the module."""
+    def _num(section_id, label):
+        return {n["label"]: n for n in cs_sections[section_id]["numbers"]}[label]
+
+    drift = json.loads((demo_build.REPO_ROOT / "results/drift/summary.json")
+                       .read_text(encoding="utf-8"))
+    ci_lo, ci_hi = drift["bootstrap"]["ci_pct"]
+    for section_id in ("intro", "verification"):
+        assert _num(section_id, "n_run_records")["value"] == len(records)
+        assert _num(section_id, "ci_level")["value"] == ci_hi - ci_lo
+
+    def _esc(policy, slice_name):
+        return next(r for r in drift["series"]["escalation"]
+                    if r["policy"] == policy and r["slice"] == slice_name
+                    and r["dataset"] == "full_cal")["escalation_rate"]["point"]
+
+    for label, policy in (("human_rise", "a_to_human"), ("b_rise", "a_to_b")):
+        expected = _esc(policy, "test_drift_2026h1") / _esc(policy, "test_drift_2025") - 1
+        assert _num("thresholds", label)["value"] == pytest.approx(expected, abs=1e-12)
+
+    perturb = json.loads((demo_build.REPO_ROOT / "results/perturbation/summary.json")
+                         .read_text(encoding="utf-8"))
+
+    def _delta(arm):
+        return next(r for r in perturb["rows"] if r["arm"] == arm and r["family"] == "typo"
+                    and r["rate"] == 0.1)["metrics"]["macro_f1"]["delta"]
+
+    shield = 1.0 - _delta("logreg_wordchar") / _delta("logreg_word_only")
+    assert _num("robustness", "char_shield_share")["value"] == pytest.approx(shield,
+                                                                             abs=1e-12)
+
+    # Prompt-token inflation: recomputed straight off the committed receipt lines, with no
+    # help from cost_model's loader, so a change in that loader cannot make this agree.
+    clean = _receipts_by_id(demo_build.record_for(
+        resolved, demo_build.HAIKU_TEST, "test_iid")["extra"]["raw_log_path"])
+    for family in ("typo", "ocr", "case"):
+        row = next(r for r in perturb["rows"] if r["arm"] == "tier_c_haiku"
+                   and r["family"] == family and r["rate"] == 0.1)
+        perturbed = _receipts_by_id(demo_build.record_for(
+            resolved, row["perturbed_config"], "test_iid")["extra"]["raw_log_path"])
+        ids = sorted(perturbed)
+        expected = (sum(perturbed[i]["prompt_tokens"] for i in ids)
+                    / sum(clean[i]["prompt_tokens"] for i in ids) - 1.0)
+        assert _num("robustness", f"inflation_{family}")["value"] == \
+            pytest.approx(expected, abs=1e-12)
+
+    providers: Counter = Counter()
+    for entry in payload["receipts.json"]["runs"].values():
+        providers.update(entry["provider_mix"])
+    total = sum(providers.values())
+    assert _num("verification", "n_tier_c_calls")["value"] == total
+    assert _num("verification", "bedrock_share")["value"] == pytest.approx(
+        providers["Amazon Bedrock"] / total, abs=1e-12)
+
+
+@_needs_demo
+def test_case_study_declared_suite_counts_are_the_module_constant(cs_sections):
+    """The one number with no results/ artifact: it must at least be a named constant."""
+    numbers = {n["label"]: n for n in cs_sections["verification"]["numbers"]}
+    for field in ("passed", "skipped", "failed"):
+        entry = numbers[f"suite_{field}"]
+        assert entry["basis"] == "declared"
+        assert entry["value"] == demo_build.SUITE_RESULT[field]
+        assert entry["repro"] == demo_build.SUITE_RESULT["command"]
+    assert numbers["suite_failed"]["value"] == 0, "the page may not claim a green suite"
+
+
+@_needs_demo
+def test_case_study_records_the_numbers_it_deliberately_does_not_show(cs_sections):
+    """`gaps` is load-bearing: an omission with a reason, not a silent absence.
+
+    The three `tier_c_compare` gaps closed on 2026-08-13 when that tool learned to write a
+    committed artifact, so the page now STATES those comparisons. This test pins the
+    closure: no gap may cite tier_c_compare again without the artifact also disappearing,
+    which the value gate would catch first.
+    """
+    gap_text = " ".join(g for s in cs_sections.values() for g in s["gaps"])
+    assert "tier_c_compare" not in gap_text, (
+        "a tier_c_compare gap is back: either an artifact went missing or a paired "
+        "comparison was silently dropped from the prose")
+    # The one surviving omission is a real one: a superseded cost generation's figure.
+    assert cs_sections["negatives"]["gaps"], "the cost-generation omission must stay stated"
+    assert "generation" in " ".join(cs_sections["negatives"]["gaps"])
+    for section_id in ("tiers", "drift", "negatives"):
+        assert not any("EXPERIMENT_LOG.md" in g for g in cs_sections[section_id]["gaps"]), (
+            f"{section_id}: EXPERIMENT_LOG.md is no longer a substitute for an artifact")
+
+
+@_needs_demo
+def test_case_study_states_the_three_paired_tier_c_comparisons(cs_sections):
+    """The arc the gaps used to swallow: tied in distribution, decisive off it.
+
+    Checked against the artifacts rather than the prose, and with the SLICE pinned — the
+    POSTCUTOFF delta is not a 2026-H1 drift-slice number and the page must not imply it is.
+    """
+    def _art(key):
+        return json.loads((demo_build.DEFAULT_TIER_C_COMPARE_DIR / f"{key}.json")
+                          .read_text(encoding="utf-8"))
+
+    expected = {
+        ("tiers", "sonnet_minus_haiku_iid"): (demo_build.TIER_C_COMPARE_SONNET_IID,
+                                              "test_iid", False),
+        ("drift", "sonnet_minus_haiku_pc"): (demo_build.TIER_C_COMPARE_SONNET_POSTCUTOFF,
+                                             "test_postcutoff", True),
+        ("negatives", "fewshot_minus_zeroshot"): (demo_build.TIER_C_COMPARE_FEWSHOT,
+                                                  "cal", False),
+    }
+    for (section_id, prefix), (key, split, excludes_zero) in expected.items():
+        artifact = _art(key)
+        assert artifact["split"] == split, f"{key}: wrong slice"
+        band = artifact["deltas"]["macro_f1"]
+        assert band["excludes_zero"] is excludes_zero, (
+            f"{key}: the page's verdict depends on this and it flipped")
+        numbers = {n["label"]: n for n in cs_sections[section_id]["numbers"]}
+        assert numbers[f"{prefix}_delta"]["value"] == {
+            "point": band["delta"], "ci_lo": band["ci_lo"], "ci_hi": band["ci_hi"]}
+        assert numbers[f"{prefix}_p"]["value"] == artifact["mcnemar"]["p_value"]
+        assert numbers[f"{prefix}_n"]["value"] == artifact["n_examples"] == 1500
+        assert numbers[f"{prefix}_delta"]["source"] == \
+            f"results/tier_c_compare/{key}.json"
+        assert numbers[f"{prefix}_delta"]["repro"] == artifact["repro_command"]
+        # Both arms' run ids, resolved by the tool from the receipts, reach the chips.
+        assert set(numbers[f"{prefix}_delta"]["run_ids"]) == {
+            artifact["arm_a"]["run_id"], artifact["arm_b"]["run_id"]}
+    # Slice hygiene: the drift section must name POSTCUTOFF where it quotes that delta.
+    drift_prose = " ".join(cs_sections["drift"]["paragraphs"])
+    assert "TEST-POSTCUTOFF" in drift_prose
+
+
+@_needs_demo
+def test_case_study_sections_carry_receipts(cs_sections):
+    for section_id in ("tiers", "drift", "thresholds", "router", "robustness",
+                       "negatives"):
+        section = cs_sections[section_id]
+        assert section["repro"], f"{section_id}: no reproduction command"
+        assert section["run_ids"] or section_id == "router", (
+            f"{section_id}: no run chips")
+    # The verification checklist is the page's spine: every item states a source.
+    for item in cs_sections["verification"]["items"]:
+        assert item["source"] and item["title"] and item["text"]
+
+
+@_needs_demo
+def test_case_study_is_reachable_from_the_site(case_study):
+    """A payload no panel loads is not an exhibit. Pin the wiring, not the styling."""
+    index = (demo_build.REPO_ROOT / "demo" / "index.html").read_text(encoding="utf-8")
+    app = (demo_build.REPO_ROOT / "demo" / "assets" / "app.js").read_text(encoding="utf-8")
+    assert 'data-panel="casestudy"' in index
+    assert 'id="panel-casestudy"' in index
+    for element_id in ("casestudy-body", "casestudy-banner-slot", "casestudy-source-note",
+                       "casestudy-title"):
+        assert f'id="{element_id}"' in index, f"index.html has no #{element_id}"
+        assert f'"{element_id}"' in app, f"app.js never reads #{element_id}"
+    assert '"casestudy"' in app and "initCaseStudy()" in app
+    assert 'loadJSON("case_study.json")' in app
 
 
 # ---------------------------------------------------------------------------
