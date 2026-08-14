@@ -549,16 +549,21 @@ def centroid_pass(
 def cosine_distance(a: np.ndarray, b: np.ndarray) -> float:
     """1 - cos(a, b); 0 when either vector is the origin (no direction to disagree about).
 
-    The cosine is clipped into [-1, 1] before the subtraction. Without it the self-distance
-    of a 300,000-document centroid comes out at -2.2e-16 instead of 0 -- a *negative
-    distance* in a committed JSON that claims to be a structural zero. Clipping is the
-    standard, sign-preserving fix: the quantity is mathematically in [0, 2] and only float
-    rounding puts it outside.
+    The cosine is clipped into [-1, 1] before the subtraction, and distances below 1e-12
+    snap to exactly +0.0. Both guards exist because float rounding lands the self-cosine on
+    either side of 1 depending on the BLAS: on macOS/Accelerate the 300,000-document TRAIN
+    centroid comes out at cos > 1 (a *negative* distance, -2.2e-16, in a JSON that claims a
+    structural zero -- the clip fixes that); on Linux/OpenBLAS it comes out at cos < 1
+    (+3.3e-16, which the clip cannot touch -- the snap fixes that). The quantity is
+    mathematically in [0, 2] and every measured drift distance in the committed artifacts is
+    >= ~1e-3, four orders above the snap threshold, so the snap can only ever absorb rounding
+    noise.
     """
     na, nb = float(np.linalg.norm(a)), float(np.linalg.norm(b))
     if na == 0.0 or nb == 0.0:
         return 0.0
-    return float(1.0 - min(1.0, max(-1.0, float(a @ b) / (na * nb))))
+    d = 1.0 - min(1.0, max(-1.0, float(a @ b) / (na * nb)))
+    return 0.0 if d < 1e-12 else float(d)
 
 
 # ---------------------------------------------------------------------------
