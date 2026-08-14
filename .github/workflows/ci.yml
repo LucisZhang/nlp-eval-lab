@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   smoke:
     runs-on: ubuntu-latest
@@ -13,6 +16,25 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
-      - run: uv sync --frozen
+      # One sync with every extra the CI-safe path needs, on purpose in a SINGLE
+      # command: `uv sync` is exact, so a later sync with a different extras set
+      # uninstalls the previous one (the charts-only install gap — see
+      # EXPERIMENT_LOG 2026-08-12). `charts` unskips the drift-chart tests;
+      # `tierc` because the mock-based tier_c tests import openai. `tierb`
+      # (torch) is not needed: every test that wants a checkpoint or data/
+      # skips itself on a bare clone.
+      - run: uv sync --frozen --extra charts --extra tierc
       - run: uv run ruff check
-      - run: uv run pytest
+      # The pytest run carries the CI-safe demo-payload checks: the frozen
+      # curated-selection regenerate-and-compare (pool_sha256 gate), the
+      # DATA_CONTRACT tests, and the live-inference agreement-report gates all
+      # run from committed files. A full `make demo-data` byte-identity rebuild
+      # is NOT possible here by design: the router-path replay in demo_build
+      # reads per-example prediction artifacts under data/preds/, and a runner
+      # has no data/ or checkpoints (same reason reproduce_headline runs as
+      # --plan below).
+      - run: uv run pytest -q
+      # CI-safe entry point of the headline reproduction: resolves the full run
+      # chain (11 runs, 27 gated outputs) from the committed derivation records
+      # without touching data/.
+      - run: uv run python -m triage_lab.reproduce_headline --plan
