@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier tier-b-frontier prior-shift prior-shift-paired oov perturb perturb-tier-c perturb-report drift-charts demo-data demo-live
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier tier-b-frontier prior-shift prior-shift-paired oov perturb perturb-tier-c perturb-report drift-charts demo-data demo-live reproduce-headline
 
 setup:
 	uv sync --frozen
@@ -85,8 +85,12 @@ tier-c-smoke:
 # every non-smoke run and verify each against its logged point metrics (✓/✗, nonzero exit
 # on mismatch). Artifacts are gitignored (data/) and regenerable; runs.jsonl is untouched.
 # The slow LogReg re-fit is isolated with --only for a separate background launch.
+#
+# `--extra tierb`: re-deriving a Tier B artifact re-runs the checkpoint, which needs torch +
+# transformers. Without the extra this target dies partway through on a fresh clone (fixed
+# 2026-08-13 with `make reproduce-headline`, which takes the same path).
 preds:
-	uv run python -m triage_lab.predictions --all
+	uv run --extra tierb python -m triage_lab.predictions --all
 
 # Risk-coverage evidence JSONs (Phase 4): committed, deterministic operating-point tables
 # + CI'd AURC / acc@coverage summaries, one per artifact, for the router phase and demo.
@@ -250,6 +254,31 @@ drift-charts:
 # demo/data/curated_ids.json (CLAUDE.md rule 2).
 demo-data:
 	uv run python -m triage_lab.demo_build --all
+
+# ONE command from the frozen snapshot to the headline claims (Phase 6, UPGRADE_PLAN §4.3).
+# Re-materializes the splits from the frozen CFPB snapshot (`make data`, with the split
+# sha256s checked against the frozen run records, not just against their own stats file),
+# RE-DERIVES every per-example artifact the headline chain reads (`predictions --force`:
+# Tier A refits, Tier B re-runs the checkpoints, Tier C rebuilds from committed receipts —
+# each verified against its logged metrics at 1e-9), re-runs the v2 cost/threshold/router/
+# frontier derivation, rebuilds demo/data/, and then GATES all 27 regenerated files against
+# the committed ones by sha256. Any difference (or an unexpected new output) fails the run.
+#
+# Scope is the HEADLINE CLAIM CHAIN — the certified a_to_b frontier and the payload that
+# publishes it — not every number on the case-study page: the yearly drift, perturbation,
+# OOV and prior-shift exhibits are their own multi-hour jobs and keep their own repro
+# commands in EXPERIMENT_LOG.md.
+#
+# Offline apart from the snapshot download; no OPENROUTER_API_KEY, nothing appended to
+# results/runs.jsonl. Needs the `tierb` extra (Tier B artifacts are re-derived from the
+# checkpoints under data/checkpoints/, which are NOT in git — see docs/TIER_B_RUNBOOK.md;
+# their absence fails in preflight, in seconds, instead of hours in).
+#
+# EXPENSIVE: ~16-20h wall-clock on the local box, dominated by re-running the three
+# ModernBERT seeds over TEST-IID. `--preflight` checks every prerequisite in seconds;
+# `--plan` resolves the chain with no data/ at all (CI-safe).
+reproduce-headline:
+	uv run --extra tierb python -m triage_lab.reproduce_headline
 
 # In-browser live inference exports (Phase 6): exports the calibrated Tier A model to
 # demo/live/tier_a/tier_a_live.json for in-browser inference (refit on TRAIN + isotonic on

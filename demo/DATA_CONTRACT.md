@@ -153,7 +153,7 @@ artifact.
 {"schema_version": "case-study-v1", "title": "...", "source_note": "...",
  "repo": {"url_base": "<'' until the GitHub push>", "default_branch": "main"},
  "evidence_classes": {...same legend as meta.json...},
- "pending": [{"pending": true, "slot": "reproduce_headline", "label": "..."}],
+ "pending": [],                                 // both slots shipped 2026-08-13; shape unchanged
  "sections": [
    {"id": "intro|tiers|drift|thresholds|router|robustness|negatives|verification|limits|provenance",
     "kind": "narrative|verification|limits|provenance|pending",
@@ -220,9 +220,19 @@ comparisons that were `gaps` on 2026-08-13 are now stated — `triage_lab.tier_c
 --out` writes `results/tier_c_compare/*.json`, so they have a source to be checked against.
 The surviving `gaps` entry is a figure that exists only under a superseded cost generation.)
 
-One slot is still pending and is rendered as a labeled pending object, never omitted:
-`reproduce_headline` (the `make reproduce-headline` target, next Phase 6 task). The former
-`provenance_seeds` slot shipped 2026-08-13 as the real `provenance` section below.
+**No slot is pending as of 2026-08-13** — `case_study.pending` is `[]`, and the key is still
+always present. `provenance_seeds` shipped as the real `provenance` section below;
+`reproduce_headline` shipped as verification item 11: `make reproduce-headline`
+(`src/triage_lab/reproduce_headline.py`) re-derives the headline claim chain from the frozen
+snapshot — splits re-materialized and hash-checked against the frozen run records, every
+per-example artifact the chain reads re-derived and verified against its logged metrics, the
+v2 threshold/router/frontier derivation re-run, this payload rebuilt — and fails unless every
+regenerated file is byte-identical to the committed one. `demo/data/meta.json` is compared
+with `git_sha` masked (HEAD at build time is the one field that legitimately moves between
+two honest builds); every other file, including this payload's other nine, is gated raw.
+Its scope is the headline chain, not the drift/perturbation/OOV exhibits, which keep their
+own reproduction commands. If a future slot is needed, the labeled-object shape above still
+applies.
 
 #### The `provenance` section (`kind: "provenance"`)
 

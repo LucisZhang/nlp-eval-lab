@@ -6,13 +6,7 @@
     "projected": "an extrapolation to conditions not evaluated (e.g. cost at a volume no run reached); carries the assumption that produced it",
     "provenance": "a self-reported coursework result, copied verbatim from the read-only seed archive under docs/seed-evidence/ — NOT verified or reproduced by this lab; provenance, not evidence"
   },
-  "pending": [
-    {
-      "label": "`make reproduce-headline` — pending (next Phase 6 task): a single target that re-derives every headline number on this page from the committed artifacts",
-      "pending": true,
-      "slot": "reproduce_headline"
-    }
-  ],
+  "pending": [],
   "repo": {
     "default_branch": "main",
     "url_base": ""
@@ -1917,7 +1911,7 @@
           "n": 9,
           "run_ids": [],
           "source": "tests/test_demo_build.py",
-          "text": "A smoke eval runs in CI; the full suite is 652 passed / 1 skipped / 0 failed. The demo's traceability is test-enforced: every run id under demo/data must exist in the results log, every copied number must equal its source, and every numeric token in this page's prose must be a declared, sourced value.",
+          "text": "A smoke eval runs in CI; the full suite is 675 passed / 1 skipped / 0 failed. The demo's traceability is test-enforced: every run id under demo/data must exist in the results log, every copied number must equal its source, and every numeric token in this page's prose must be a declared, sourced value.",
           "title": "Tests, including the one that guards this page"
         },
         {
@@ -1929,16 +1923,11 @@
           "title": "Dev/test hygiene"
         },
         {
-          "evidence_class": "pending",
+          "evidence_class": "measured",
           "n": 11,
-          "pending": {
-            "label": "`make reproduce-headline` — pending (next Phase 6 task): a single target that re-derives every headline number on this page from the committed artifacts",
-            "pending": true,
-            "slot": "reproduce_headline"
-          },
           "run_ids": [],
           "source": "Makefile",
-          "text": "A single `make reproduce-headline` target that re-derives every headline number on this page from the committed artifacts.",
+          "text": "`make reproduce-headline` re-derives the headline claim chain from the frozen snapshot: it re-materializes the splits and checks their hashes against the frozen run records, re-derives every per-example artifact the chain reads (each verified against its own logged metrics), re-runs the threshold, router and frontier derivations under the Tier B cost generation, rebuilds this payload, and FAILS unless every regenerated file is byte-identical to the committed one. Its scope is the headline claim chain — the drift, perturbation and OOV exhibits keep their own reproduction commands in EXPERIMENT_LOG.md.",
           "title": "One-command headline reproduction"
         }
       ],
@@ -2098,7 +2087,7 @@
         },
         {
           "basis": "declared",
-          "display": "652",
+          "display": "675",
           "evidence_class": "measured",
           "label": "suite_passed",
           "note": "measured in this working tree at the git SHA meta.json records; a test run is not a logged experiment, so this is a declared constant in src/triage_lab/demo_build.py, not a copy from results/",
@@ -2106,7 +2095,7 @@
           "run_ids": [],
           "source": "src/triage_lab/demo_build.py",
           "unit": "count",
-          "value": 652
+          "value": 675
         },
         {
           "basis": "declared",
@@ -2136,7 +2125,8 @@
       "paragraphs": [],
       "repro": [
         "uv run pytest -q",
-        "make data"
+        "make data",
+        "make reproduce-headline"
       ],
       "run_ids": [
         "70a1b0c40e8e042a336ea595588dfc1038806bdf68f2d056587302d232a39f1e",

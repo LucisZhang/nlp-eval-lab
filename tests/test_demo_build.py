@@ -799,18 +799,35 @@ def test_case_study_shape(case_study, cs_sections):
 
 
 @_needs_demo
-def test_case_study_pending_slots_are_labeled_objects(case_study, cs_sections):
-    """One slot left: `provenance_seeds` shipped 2026-08-13 and must not regress to pending."""
-    slots = {p["slot"] for p in case_study["pending"]}
-    assert slots == {"reproduce_headline"}
-    for slot in case_study["pending"]:
+def test_case_study_has_no_pending_slots_left(case_study, cs_sections):
+    """Both slots shipped 2026-08-13 (`provenance_seeds`, then `reproduce_headline`).
+
+    The shape rule survives the emptying: any slot that ever comes back must still be a
+    labeled object, and neither shipped section may regress into one.
+    """
+    assert case_study["pending"] == [] == list(demo_build.CASE_STUDY_PENDING)
+    for slot in case_study["pending"]:  # kept: the invariant, not the count
         assert slot["pending"] is True and slot["label"]
-    # ...and it is visible where the reader meets it, not only in the footer.
-    verification_pending = [i for i in cs_sections["verification"]["items"] if i.get("pending")]
-    assert [i["pending"]["slot"] for i in verification_pending] == ["reproduce_headline"]
+    assert [i for i in cs_sections["verification"]["items"] if i.get("pending")] == []
     provenance = cs_sections["provenance"]
     assert "pending" not in provenance and provenance["kind"] == "provenance"
     assert provenance["numbers"] and provenance["items"]
+
+
+@_needs_demo
+def test_case_study_verification_item_11_describes_the_real_reproduce_target(cs_sections):
+    """Item 11 is now a shipped capability, sourced from the Makefile — not a promise."""
+    item = next(i for i in cs_sections["verification"]["items"] if i["n"] == 11)
+    assert item["source"] == "Makefile"
+    assert item["evidence_class"] in set(demo_build.EVIDENCE_LEGEND) - {"provenance"}
+    assert "pending" not in item
+    assert "make reproduce-headline" in item["text"]
+    assert "byte-identical" in item["text"]
+    assert "make reproduce-headline" in cs_sections["verification"]["repro"]
+    # The target exists and is wired to the module that implements it.
+    makefile = (demo_build.REPO_ROOT / "Makefile").read_text(encoding="utf-8")
+    assert "\nreproduce-headline:" in makefile
+    assert "triage_lab.reproduce_headline" in makefile
 
 
 @_needs_demo

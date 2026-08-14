@@ -2280,3 +2280,98 @@ reported runs. Every portfolio-bound number carries its reproduction command
   uv run pytest tests/test_demo_build.py -q
   python3 -m http.server 8642 -d demo   # open /#casestudy — provenance card
   ```
+
+## 2026-08-13 — Phase 6: `make reproduce-headline` ($0, no new runs, runs.jsonl untouched at 55)
+
+- **Hypothesis / scope:** UPGRADE_PLAN §4.3's last Phase 6 deliverable — ONE command that
+  re-derives the headline claim chain end-to-end from the frozen snapshot AND proves the
+  result is the committed one. Headline = the certified `a_to_b` frontier in
+  `results/frontier/frontier__opv2__cost-2c969255.json` (headline_router repointed
+  2026-08-13) plus the demo payload that publishes it. Deliberately NOT the whole
+  case-study page: the yearly-drift, perturbation, OOV and prior-shift exhibits are each
+  their own multi-hour job and keep their own repro commands above (owner scoping).
+- **Shape:** `make reproduce-headline` → `uv run --extra tierb python -m
+  triage_lab.reproduce_headline` (new module). Seven stages: `make data` (snapshot
+  sha256-verify → ingest → taxonomy → dedup → splits → datasheet) → **split byte-identity
+  gate** → `predictions --force` on the chain's 11 runs → `cost_model` (Tier B, v2) →
+  `threshold_opt --derivation v2-isocal` → `router_sim`/`frontier --op-version v2-isocal`
+  → `demo_build --all` → **hash gate**. Offline apart from the snapshot download; no
+  OPENROUTER_API_KEY (Tier C artifacts rebuild from committed receipts); appends nothing
+  to `results/runs.jsonl`.
+- **The run set is resolved, never transcribed.** Each threshold/router/frontier file names
+  its inputs in `inputs.*.{run_id, config_name}`; the driver reads those blocks out of the
+  exact files it regenerates → **10 runs** (Tier A logreg CAL-isocal `40513354…`, Tier A
+  TEST-IID logreg `8e4d6345…` + CNB `c20cd14a…`, B1 ×3 `8071d31d…`/`adb96307…`/`a523049a…`,
+  B2 TEST-IID `5517ebf1…` + B2 CAL `aa89db57…`, Haiku CAL-ablation `3f310951…` + Haiku
+  TEST-IID `70a1b0c4…`), plus **1** demo-only input (`tier_a_logreg_wordchar_cal
+  abcadd53…`, the raw-probability CAL calibration exhibit) named in `DEMO_ONLY_CONFIGS`.
+  The set is cross-checked against the config-stem constants the chain modules actually
+  read; divergence is a hard failure, and a test pins both sides.
+- **Gate:** 27 committed files hashed before and after — `docs/DATASHEET.md`, the 5 Tier B
+  `results/cost_model/*.json`, 7 `results/thresholds/*cost-2c969255*`, 3
+  `results/router_sim/*opv2__cost-2c969255*`, the frontier file, and all 10
+  `demo/data/*.json` — plus a file-SET check on each of those directories, so an
+  unexpected new output fails too. `demo/data/meta.json` is compared with `git_sha`
+  masked (HEAD at build time is the one field that legitimately moves; a test proves it is
+  the only key of `build_meta` that changes when HEAD does) and the mask is reported, never
+  silent.
+- **Deviation from `make tier-b-frontier`, and why (finding):** that target prices Tier B
+  with `--config-prefix tier_b`, correct when written (2026-08-11: the 5 Tier B runs then
+  in the log were exactly the chain's). Phase 5 added four `tier_b2_distilbert_s0_test_drift_*`
+  runs, which the prefix now also selects — re-running it verbatim today writes 4
+  `results/cost_model/*.json` files HEAD does not carry, and hard-fails on a clone that has
+  no artifact for them. The driver therefore passes the 5 Tier B **run ids** the chain
+  artifacts name; a test asserts the prefix is a strict superset and that no non-chain Tier
+  B run has a committed cost_model file.
+- **Split byte-identity is checked against the run records.** `make data` rewrites
+  `data/splits/splits_stats.yaml` alongside the parquets, so the runners' parquet-vs-stats
+  check cannot catch a moved split (both sides move together). The new gate compares the
+  regenerated `{split_sha256, input_sha256}` per split to the `dataset` block frozen in
+  `results/runs.jsonl` (committed, append-only), and `docs/DATASHEET.md` — which carries the
+  split hash table — is gated on top.
+- **Fresh-clone blockers fixed:** (1) `make preds` ran without `--extra tierb`, so
+  re-deriving a Tier B artifact died on a missing torch — both it and the new target now
+  request the extra; (2) `data/checkpoints/tier_b{1_sa,1_sb,1_sc,2_s0}/` are not in git, so
+  a clone reached the Tier B stage hours in and failed there — preflight now checks the
+  canonical dirs AND hashes their weights against each run's `extra.checkpoint_sha256`
+  (all four match: `921c0334…`/`d3584c24…`/`b40a0c57…`/`fea0d60b…`), pointing at
+  docs/TIER_B_RUNBOOK.md on failure. Two cheap modes exist for exactly this: `--plan`
+  (resolve + check committed inputs; no `data/`, CI-safe) and `--preflight` (+ make, the
+  tierb extra, checkpoints, snapshot manifest) — both ~2 s.
+- **Case-study flip:** the last `CASE_STUDY_PENDING` slot (`reproduce_headline`) ships as
+  real verification item 11 (`evidence_class: measured`, source `Makefile`, existing legend
+  class — none invented), `case_study.pending` is now `[]`, the section's `repro` gains
+  `make reproduce-headline`, and DATA_CONTRACT §10 + `tests/test_demo_build.py` are updated
+  (the labeled-object rule is kept for any future slot). The Kaggle 0.83615 "uncited"
+  marking and the rest of the provenance section are untouched.
+- **Verification — the full end-to-end run WAS executed here (2026-08-13→14, exit 0):**
+  `caffeinate -i make reproduce-headline` from the frozen snapshot →
+  **`reproduce-headline: OK`, all 27 gated files byte-identical to the committed records**
+  (`✓ every gated output is byte-identical to the committed record`), 11/11 chain
+  artifacts re-derived with `--force` and each verified against its logged metrics at
+  1e-9 (`backfill: 11 run(s) processed, overall OK`), `results/runs.jsonl` untouched
+  at 55. Stage wall-clock (TOTAL **46,360.1 s ≈ 12 h 53 m**, under the 17–19 h
+  estimate): data 417.7 s (snapshot sha256 `b4d1eac8…` verified) · split-gate 0.0 s
+  (2 splits checked vs the frozen run records) · preds 45,828.7 s (the three
+  ModernBERT seeds dominate) · cost-model 3.8 s · thresholds 12.9 s · router-sim
+  22.7 s · frontier 70.4 s (all 4 claims re-certified, `pending Tier B slots: []`) ·
+  demo-data 4.1 s. Before the launch, `--plan` and `--preflight` both green in ~2 s
+  (checkpoints hash-matched `921c0334…`/`d3584c24…`/`b40a0c57…`/`fea0d60b…`).
+  Machinery checks: partial run (`--skip-data --reuse-preds`, derivation half only)
+  131 s → 27/27 byte-identical; suite **675 passed / 1 skipped / 0 failed** (+22 in
+  `tests/test_reproduce_headline.py`, all committed-tree-only so they run in CI
+  without `data/`; +1 in test_demo_build); `make demo-data` twice → byte-identical,
+  only `case_study.json` + `meta.json` differ from HEAD.
+- **Verdict:** ACCEPTED — the Phase 6 accept line "reproduce-headline succeeds from the
+  frozen snapshot" is met by an actual end-to-end run on this box: snapshot → splits →
+  forced artifact re-derivation → v2 derivation → demo payload, byte-identical
+  throughout, in one command. Still open (next session, per owner): the GitHub push +
+  Actions smoke job, for which `--plan` is the CI-safe entry point (a clean CI runner
+  has no `data/` and no Tier B checkpoints by design).
+- **Reproduce:**
+  ```
+  uv run python -m triage_lab.reproduce_headline --plan          # ~2 s, no data/ needed (CI-safe)
+  uv run --extra tierb python -m triage_lab.reproduce_headline --preflight   # ~2 s, + checkpoints
+  make reproduce-headline                                        # the real thing (~13 h measured)
+  uv run pytest tests/test_reproduce_headline.py -q
+  ```

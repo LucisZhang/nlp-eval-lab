@@ -1407,7 +1407,7 @@ CASE_STUDY_SOURCE_NOTE = (
 # logged experiment. It is recorded here as an explicit constant, stamped with the command
 # that produced it, rather than written into the prose where nothing could check it.
 SUITE_RESULT = {
-    "passed": 652,
+    "passed": 675,
     "skipped": 1,
     "failed": 0,
     "command": "uv run pytest -q",
@@ -1416,15 +1416,12 @@ SUITE_RESULT = {
              "src/triage_lab/demo_build.py, not a copy from results/"),
 }
 
-# One slot left: the provenance section shipped 2026-08-13 and is no longer pending.
-CASE_STUDY_PENDING = (
-    {
-        "slot": "reproduce_headline",
-        "label": ("`make reproduce-headline` — pending (next Phase 6 task): a single "
-                  "target that re-derives every headline number on this page from the "
-                  "committed artifacts"),
-    },
-)
+# No slots left: `provenance_seeds` shipped 2026-08-13 and `reproduce_headline` shipped
+# 2026-08-13 as verification item 11 (`make reproduce-headline`, driven by
+# `src/triage_lab/reproduce_headline.py`). The tuple stays — a page that can never declare
+# something pending would quietly turn "not measured" into "measured absent" the next time
+# a slot is needed.
+CASE_STUDY_PENDING: tuple[dict, ...] = ()
 
 
 # --- display formatting (display strings are FORMATTED from the copied value) ------------
@@ -2522,16 +2519,21 @@ def _cs_verification(records: list[dict], resolved: dict, manifest: dict, drift:
                   "including the failed hypotheses."),
          "source": "EXPERIMENT_LOG.md", "run_ids": [], "evidence_class": "measured"},
         {"n": 11, "title": "One-command headline reproduction",
-         "text": ("A single `make reproduce-headline` target that re-derives every "
-                  "headline number on this page from the committed artifacts."),
-         "source": "Makefile", "run_ids": [], "evidence_class": "pending",
-         "pending": pending_slot(CASE_STUDY_PENDING[0]["slot"],
-                                 CASE_STUDY_PENDING[0]["label"])},
+         "text": ("`make reproduce-headline` re-derives the headline claim chain from the "
+                  "frozen snapshot: it re-materializes the splits and checks their hashes "
+                  "against the frozen run records, re-derives every per-example artifact "
+                  "the chain reads (each verified against its own logged metrics), re-runs "
+                  "the threshold, router and frontier derivations under the Tier B cost "
+                  "generation, rebuilds this payload, and FAILS unless every regenerated "
+                  "file is byte-identical to the committed one. Its scope is the headline "
+                  "claim chain — the drift, perturbation and OOV exhibits keep their own "
+                  "reproduction commands in EXPERIMENT_LOG.md."),
+         "source": "Makefile", "run_ids": [], "evidence_class": "measured"},
     ]
     return _cs_section(
         "verification", "verification", "How this was verified",
         numbers=numbers, items=items,
-        repro=["uv run pytest -q", "make data"],
+        repro=["uv run pytest -q", "make data", "make reproduce-headline"],
     )
 
 
