@@ -86,9 +86,9 @@ def load_system(record: dict, preds_dir: Path) -> dict:
 def assert_identical_ids(systems: dict[str, dict]) -> None:
     names = list(systems)
     ref_name = names[0]
-    ref_ids = set(int(i) for i in systems[ref_name]["ids"])
+    ref_ids = {int(i) for i in systems[ref_name]["ids"]}
     for name in names[1:]:
-        ids = set(int(i) for i in systems[name]["ids"])
+        ids = {int(i) for i in systems[name]["ids"]}
         if ids != ref_ids:
             only_ref = sorted(ref_ids - ids)[:5]
             only_other = sorted(ids - ref_ids)[:5]

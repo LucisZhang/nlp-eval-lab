@@ -69,12 +69,13 @@ def _max_seq_length(ckpt: Path, fallback: int = 256) -> int:
 
 def export_and_verify(ckpt: Path, out_dir: Path, splits_dir: Path,
                       n_samples: int, opset: int, per_channel: bool = True) -> dict:
+    import onnx as onnx_pkg
     import torch
-    from onnxruntime import InferenceSession, __version__ as ort_version
+    import transformers as transformers_pkg
+    from onnxruntime import InferenceSession
+    from onnxruntime import __version__ as ort_version
     from onnxruntime.quantization import QuantType, quantize_dynamic
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
-    import onnx as onnx_pkg
-    import transformers as transformers_pkg
 
     from triage_lab import metrics as triage_metrics
     from triage_lab.harness import dataset_info
@@ -188,13 +189,13 @@ def export_and_verify(ckpt: Path, out_dir: Path, splits_dir: Path,
         git_sha = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, text=True
         ).strip()
-    except Exception:
+    except Exception:  # noqa: BLE001 — best-effort metadata, export must not fail on it
         git_sha = None
 
     cal_dataset_info = None
     try:
         cal_dataset_info = dataset_info("cal", splits_dir / "splits_stats.yaml")
-    except Exception:
+    except Exception:  # noqa: BLE001 — best-effort metadata, export must not fail on it
         cal_dataset_info = None
 
     wall_seconds = time.time() - wall_start
