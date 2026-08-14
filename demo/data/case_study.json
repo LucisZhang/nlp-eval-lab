@@ -9,7 +9,7 @@
   "pending": [],
   "repo": {
     "default_branch": "main",
-    "url_base": ""
+    "url_base": "https://github.com/LucisZhang/nlp-eval-lab"
   },
   "schema_version": "case-study-v1",
   "sections": [
