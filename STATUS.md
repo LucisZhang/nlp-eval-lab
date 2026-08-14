@@ -106,7 +106,7 @@ Evidence links are commit SHAs or EXPERIMENT_LOG.md entries (done tasks only).
 | Novel-class probe (stretch) | pending | — |
 | Drift charts from results log; escalation-rate-over-time; evidence classes labeled | **done for A + B2 + C** (2026-08-10 available tiers; **Tier B2 series + a_to_b escalation arms added 2026-08-12**, $0 derivation-only: tier_b2 on macro-F1 + ECE charts; a_to_b at frozen τ_A 0.6449/0.7981 (full_cal/paired, replay-verified, B2-terminal — no B→human arm exists in the frozen family, none invented); escalate-to-B2 rate quasi-flat 0.296–0.329 2022→2025 then **0.4849 [0.4780, 0.4921]** at 2026-H1 (+47% rel.); frozen-τ cascade slightly trails b2_only at the cliff (acc 0.7550 vs 0.7584) — τ-staleness finding; module cost config v1→v2, pre-existing τ byte-identical; TEST-IID arm reproduces frozen frontier point bit-for-bit; B1 series = explicit pending slot). Escalation self-adjusts late and abruptly: a_to_human flat at CAL op point 2022→2025 (0.095–0.103 vs 0.0994) then **0.1674 [0.1623, 0.1724]** at 2026-H1 (+68% rel.); selective gate worth ~5 acc pts at the cliff (answered 0.7436 vs full 0.6918); a_to_c parse-fail→human ≤0.27% everywhere (Haiku exactly 0) | EXPERIMENT_LOG 2026-08-10 Phase 5 task 6; `results/drift/summary.json` + `results/drift/charts/` (3 SVGs, evidence-class footnotes); `make drift-charts` |
 
-### Phase 6 — Demo + case study  ✅ **COMPLETE 2026-08-14 (scaffold 2026-08-10; Tier B panels, live inference, case study page, provenance links, `make reproduce-headline` done 2026-08-13; full end-to-end reproduce run green 2026-08-14 — remaining beyond the phase: GitHub push + Actions smoke job via `--plan`, next session)**
+### Phase 6 — Demo + case study  ✅ **COMPLETE 2026-08-14 (scaffold 2026-08-10; Tier B panels, live inference, case study page, provenance links, `make reproduce-headline` done 2026-08-13; full end-to-end reproduce run green 2026-08-14; GitHub publish done 2026-08-14 — see §b tail)**
 | Task | Status | Evidence |
 |---|---|---|
 | Static demo **site scaffold** (triage playground, frontier plot, policy builder, drift timeline, calibration panel, receipts drawer) | **done** (2026-08-10, $0, no new API calls, runs.jsonl untouched). `demo/` static site (vanilla JS, no external deps) + `demo/data/` (9 committed JSONs) built deterministically by `make demo-data` (`src/triage_lab/demo_build.py`, contract in `demo/DATA_CONTRACT.md`); curated set n=200 FROZEN (seed 20260806, pool = 1,500 Haiku∩Sonnet TEST-IID receipt ids, narratives from frozen splits); traceability test-enforced (`tests/test_demo_build.py`, 43 passed; CI-safe subset without `data/`); browser-verified light+dark, zero console errors; all Tier B panels explicit **pending Tier B** slot placeholders. Live ONNX inference deferred to a later Phase 6 task | EXPERIMENT_LOG 2026-08-10 Phase 6 task 1 |
@@ -184,9 +184,28 @@ Phase 6 tasks, in order (§b item 4): ~~provenance links to coursework seeds~~ �
 from the committed derivation artifacts, 27-file sha256 gate, split identity checked against
 the frozen run records, two fresh-clone blockers fixed; **full end-to-end run executed
 2026-08-13→14: exit 0, 12 h 53 m, 11/11 artifacts metric-verified, 27/27 gated outputs
-byte-identical, runs.jsonl untouched at 55 — Phase 6 COMPLETE**). **Next session: GitHub
-push + Actions smoke job**, for which `--plan` is the CI-safe entry point (a CI runner has
-no `data/` or Tier B checkpoints by design).
+byte-identical, runs.jsonl untouched at 55 — Phase 6 COMPLETE**). ~~**Next session: GitHub
+push + Actions smoke job**~~ — **done 2026-08-14**: public repo
+<https://github.com/LucisZhang/nlp-eval-lab> (main pushed after a full-history author
+rewrite to `Hsiang Kuo Chang <hsiangkuochang@outlook.com>` — history had never been pushed;
+NOTE: the rewrite changed every commit SHA, so pre-publish SHAs quoted in this file /
+EXPERIMENT_LOG.md and the `git_sha` fields inside append-only `results/runs.jsonl` refer to
+the pre-rewrite ids and do not resolve on GitHub); repo went public ruff-clean (5
+pre-existing `scripts/` errors fixed first). Actions smoke workflow **green on GitHub**:
+single `uv sync --frozen --extra charts --extra tierc` (exact-sync/charts-only install gap
+respected), ruff, CI-safe pytest subset, `reproduce_headline --plan`; a `make demo-data`
+byte-identity step is **not possible on a bare runner by design** (router-path replay reads
+`data/preds/`) — the payload's CI-safe gates (curated freeze / pool_sha256 / contract tests)
+run inside pytest, full byte-identity stays with `reproduce-headline` on a data-bearing
+machine. One cross-platform finding fixed en route: Linux/OpenBLAS lands the centroid
+self-cosine *below* 1 (+3.3e-16) where macOS/Accelerate lands above, so `oov.cosine_distance`
+now snaps <1e-12 to an exact +0.0 (committed artifacts unaffected; ubuntu structural-zero
+test green). GitHub Pages serves `demo/` via `pages.yml`:
+<https://luciszhang.github.io/nlp-eval-lab/> — live-verified: zero console errors, in-page
+model fetch returns all 67,575,183 bytes, `REPO_URL_BASE` filled + `make demo-data` moved
+only `url_base` and the meta.json `git_sha` (as designed), all 7 seed-evidence provenance
+links resolve HTTP 200 on the live site. Repo still has no README (visitor lands on a bare
+file listing) — flagged as follow-up.
 
 ---
 
