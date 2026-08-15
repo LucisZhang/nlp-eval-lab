@@ -32,11 +32,11 @@ Two results worth the click:
 
 ```mermaid
 flowchart LR
-    IN([complaint text]) --> A["Tier A\nTF-IDF + LogReg\n(isotonic-calibrated)"]
-    A -->|"confidence ≥ τ*  (70% of traffic)"| OUT([label])
-    A -->|below threshold| B["Tier B2\nDistilBERT int8 ONNX\n(temperature-scaled)"]
+    IN([complaint text]) --> A["Tier A<br/>TF-IDF + LogReg<br/>(isotonic-calibrated)"]
+    A -->|"confidence ≥ τ* (70% of traffic)"| OUT([label])
+    A -->|below threshold| B["Tier B2<br/>DistilBERT int8 ONNX<br/>(temperature-scaled)"]
     B --> OUT
-    C["Tier C\nClaude via OpenRouter\n(structured output)"] -.->|"evaluated leg — directional only,\nnot in the certified cascade"| B
+    C["Tier C<br/>Claude via OpenRouter<br/>(structured output)"] -.->|evaluated leg — directional only, not in the certified cascade| B
 ```
 
 The cascade's escalation threshold τ* is derived on the calibration slice only, by minimizing an explicit per-tier business cost model (inference $ + misroute cost); TEST slices are touched exactly once, for the final certified runs. Tier C is fully evaluated as a routing leg — the honest finding is that it doesn't certify (see below), which is itself the point of building the frontier before paying for the LLM.
