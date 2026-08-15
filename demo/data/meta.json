@@ -10,7 +10,7 @@
     "projected": "an extrapolation to conditions not evaluated (e.g. cost at a volume no run reached); carries the assumption that produced it",
     "provenance": "a self-reported coursework result, copied verbatim from the read-only seed archive under docs/seed-evidence/ — NOT verified or reproduced by this lab; provenance, not evidence"
   },
-  "git_sha": "1a49df3d16ffaabee4d234d58366c7db5aeec13f",
+  "git_sha": "07097121b8702a1fc30ba832d486a15a34463a6e",
   "headline_router": {
     "evaluation_set": "full_test_iid",
     "note": "Owner decision 2026-08-12: headline_router = a_to_b (full TEST-IID) — the only certified two-axis win (cost AND macro-F1 paired CIs excl. 0 vs b2_only), dominating 3 model baselines. a_to_c_parsefail_human is retained as the LLM-cascade contrast exhibit; the drift-chapter Sonnet-terminal variant is unchanged.",

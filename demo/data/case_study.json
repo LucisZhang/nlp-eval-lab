@@ -9,7 +9,7 @@
   "pending": [],
   "repo": {
     "default_branch": "main",
-    "url_base": "https://github.com/LucisZhang/nlp-eval-lab"
+    "url_base": "https://github.com/LucisZhang/triage-router"
   },
   "schema_version": "case-study-v1",
   "sections": [

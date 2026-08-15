@@ -4,7 +4,7 @@
 
 A three-tier consumer-complaint triage system — TF-IDF linear models (Tier A), fine-tuned transformers (Tier B), Claude LLMs (Tier C) — combined into a confidence-cascade router, optimized against an explicit business cost model, and stress-tested on eleven years of measured distribution drift in the CFPB Consumer Complaint Database (2015→2026).
 
-### ▶ [Live demo — luciszhang.github.io/nlp-eval-lab](https://luciszhang.github.io/nlp-eval-lab/)
+### ▶ [Live demo — luciszhang.github.io/triage-router](https://luciszhang.github.io/triage-router/)
 
 Fully static: precomputed results plus in-browser int8 ONNX inference (the actual deployment model runs in your tab). Every number on the site is test-gated to a committed run record. The **case study narrative** is the final panel of the demo.
 
@@ -54,8 +54,8 @@ Where drift is worst is exactly where the expensive model earns its keep: on 202
 ## Reproduce
 
 ```bash
-git clone https://github.com/LucisZhang/nlp-eval-lab.git
-cd nlp-eval-lab
+git clone https://github.com/LucisZhang/triage-router.git
+cd triage-router
 uv sync --frozen
 uv run python -m triage_lab.reproduce_headline --plan
 ```
@@ -76,7 +76,7 @@ The log records failures with the same rigor as wins. Character n-grams did not 
 
 ## Going deeper
 
-- **[Case study](https://luciszhang.github.io/nlp-eval-lab/)** — the narrative panel of the demo, every figure traceable to a run record
+- **[Case study](https://luciszhang.github.io/triage-router/)** — the narrative panel of the demo, every figure traceable to a run record
 - **[EXPERIMENT_LOG.md](EXPERIMENT_LOG.md)** — dated hypothesis → result → verdict entries, including the refuted ones, with the reproduction command for every portfolio-bound number
 - **[UPGRADE_PLAN.md](UPGRADE_PLAN.md)** — scope, metrics, phase acceptance criteria (the project's single source of truth)
 - **[STATUS.md](STATUS.md)** — execution state and decision log

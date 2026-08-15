@@ -128,7 +128,7 @@ SCHEMA_VERSION = "demo-v1"
 # -> `demo/assets/app.js`'s repoRef(), which renders a non-link <code> chip labeled
 # "link resolves after GitHub push" while this is "" and a real <a href> once it is set.
 # Filling it is a one-line change plus `make demo-data`; nothing else moves.
-REPO_URL_BASE: str = "https://github.com/LucisZhang/nlp-eval-lab"
+REPO_URL_BASE: str = "https://github.com/LucisZhang/triage-router"
 REPO_DEFAULT_BRANCH: str = "main"
 
 
