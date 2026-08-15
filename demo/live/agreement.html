@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Live-inference agreement harness — Triage Router Lab</title>
+<title>Live-inference agreement harness — Triage Router</title>
 <!--
   Standalone verification page for demo/assets/live.js.
 
@@ -33,35 +33,59 @@
   numbers or a reliable Tier B2 run.
 -->
 <style>
-  :root { color-scheme: light; }
+  /* Same tokens as demo/assets/styles.css; inlined so this harness stays
+     dependency-free and servable straight from demo/. */
+  :root {
+    color-scheme: light;
+    --ink: #151817; --muted: #5d6561; --paper: #f7f8f6; --white: #ffffff;
+    --line: #d9dedb; --line-dark: #a9b1ad;
+    --green: #166534; --amber: #7c4a03;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", "SF Mono", Menlo, monospace;
+  }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    margin: 0; padding: 24px 28px; color: #23262b; background: #fbfbfc; line-height: 1.5;
+    margin: 0; padding: 26px 30px; color: var(--ink); background: var(--paper); line-height: 1.5;
+    letter-spacing: 0;
   }
-  h1 { font-size: 19px; margin: 0 0 4px; }
-  h2 { font-size: 14px; margin: 22px 0 8px; text-transform: uppercase; letter-spacing: .04em; color: #666; }
-  .sub { color: #666; font-size: 13px; margin: 0 0 18px; max-width: 760px; }
+  h1 { font-size: 20px; font-weight: 650; letter-spacing: -.012em; margin: 0 0 6px; }
+  h2 {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--muted); margin: 26px 0 8px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--line-dark);
+  }
+  .sub { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0 0 18px; max-width: 74ch; }
   button {
-    font: inherit; padding: 7px 14px; margin-right: 8px; border: 1px solid #b7bcc4;
-    border-radius: 5px; background: #fff; cursor: pointer;
+    font: inherit; font-size: 12px; padding: 6px 11px; margin-right: 8px;
+    border: 1px solid var(--line-dark); border-radius: 4px; background: var(--white); cursor: pointer;
   }
-  button:hover:not(:disabled) { background: #f0f2f5; }
+  button:hover:not(:disabled) { border-color: var(--ink); }
   button:disabled { opacity: .5; cursor: default; }
-  .status { font-size: 13px; color: #444; margin: 10px 0; min-height: 20px; }
+  .status { font-size: 12.5px; color: var(--muted); margin: 10px 0; min-height: 20px; }
   .banner {
-    border-left: 4px solid #d55e00; background: #fff5ef; padding: 8px 12px;
-    font-size: 13px; margin: 10px 0; border-radius: 0 4px 4px 0;
+    border: 0; border-left: 2px solid var(--amber); border-radius: 0; background: transparent;
+    padding: 2px 0 2px 12px; font-size: 13px; line-height: 1.6; margin: 12px 0; max-width: 74ch;
   }
-  .ok { border-left-color: #009e73; background: #eff9f5; }
-  table.kv { border-collapse: collapse; font-size: 13px; margin: 6px 0 14px; }
-  table.kv td { padding: 3px 14px 3px 0; vertical-align: top; border-bottom: 1px solid #ececf0; }
-  table.kv td.k { color: #666; white-space: nowrap; }
+  .ok { border-left-color: var(--green); }
+  table.kv { border-collapse: collapse; font-size: 12.5px; margin: 6px 0 16px; }
+  table.kv td {
+    padding: 6px 16px 6px 0; vertical-align: top; border-bottom: 1px solid var(--line);
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+  }
+  table.kv td.k {
+    color: var(--muted); white-space: nowrap; font-family: inherit;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  }
   pre#report {
-    background: #1e2127; color: #e6e6e6; padding: 14px; border-radius: 6px;
-    font-size: 12px; line-height: 1.45; overflow-x: auto; max-height: 640px;
+    background: var(--white); color: var(--ink); border: 1px solid var(--line);
+    border-top: 1px solid var(--line-dark); border-radius: 0; padding: 14px;
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.55;
+    overflow-x: auto; max-height: 640px;
   }
-  code { background: #eef0f3; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
-  progress { width: 320px; vertical-align: middle; }
+  code {
+    background: var(--white); border: 1px solid var(--line); padding: 1px 4px;
+    border-radius: 0; font-family: var(--mono); font-size: 11.5px;
+  }
+  progress { width: 320px; vertical-align: middle; accent-color: var(--green); }
 </style>
 </head>
 <body>

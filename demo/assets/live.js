@@ -1,4 +1,4 @@
-// Triage Router Lab — in-browser live inference engines.
+// Triage Router — in-browser live inference engines.
 // Vanilla ES module, zero dependencies, no external URLs (ever).
 //
 // Two engines, both exposing the same shape:

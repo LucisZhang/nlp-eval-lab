@@ -1,4 +1,4 @@
-// Triage Router Lab — static demo app.
+// Triage Router — static demo app.
 // Vanilla ES module, zero dependencies. All data loaded via fetch of ./data/*.json.
 // Every panel degrades to a visible banner (never a blank page / console-only error)
 // when its data file is missing or malformed.
@@ -1066,7 +1066,11 @@ function renderPolicyList() {
     const costCell = el("div", null, [costLabel, el("br"), tag]);
     if (policy.run_refs && policy.run_refs.length) {
       costCell.appendChild(el("br"));
-      policy.run_refs.forEach((rid) => costCell.appendChild(runChip(rid)));
+      policy.run_refs.forEach((rid, i) => {
+        // a real space between chips, so a row of them can wrap in a narrow column
+        if (i > 0) costCell.appendChild(document.createTextNode(" "));
+        costCell.appendChild(runChip(rid));
+      });
     }
     row.appendChild(costCell);
 
