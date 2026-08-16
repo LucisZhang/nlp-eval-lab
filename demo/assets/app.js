@@ -250,13 +250,13 @@ function closeDrawer() {
 
 const PANEL_ORDER = ["playground", "frontier", "policy", "drift", "calibration", "receipts", "casestudy"];
 const PANEL_LABELS = {
-  playground: "1. Playground",
-  frontier: "2. Frontier",
-  policy: "3. Policy",
-  drift: "4. Drift",
-  calibration: "5. Calibration",
-  receipts: "6. Receipts",
-  casestudy: "7. Case study",
+  playground: "Playground",
+  frontier: "Frontier",
+  policy: "Policy",
+  drift: "Drift",
+  calibration: "Calibration",
+  receipts: "Receipts",
+  casestudy: "Case study",
 };
 
 function showPanel(name) {
@@ -281,8 +281,11 @@ function initNav() {
   });
 
   const topTabs = document.getElementById("top-tabs");
-  PANEL_ORDER.forEach((p) => {
-    const a = el("a", "nav-link", PANEL_LABELS[p]);
+  PANEL_ORDER.forEach((p, i) => {
+    const a = el("a", "nav-link", [
+      el("span", "nav-num", String(i + 1).padStart(2, "0")),
+      el("span", "nav-label", PANEL_LABELS[p]),
+    ]);
     a.href = "#" + p;
     a.dataset.panel = p;
     a.addEventListener("click", (e) => {
@@ -313,6 +316,28 @@ function svgEl(tag, attrs) {
   return node;
 }
 
+// Log-axis ticks. Decades first; if fewer than three of them fall inside the
+// domain the decade is subdivided by successively finer mantissa sets, so a
+// sub-decade span (which is what the cost axis actually has) still gets an axis
+// a reader can measure against.
+function logTicks(domain) {
+  const [d0, d1] = domain;
+  const MANTISSAS = [[1], [1, 5], [1, 2, 5], [1, 1.5, 2, 3, 5, 7]];
+  for (const ms of MANTISSAS) {
+    const ticks = [];
+    for (let e = Math.floor(Math.log10(d0)); e <= Math.ceil(Math.log10(d1)); e++) {
+      ms.forEach((m) => {
+        const v = m * Math.pow(10, e);
+        if (v >= d0 && v <= d1) ticks.push(v);
+      });
+    }
+    if (ticks.length >= 3 || ms === MANTISSAS[MANTISSAS.length - 1]) {
+      return ticks.sort((a, b) => a - b);
+    }
+  }
+  return [];
+}
+
 // linear scale
 function makeLinearScale(domain, range) {
   const [d0, d1] = domain;
@@ -329,39 +354,72 @@ function makeLogScale(domain, range) {
   return (v) => r0 + ((Math.log10(Math.max(v, 1e-9)) - ld0) / (ld1 - ld0 || 1)) * (r1 - r0);
 }
 
+// Axis furniture. Tick values are data, so they set in the mono stack with
+// tabular figures (via .chart-tick); axis names are labels, so they set in the
+// small-caps metadata register (via .chart-axis-label). Both label offsets are
+// derived from the caller's margins rather than hardcoded — the reliability
+// diagrams used to draw their x-axis name 2px past the bottom of the viewBox,
+// which clipped "confidence" on every small multiple.
 function drawAxes(svg, opts) {
   const { x0, x1, y0, y1, xTicks, yTicks, xLabel, yLabel } = opts;
-  // axis lines
+  const H = Number(svg.getAttribute("height")) || y1;
+
   svg.appendChild(svgEl("line", { class: "chart-axis", x1: x0, y1: y1, x2: x1, y2: y1 }));
   svg.appendChild(svgEl("line", { class: "chart-axis", x1: x0, y1: y0, x2: x0, y2: y1 }));
 
   (xTicks || []).forEach(({ x, label }) => {
     svg.appendChild(svgEl("line", { class: "chart-gridline", x1: x, y1: y0, x2: x, y2: y1 }));
-    const t = svgEl("text", { x, y: y1 + 16, "font-size": 10, "text-anchor": "middle" });
+    const t = svgEl("text", { class: "chart-tick", x, y: y1 + 15, "text-anchor": "middle" });
     t.textContent = label;
     svg.appendChild(t);
   });
 
   (yTicks || []).forEach(({ y, label }) => {
     svg.appendChild(svgEl("line", { class: "chart-gridline", x1: x0, y1: y, x2: x1, y2: y }));
-    const t = svgEl("text", { x: x0 - 8, y: y + 3, "font-size": 10, "text-anchor": "end" });
+    const t = svgEl("text", { class: "chart-tick", x: x0 - 9, y: y + 3.5, "text-anchor": "end" });
     t.textContent = label;
     svg.appendChild(t);
   });
 
   if (xLabel) {
-    const t = svgEl("text", { x: (x0 + x1) / 2, y: y1 + 32, "font-size": 11, "text-anchor": "middle" });
+    // sit on the last text baseline that still fits inside the viewBox
+    const t = svgEl("text", {
+      class: "chart-axis-label", x: (x0 + x1) / 2, y: Math.min(y1 + 33, H - 4),
+      "text-anchor": "middle",
+    });
     t.textContent = xLabel;
     svg.appendChild(t);
   }
   if (yLabel) {
     const t = svgEl("text", {
-      x: -( (y0 + y1) / 2 ), y: 14, "font-size": 11, "text-anchor": "middle",
+      class: "chart-axis-label", x: -((y0 + y1) / 2), y: 11, "text-anchor": "middle",
       transform: "rotate(-90)",
     });
     t.textContent = yLabel;
     svg.appendChild(t);
   }
+}
+
+// ---- legend rows ------------------------------------------------------------
+// Legends always live below the plot as a list. With ten drift arms there is no
+// empty quadrant left to float into, and an in-plot legend would sit on top of
+// the lines it names. The swatch mirrors the mark it stands for: a rule for a
+// line series, a disc or square for a scatter marker.
+function legendRow(color, label, shape) {
+  const item = el("span", null);
+  const swatch = el("span", "legend-swatch" + (shape ? " legend-" + shape : ""));
+  if (shape === "dot" || shape === "square") swatch.style.background = color;
+  else swatch.style.color = color;
+  item.appendChild(swatch);
+  item.appendChild(el("span", "legend-text", label));
+  return item;
+}
+
+function pendingLegendRow(label) {
+  const item = el("span", null);
+  item.appendChild(el("span", "legend-swatch pending"));
+  item.appendChild(el("span", "legend-text", label));
+  return item;
 }
 
 // ----------------------------------------------------------------------------
@@ -795,30 +853,170 @@ async function initFrontier() {
     return;
   }
 
-  // claim callout cards — frontier.json .claims.claims is a list of headline
-  // comparisons, each with delta_* metric objects and an optional gate verdict.
+  // frontier.json .claims.claims is a list of paired comparisons, each with
+  // delta_* metric objects and an optional gate verdict. Rendered as a table,
+  // not as one bordered card per claim: fourteen identically-shaped cards make
+  // the deltas impossible to compare against each other, which is the only
+  // thing a reader wants to do with them. In a table the columns do that work.
   const claimsList = data.claims && Array.isArray(data.claims.claims) ? data.claims.claims : [];
-  claimsList.forEach((claim) => {
-    const card = el("div", "claim-card");
-    card.appendChild(el("div", "claim-title", claim.claim || "claim"));
-    Object.entries(claim).forEach(([k, v]) => {
-      if (!k.startsWith("delta_") || !v || typeof v !== "object") return;
-      card.appendChild(el("div", "claim-delta", `${k.replace("delta_", "")}: ${metricStr(v)}${v.excludes_zero ? " (excludes zero)" : ""}`));
-    });
-    if (claim.gate) {
-      const gateTag = el("span", "tag " + (claim.gate.certified ? "measured" : "derived"),
-        claim.gate.certified ? "certified" : "not certified");
-      card.appendChild(gateTag);
+  if (claimsList.length) {
+    claimsWrap.appendChild(claimsTable(claimsList));
+    const note = el("p", "table-note", [
+      "A point value is set in ink when its 95% interval clears zero and stays grey when the " +
+      "interval spans it, so the columns can be read for significance directly. ",
+      "Gate verdicts follow the stricter criterion recorded in the artifact: CERTIFIED requires " +
+      "every gated metric to be favourable and significant. ",
+    ]);
+    if (data.claims && data.claims.source) {
+      note.appendChild(el("span", null, "Source: "));
+      note.appendChild(sourceChip(data.claims.source));
     }
-    if (claim.evaluation_set) card.appendChild(el("div", "panel-desc", "evaluation set: " + claim.evaluation_set));
-    claimsWrap.appendChild(card);
-  });
-  if (data.claims && data.claims.source) {
-    claimsWrap.appendChild(sourceChip(data.claims.source));
+    claimsWrap.appendChild(note);
   }
 
   chartWrap.style.display = "";
   drawFrontierChart(data);
+}
+
+// Column order is discovered from the data (union of delta_* keys, first-seen
+// order) so a new gated metric appears without a code change here.
+function claimDeltaKeys(claims) {
+  const keys = [];
+  claims.forEach((c) => Object.keys(c).forEach((k) => {
+    if (k.startsWith("delta_") && c[k] && typeof c[k] === "object" && !keys.includes(k)) keys.push(k);
+  }));
+  return keys;
+}
+
+function deltaCell(metric) {
+  const td = el("td", "claim-num");
+  if (!metric || typeof metric !== "object") {
+    td.appendChild(el("span", "claim-point", "—"));
+    return td;
+  }
+  const digits = Math.abs(metric.point) >= 1 ? 2 : 4;
+  const point = el("span", "claim-point" + (metric.excludes_zero ? " excludes-zero" : ""),
+    (metric.point > 0 ? "+" : "") + fmtNum(metric.point, digits));
+  td.appendChild(point);
+  if (metric.ci_lo !== undefined && metric.ci_hi !== undefined) {
+    td.appendChild(el("span", "claim-ci",
+      `${fmtNum(metric.ci_lo, digits)} … ${fmtNum(metric.ci_hi, digits)}`));
+  }
+  return td;
+}
+
+// The gate is the one judgement on this page, so it is the one place status
+// colour lands — on the word, never behind it.
+function gateCell(claim) {
+  const td = el("td");
+  const gate = claim.gate;
+  if (!gate) {
+    td.appendChild(el("span", "verdict verdict--none", claim.status ? claim.status.replace(/_/g, " ") : "—"));
+    return td;
+  }
+  let cls = "verdict--none", text = "not established";
+  if (gate.certified) { cls = "verdict--pass"; text = "certified"; }
+  else if (gate.any_adverse) { cls = "verdict--warn"; text = "adverse"; }
+  const span = el("span", "verdict " + cls, text);
+  if (claim.verdict) span.title = claim.verdict;
+  td.appendChild(span);
+  return td;
+}
+
+function claimsTable(claims) {
+  const keys = claimDeltaKeys(claims);
+  const wrap = el("div", "claims-table-wrap");
+  const table = el("table", "claims-table");
+
+  const head = el("tr", null, [el("th", null, "router arm vs baseline"), el("th", null, "eval set")]);
+  keys.forEach((k) => head.appendChild(el("th", "num", "Δ " + k.replace(/^delta_/, "").replace(/_/g, " "))));
+  head.appendChild(el("th", null, "gate"));
+  const thead = el("thead", null, head);
+  table.appendChild(thead);
+
+  const tbody = el("tbody");
+  claims.forEach((claim) => {
+    const tr = el("tr");
+    const armTd = el("td", null, [
+      el("span", "claim-arm", claim.router || "—"),
+      claim.baseline ? el("span", "claim-baseline", "vs " + claim.baseline) : null,
+      el("span", "claim-family", claim.claim || ""),
+    ]);
+    tr.appendChild(armTd);
+
+    // a claim that was not evaluated states why, across the metric columns,
+    // rather than showing a row of em dashes
+    if (claim.status && !claim.gate) {
+      tr.appendChild(el("td", null, el("span", "claim-evalset", claim.evaluation_set || "—")));
+      const na = el("td", "claim-na", claim.reason || claim.status.replace(/_/g, " "));
+      na.setAttribute("colspan", String(keys.length + 1));
+      tr.appendChild(na);
+      tbody.appendChild(tr);
+      return;
+    }
+
+    tr.appendChild(el("td", null, el("span", "claim-evalset", claim.evaluation_set || "—")));
+    keys.forEach((k) => tr.appendChild(deltaCell(claim[k])));
+    tr.appendChild(gateCell(claim));
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  return wrap;
+}
+
+// ---- scatter label placement ------------------------------------------------
+// Fourteen operating points cluster inside a narrow macro-F1 band, so the naive
+// "draw the name up and to the right of every marker" rule stacked five labels
+// on top of each other and on top of the lines. Greedy placement: try candidate
+// offsets around the marker in preference order, take the first that collides
+// with nothing already placed and stays inside the plot; if every candidate
+// collides, step further out. A label that ends up away from its default
+// position gets a hairline leader back to its marker.
+const LABEL_CANDIDATES = [
+  [9, -7, "start"], [9, 12, "start"], [-9, -7, "end"], [-9, 12, "end"],
+  [9, -19, "start"], [9, 24, "start"], [-9, -19, "end"], [-9, 24, "end"],
+  [9, 25, "start"], [-9, 25, "end"], [9, -31, "start"], [-9, -31, "end"],
+];
+const LABEL_CHAR_W = 6.5;
+const LABEL_H = 12;
+
+function placeLabels(items, bounds) {
+  const placed = [];
+  const hit = (b) => placed.some((p) =>
+    b.x0 < p.x1 && b.x1 > p.x0 && b.y0 < p.y1 && b.y1 > p.y0);
+
+  // longest names first: they are the hardest to fit and the most damaging to
+  // clip, so they get first pick of the free space
+  const order = items.map((it, i) => i).sort((a, b) => items[b].text.length - items[a].text.length);
+
+  return order.map((i) => {
+    const it = items[i];
+    const w = it.text.length * LABEL_CHAR_W;
+    let best = null;
+    for (let ring = 0; ring < 4 && !best; ring++) {
+      for (const [dx, dy, anchor] of LABEL_CANDIDATES) {
+        const oy = dy + Math.sign(dy || 1) * ring * 13;
+        const x = it.cx + dx;
+        const y = it.cy + oy;
+        const x0 = anchor === "end" ? x - w : x;
+        const box = { x0, x1: x0 + w, y0: y - LABEL_H + 3, y1: y + 3 };
+        if (box.x0 < bounds.x0 - 4 || box.x1 > bounds.x1 + 4) continue;
+        if (box.y0 < bounds.y0 - 2 || box.y1 > bounds.y1 + 2) continue;
+        if (hit(box)) continue;
+        placed.push(box);
+        best = { i, x, y, anchor, displaced: ring > 0 || Math.abs(oy) > 13 };
+        break;
+      }
+    }
+    if (!best) {
+      // nothing fits: fall back to the default corner rather than dropping the
+      // name — an unlabelled point is worse than a tight one
+      const x = it.cx + 9;
+      best = { i, x, y: it.cy - 7, anchor: "start", displaced: false };
+    }
+    return best;
+  });
 }
 
 function drawFrontierChart(data) {
@@ -827,8 +1025,8 @@ function drawFrontierChart(data) {
   const legend = document.getElementById("frontier-legend");
   legend.innerHTML = "";
 
-  const W = 760, H = 420;
-  const margin = { top: 20, right: 20, bottom: 50, left: 60 };
+  const W = 760, H = 470;
+  const margin = { top: 26, right: 24, bottom: 52, left: 62 };
   const x0 = margin.left, x1 = W - margin.right, y0 = margin.top, y1 = H - margin.bottom;
 
   const points = data.points.filter((p) => p.cost_per_1k_usd && p.macro_f1);
@@ -846,18 +1044,14 @@ function drawFrontierChart(data) {
   const xScale = makeLogScale(xDomain, [x0, x1]);
   const yScale = makeLinearScale(yDomain, [y1, y0]);
 
-  // ticks
-  const xTicks = [];
-  const minExp = Math.floor(Math.log10(xDomain[0]));
-  const maxExp = Math.ceil(Math.log10(xDomain[1]));
-  for (let e = minExp; e <= maxExp; e++) {
-    const v = Math.pow(10, e);
-    if (v >= xDomain[0] && v <= xDomain[1]) xTicks.push({ x: xScale(v), label: "$" + v.toLocaleString() });
-  }
-  const yTicks = [];
-  for (let f = Math.ceil(yDomain[0] * 10) / 10; f <= yDomain[1]; f += 0.1) {
-    yTicks.push({ y: yScale(f), label: f.toFixed(1) });
-  }
+  // Log ticks at decade boundaries only gave this chart a single labelled tick
+  // ("$1,000"): the measured costs span well under one decade, so the axis had
+  // nothing to read against. Subdivide each decade until at least three ticks
+  // land inside the domain.
+  const xTicks = logTicks(xDomain).map((v) => ({
+    x: xScale(v), label: "$" + v.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+  }));
+  const yTicks = niceTicks(yDomain, 5).map((v) => ({ y: yScale(v), label: v.toFixed(2) }));
 
   drawAxes(svg, { x0, x1, y0, y1, xTicks, yTicks, xLabel: "cost per 1k complaints (USD, log scale)", yLabel: "macro-F1" });
 
@@ -865,6 +1059,8 @@ function drawFrontierChart(data) {
   let colorIdx = 0;
   const colorByKind = {};
 
+  // whiskers under markers under labels, so nothing important is covered
+  const placedGeom = [];
   points.forEach((p) => {
     const key = p.kind || "single";
     if (!(key in colorByKind)) {
@@ -874,8 +1070,8 @@ function drawFrontierChart(data) {
     const color = colorByKind[key];
     const cx = xScale(p.cost_per_1k_usd.point);
     const cy = yScale(p.macro_f1.point);
+    placedGeom.push({ p, cx, cy, color, text: p.label || "" });
 
-    // whiskers
     if (p.cost_per_1k_usd.ci_lo !== undefined) {
       svg.appendChild(svgEl("line", {
         class: "chart-whisker", x1: xScale(p.cost_per_1k_usd.ci_lo), x2: xScale(p.cost_per_1k_usd.ci_hi),
@@ -888,10 +1084,20 @@ function drawFrontierChart(data) {
         y1: yScale(p.macro_f1.ci_lo), y2: yScale(p.macro_f1.ci_hi), stroke: color,
       }));
     }
+  });
 
+  // Fourteen operating points inside a narrow macro-F1 band cannot carry
+  // fourteen spelled-out names without the names covering the data — the
+  // previous version stacked five of them on one another. Keyed markers instead:
+  // a numeral on the plot, the full name in the legend below, numbered left to
+  // right by cost so the key reads in the same order as the axis.
+  placedGeom.sort((a, b) => a.cx - b.cx);
+  placedGeom.forEach((g, i) => { g.key = String(i + 1); g.text = g.key; });
+
+  placedGeom.forEach(({ p, cx, cy, color }) => {
     const marker = p.kind === "router"
-      ? svgEl("rect", { x: cx - 5, y: cy - 5, width: 10, height: 10, fill: color, stroke: "none" })
-      : svgEl("circle", { cx, cy, r: 5, fill: color, stroke: "none" });
+      ? svgEl("rect", { x: cx - 4, y: cy - 4, width: 8, height: 8, fill: color, stroke: "var(--paper)", "stroke-width": 1 })
+      : svgEl("circle", { cx, cy, r: 4, fill: color, stroke: "var(--paper)", "stroke-width": 1 });
     marker.style.cursor = "pointer";
     marker.addEventListener("click", () => {
       if (p.run_id) openDrawerForRun(p.run_id);
@@ -900,26 +1106,32 @@ function drawFrontierChart(data) {
     titleEl.textContent = `${p.label}\ncost: ${metricStr(p.cost_per_1k_usd)}\nmacro-F1: ${metricStr(p.macro_f1)}\n${p.cost_basis || ""}`;
     marker.appendChild(titleEl);
     svg.appendChild(marker);
+  });
 
-    const labelText = svgEl("text", { x: cx + 8, y: cy - 8, "font-size": 10 });
-    labelText.textContent = p.label;
+  placeLabels(placedGeom, { x0, x1, y0, y1 }).forEach(({ i, x, y, anchor, displaced }) => {
+    const g = placedGeom[i];
+    if (displaced) {
+      svg.appendChild(svgEl("line", {
+        class: "chart-leader",
+        x1: g.cx + (anchor === "end" ? -5 : 5), y1: g.cy,
+        x2: x + (anchor === "end" ? 2 : -2), y2: y - 3,
+      }));
+    }
+    const labelText = svgEl("text", {
+      class: "chart-point-key", x, y, "text-anchor": anchor, fill: g.color,
+    });
+    labelText.textContent = g.key;
     svg.appendChild(labelText);
   });
 
-  // legend: kinds + pending slots
-  Object.entries(colorByKind).forEach(([kind, color]) => {
-    const item = el("span", null);
-    const swatch = el("span", "legend-swatch");
-    swatch.style.background = color;
-    item.appendChild(swatch);
-    item.appendChild(document.createTextNode(kind === "router" ? "router policy (square)" : "single tier (circle)"));
-    legend.appendChild(item);
+  placedGeom.forEach((g) => {
+    const row = legendRow(g.color, `${g.key}  ${g.p.label}`, g.p.kind === "router" ? "square" : "dot");
+    row.style.cursor = g.p.run_id ? "pointer" : "";
+    if (g.p.run_id) row.addEventListener("click", () => openDrawerForRun(g.p.run_id));
+    legend.appendChild(row);
   });
   (data.pending_points || []).forEach((pp) => {
-    const item = el("span", null);
-    item.appendChild(el("span", "legend-swatch pending"));
-    item.appendChild(document.createTextNode("pending Tier B — " + (pp.label || pp.slot)));
-    legend.appendChild(item);
+    legend.appendChild(pendingLegendRow("pending Tier B — " + (pp.label || pp.slot)));
   });
 }
 
@@ -1154,53 +1366,111 @@ function drawDriftF1Chart(data) {
   const seriesKeys = Object.keys(allSeries);
   if (!seriesKeys.length) return;
 
-  const W = 760, H = 320;
-  const margin = { top: 20, right: 20, bottom: 50, left: 50 };
+  const W = 760, H = 360;
+  const margin = { top: 26, right: 24, bottom: 52, left: 54 };
   const x0 = margin.left, x1 = W - margin.right, y0 = margin.top, y1 = H - margin.bottom;
 
   const { scale: xScale, idx } = driftXScale(sliceOrder, x0, x1);
-  const yScale = makeLinearScale([0, 1], [y1, y0]);
+  // Crop the y-axis to the measured band. Every arm lives between roughly 0.65
+  // and 0.85, so a fixed 0–1 axis squashed ten series into the top fifth of the
+  // plot and made the drift — the entire point of the exhibit — invisible. The
+  // caption states the crop so no one reads the slopes as steeper than they are.
+  const yDomain = driftYDomain(allSeries, idx);
+  const yScale = makeLinearScale(yDomain, [y1, y0]);
 
   const xTicks = sliceOrder.map((s) => ({ x: xScale(idx[s]), label: sliceLabels[s] || s }));
-  const yTicks = [0, 0.2, 0.4, 0.6, 0.8, 1.0].map((v) => ({ y: yScale(v), label: v.toFixed(1) }));
+  const yTicks = niceTicks(yDomain, 5).map((v) => ({ y: yScale(v), label: v.toFixed(2) }));
   drawAxes(svg, { x0, x1, y0, y1, xTicks, yTicks, xLabel: "time slice", yLabel: "macro-F1" });
 
   const palette = Object.values(OKABE_ITO);
   seriesKeys.forEach((key, i) => {
     const color = palette[i % palette.length];
+    // eight colourblind-safe hues, ten arms: past the palette a dash pattern
+    // carries the identity so two arms never share both colour and stroke
+    const dash = i >= palette.length ? "5,3" : null;
     const s = allSeries[key];
     const pts = s.points.filter((pt) => pt.slice in idx).sort((a, b) => idx[a.slice] - idx[b.slice]);
     const pathPts = pts.map((pt) => `${xScale(idx[pt.slice])},${yScale(pt.value)}`).join(" ");
     if (pts.length) {
-      svg.appendChild(svgEl("polyline", { points: pathPts, fill: "none", stroke: color, "stroke-width": 2 }));
+      const line = svgEl("polyline", { points: pathPts, fill: "none", stroke: color, "stroke-width": 1.75 });
+      if (dash) line.setAttribute("stroke-dasharray", dash);
+      svg.appendChild(line);
       pts.forEach((pt) => {
-        svg.appendChild(svgEl("circle", { cx: xScale(idx[pt.slice]), cy: yScale(pt.value), r: 3, fill: color }));
+        svg.appendChild(svgEl("circle", {
+          cx: xScale(idx[pt.slice]), cy: yScale(pt.value), r: 2.5, fill: color,
+        }));
       });
     }
-    const legendItem = el("span", null);
-    const swatch = el("span", "legend-swatch");
-    swatch.style.background = color;
-    legendItem.appendChild(swatch);
-    legendItem.appendChild(document.createTextNode(s.label));
-    legendWrap.appendChild(legendItem);
+    const row = legendRow(color, s.label);
+    if (dash) row.querySelector(".legend-swatch").style.borderTopStyle = "dashed";
+    legendWrap.appendChild(row);
   });
 
   (data.pending_series || []).forEach((ps) => {
-    const item = el("span", null);
-    item.appendChild(el("span", "legend-swatch pending"));
-    item.appendChild(document.createTextNode(ps.label || ("pending Tier B — " + (ps.slot || ""))));
-    legendWrap.appendChild(item);
+    legendWrap.appendChild(pendingLegendRow(ps.label || ("pending Tier B — " + (ps.slot || ""))));
   });
 
-  // annotation lines
+  // Annotation lines. drift.json gives each event an `x` that may be either a
+  // slice KEY ("test_drift_2026h1") or the slice's display LABEL ("2026-H1"),
+  // and the old lookup only tried the key — so the panel promised "annotated
+  // events" and silently drew none of them. Resolve against both. An event that
+  // matches neither (a calendar date on a yearly axis) is not placed at an
+  // invented position; it is listed under the figure instead of vanishing.
+  const unplaced = [];
   (data.annotations || []).forEach((a) => {
-    if (!(a.x in idx)) return;
-    const ax = xScale(idx[a.x]);
-    svg.appendChild(svgEl("line", { x1: ax, x2: ax, y1: y0, y2: y1, stroke: OKABE_ITO.vermillion, "stroke-dasharray": "3,3" }));
-    const t = svgEl("text", { x: ax + 3, y: y0 + 10, "font-size": 9, fill: OKABE_ITO.vermillion });
+    const key = a.x in idx
+      ? a.x
+      : Object.keys(idx).find((k) => (sliceLabels[k] || k) === a.x);
+    if (key === undefined) { unplaced.push(a); return; }
+    const ax = xScale(idx[key]);
+    svg.appendChild(svgEl("line", {
+      x1: ax, x2: ax, y1: y0, y2: y1, stroke: "var(--rule-strong)", "stroke-dasharray": "3,3",
+    }));
+    // annotation text hugs the top rule, above every series, and flips to the
+    // left of its rule when the rule is near the right edge
+    const nearRight = ax > x1 - 190;
+    const t = svgEl("text", {
+      class: "chart-annotation-label", x: ax + (nearRight ? -5 : 5), y: y0 - 9,
+      "text-anchor": nearRight ? "end" : "start", fill: "var(--muted)",
+    });
     t.textContent = a.label;
     svg.appendChild(t);
   });
+
+  if (unplaced.length) {
+    const note = el("div", "chart-events");
+    note.appendChild(el("span", "meta-label", "events off this axis"));
+    unplaced.forEach((a) => {
+      note.appendChild(el("span", "chart-event-item", `${a.x} — ${a.label}`));
+    });
+    legendWrap.parentNode.insertBefore(note, legendWrap.nextSibling);
+  }
+}
+
+// y-domain from the data, padded, snapped outward to a round step. Never
+// inverted and never zero-height, even if a series is flat.
+function driftYDomain(allSeries, idx) {
+  const vals = [];
+  Object.values(allSeries).forEach((s) => s.points.forEach((pt) => {
+    if (pt.slice in idx && Number.isFinite(pt.value)) vals.push(pt.value);
+  }));
+  if (!vals.length) return [0, 1];
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  const pad = Math.max((hi - lo) * 0.14, 0.02);
+  lo = Math.max(0, Math.floor((lo - pad) * 20) / 20);
+  hi = Math.min(1, Math.ceil((hi + pad) * 20) / 20);
+  return hi > lo ? [lo, hi] : [Math.max(0, lo - 0.05), Math.min(1, lo + 0.05)];
+}
+
+function niceTicks([lo, hi], target) {
+  const raw = (hi - lo) / target;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) || mag * 10;
+  const ticks = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) {
+    ticks.push(Math.round(v / step) * step);
+  }
+  return ticks;
 }
 
 function drawDriftEscalationChart(data) {
@@ -1216,37 +1486,47 @@ function drawDriftEscalationChart(data) {
   const escSeries = buildDriftLineSeries(summary, "escalation_rate", driftArmKey);
   const seriesKeys = Object.keys(escSeries);
   if (!seriesKeys.length) {
-    const t = svgEl("text", { x: 10, y: 20, "font-size": 11 });
+    const t = svgEl("text", { class: "chart-tick", x: 10, y: 22 });
     t.textContent = "no escalation_rate field present in drift.json summary series";
     svg.appendChild(t);
     return;
   }
 
-  const W = 760, H = 220;
-  const margin = { top: 20, right: 20, bottom: 40, left: 50 };
+  const W = 760, H = 260;
+  const margin = { top: 22, right: 24, bottom: 52, left: 54 };
   const x0 = margin.left, x1 = W - margin.right, y0 = margin.top, y1 = H - margin.bottom;
 
   const { scale: xScale, idx } = driftXScale(sliceOrder, x0, x1);
-  const yScale = makeLinearScale([0, 1], [y1, y0]);
+  // A rate keeps its zero baseline — the distance from "never escalates" is the
+  // quantity of interest — but the top is cropped to the measured maximum.
+  const escMax = Math.max(...Object.values(escSeries).flatMap((s) =>
+    s.points.filter((pt) => pt.slice in idx).map((pt) => pt.value)), 0.1);
+  const yDomain = [0, Math.min(1, Math.ceil(escMax * 1.15 * 20) / 20)];
+  const yScale = makeLinearScale(yDomain, [y1, y0]);
   const xTicks = sliceOrder.map((s) => ({ x: xScale(idx[s]), label: sliceLabels[s] || s }));
-  const yTicks = [0, 0.25, 0.5, 0.75, 1.0].map((v) => ({ y: yScale(v), label: v.toFixed(2) }));
+  const yTicks = niceTicks(yDomain, 4).map((v) => ({ y: yScale(v), label: v.toFixed(2) }));
   drawAxes(svg, { x0, x1, y0, y1, xTicks, yTicks, xLabel: "time slice", yLabel: "escalation rate" });
 
   const palette = Object.values(OKABE_ITO);
   seriesKeys.forEach((key, i) => {
     const color = palette[i % palette.length];
+    const dash = i >= palette.length ? "5,3" : null;
     const s = escSeries[key];
     const pts = s.points.filter((pt) => pt.slice in idx).sort((a, b) => idx[a.slice] - idx[b.slice]);
     const pathPts = pts.map((pt) => `${xScale(idx[pt.slice])},${yScale(pt.value)}`).join(" ");
     if (pts.length) {
-      svg.appendChild(svgEl("polyline", { points: pathPts, fill: "none", stroke: color, "stroke-width": 2 }));
+      const line = svgEl("polyline", { points: pathPts, fill: "none", stroke: color, "stroke-width": 1.75 });
+      if (dash) line.setAttribute("stroke-dasharray", dash);
+      svg.appendChild(line);
+      pts.forEach((pt) => {
+        svg.appendChild(svgEl("circle", {
+          cx: xScale(idx[pt.slice]), cy: yScale(pt.value), r: 2.5, fill: color,
+        }));
+      });
     }
-    const legendItem = el("span", null);
-    const swatch = el("span", "legend-swatch");
-    swatch.style.background = color;
-    legendItem.appendChild(swatch);
-    legendItem.appendChild(document.createTextNode(s.label));
-    legendWrap.appendChild(legendItem);
+    const row = legendRow(color, s.label);
+    if (dash) row.querySelector(".legend-swatch").style.borderTopStyle = "dashed";
+    legendWrap.appendChild(row);
   });
 }
 
@@ -1287,51 +1567,66 @@ async function initCalibration() {
   });
 }
 
+// Reliability diagram as a small multiple: title, quiet provenance line, plot,
+// metrics under a hairline. No card border — the grid gutter separates them,
+// and a box around a box around a plot was three frames for one exhibit.
 function reliabilityCard(ex) {
-  const card = el("div", "card");
-  const header = el("div", "panel-header");
-  header.appendChild(el("strong", null, ex.label || ex.key));
-  header.appendChild(evidenceBadge(ex.evidence_class));
-  card.appendChild(header);
-  if (ex.run_id) card.appendChild(runChip(ex.run_id));
+  const fig = el("figure", "figure figure--fluid");
 
-  const svg = svgEl("svg", { width: 300, height: 220, role: "img" });
+  const header = el("figcaption", "exhibit-header");
+  header.appendChild(el("span", "exhibit-title", ex.label || ex.key));
+  const meta = el("div", "exhibit-meta");
+  meta.appendChild(evidenceBadge(ex.evidence_class));
+  if (ex.run_id) meta.appendChild(runChip(ex.run_id));
+  header.appendChild(meta);
+  fig.appendChild(header);
+
+  // The x-axis name used to be drawn 2px below the bottom of the viewBox and was
+  // clipped on every exhibit; the box is now tall enough to hold it, and the
+  // left margin clears the rotated y-axis name from the tick values.
+  const W = 320, H = 248;
+  const svg = svgEl("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: "img" });
+  svg.setAttribute("aria-label", `Reliability diagram — ${ex.label || ex.key}`);
   const bins = ex.bins || [];
-  const W = 300, H = 220;
-  const margin = { top: 10, right: 10, bottom: 30, left: 34 };
+  const margin = { top: 12, right: 8, bottom: 46, left: 44 };
   const x0 = margin.left, x1 = W - margin.right, y0 = margin.top, y1 = H - margin.bottom;
   const xScale = makeLinearScale([0, 1], [x0, x1]);
   const yScale = makeLinearScale([0, 1], [y1, y0]);
 
   drawAxes(svg, {
     x0, x1, y0, y1,
-    xTicks: [0, 0.5, 1].map((v) => ({ x: xScale(v), label: v.toString() })),
-    yTicks: [0, 0.5, 1].map((v) => ({ y: yScale(v), label: v.toString() })),
+    xTicks: [0, 0.5, 1].map((v) => ({ x: xScale(v), label: v.toFixed(1) })),
+    yTicks: [0, 0.5, 1].map((v) => ({ y: yScale(v), label: v.toFixed(1) })),
     xLabel: "confidence", yLabel: "accuracy",
   });
 
-  // diagonal reference
-  svg.appendChild(svgEl("line", { x1: xScale(0), y1: yScale(0), x2: xScale(1), y2: yScale(1), stroke: OKABE_ITO.black, "stroke-dasharray": "2,2" }));
+  // perfect-calibration reference
+  svg.appendChild(svgEl("line", {
+    x1: xScale(0), y1: yScale(0), x2: xScale(1), y2: yScale(1),
+    stroke: "var(--rule-strong)", "stroke-dasharray": "3,3",
+  }));
 
   const barW = (x1 - x0) / Math.max(bins.length, 1);
   bins.forEach((b, i) => {
     const bx = x0 + i * barW;
-    const bh = (y1 - y0) * (1 - (b.acc ?? 0));
-    svg.appendChild(svgEl("rect", {
-      x: bx + 1, y: yScale(b.acc ?? 0), width: Math.max(barW - 2, 1), height: y1 - yScale(b.acc ?? 0),
-      fill: OKABE_ITO.blue, opacity: 0.75,
-    }));
+    const rect = svgEl("rect", {
+      x: bx + 0.75, y: yScale(b.acc ?? 0),
+      width: Math.max(barW - 1.5, 1), height: y1 - yScale(b.acc ?? 0),
+      fill: OKABE_ITO.skyblue, opacity: 0.9,
+    });
     const titleEl = svgEl("title", {});
     titleEl.textContent = `bin [${fmtNum(b.lo, 2)}, ${fmtNum(b.hi, 2)}) n=${b.n} conf_mean=${fmtNum(b.conf_mean, 3)} acc=${fmtNum(b.acc, 3)}`;
-    svg.lastChild.appendChild(titleEl);
+    rect.appendChild(titleEl);
+    svg.appendChild(rect);
   });
 
-  const chartWrap = el("div", "chart-wrap");
-  chartWrap.appendChild(svg);
-  card.appendChild(chartWrap);
+  const body = el("div", "figure-body");
+  body.appendChild(svg);
+  fig.appendChild(body);
 
-  card.appendChild(el("div", null, `ECE: ${metricStr(ex.ece)} · Brier: ${metricStr(ex.brier)}`));
-  return card;
+  fig.appendChild(el("div", "exhibit-metrics",
+    `ECE ${metricStr(ex.ece)} · Brier ${metricStr(ex.brier)}`));
+  return fig;
 }
 
 // ----------------------------------------------------------------------------
@@ -1474,9 +1769,14 @@ function pendingCard(pending) {
   return card;
 }
 
-function renderNarrativeSection(section) {
+function renderNarrativeSection(section, pageTitle) {
   const card = el("div", "card cs-section");
-  card.appendChild(el("h3", "cs-heading", section.title));
+  // the opening section repeats the page title in the payload; printing it twice,
+  // once as the panel heading and again as the first subhead, is a rendering
+  // artefact rather than content, so the duplicate subhead is suppressed
+  if (section.title && section.title !== pageTitle) {
+    card.appendChild(el("h3", "cs-heading", section.title));
+  }
   (section.paragraphs || []).forEach((p) => card.appendChild(el("p", "cs-para", p)));
   (section.gaps || []).forEach((g) => {
     card.appendChild(el("div", "info-card cs-gap", [
@@ -1602,7 +1902,7 @@ async function initCaseStudy() {
     else if (section.kind === "limits") body.appendChild(renderLimitsSection(section));
     else if (section.kind === "provenance") {
       body.appendChild(renderProvenanceSection(section, data.repo));
-    } else body.appendChild(renderNarrativeSection(section));
+    } else body.appendChild(renderNarrativeSection(section, data.title));
   });
 
   const pending = data.pending || [];

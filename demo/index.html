@@ -12,15 +12,15 @@
 
   <nav class="sidenav" id="sidenav" aria-label="Primary">
     <h1>Triage Router</h1>
-    <p class="subtitle">CFPB complaint triage — Tier A/B/C + router</p>
+    <p class="subtitle">Three tiers, one cascade router, and the receipts for every number.</p>
     <ul class="nav-list">
-      <li><a class="nav-link" data-panel="playground" href="#playground">1. Triage playground</a></li>
-      <li><a class="nav-link" data-panel="frontier" href="#frontier">2. Cost-quality frontier</a></li>
-      <li><a class="nav-link" data-panel="policy" href="#policy">3. Router policy builder</a></li>
-      <li><a class="nav-link" data-panel="drift" href="#drift">4. Drift timeline</a></li>
-      <li><a class="nav-link" data-panel="calibration" href="#calibration">5. Calibration</a></li>
-      <li><a class="nav-link" data-panel="receipts" href="#receipts">6. Receipts / all runs</a></li>
-      <li><a class="nav-link" data-panel="casestudy" href="#casestudy">7. Case study</a></li>
+      <li><a class="nav-link" data-panel="playground" href="#playground"><span class="nav-num">01</span><span class="nav-label">Triage playground</span></a></li>
+      <li><a class="nav-link" data-panel="frontier" href="#frontier"><span class="nav-num">02</span><span class="nav-label">Cost-quality frontier</span></a></li>
+      <li><a class="nav-link" data-panel="policy" href="#policy"><span class="nav-num">03</span><span class="nav-label">Router policy builder</span></a></li>
+      <li><a class="nav-link" data-panel="drift" href="#drift"><span class="nav-num">04</span><span class="nav-label">Drift timeline</span></a></li>
+      <li><a class="nav-link" data-panel="calibration" href="#calibration"><span class="nav-num">05</span><span class="nav-label">Calibration</span></a></li>
+      <li><a class="nav-link" data-panel="receipts" href="#receipts"><span class="nav-num">06</span><span class="nav-label">Receipts / all runs</span></a></li>
+      <li><a class="nav-link" data-panel="casestudy" href="#casestudy"><span class="nav-num">07</span><span class="nav-label">Case study</span></a></li>
     </ul>
   </nav>
 
@@ -31,8 +31,8 @@
     <!-- ================= 1. PLAYGROUND ================= -->
     <section class="panel" id="panel-playground" data-panel="playground">
       <div class="panel-header">
+        <p class="panel-eyebrow"><span class="panel-num">01 / 7</span><span class="evidence-badge measured" id="playground-evidence-badge">measured</span></p>
         <h2>Triage playground</h2>
-        <span class="evidence-badge measured" id="playground-evidence-badge">measured</span>
       </div>
       <p class="panel-desc">
         ~200 real CFPB complaint narratives (class-stratified sample), each scored by every
@@ -72,8 +72,8 @@
     <!-- ================= 2. FRONTIER ================= -->
     <section class="panel" id="panel-frontier" data-panel="frontier">
       <div class="panel-header">
+        <p class="panel-eyebrow"><span class="panel-num">02 / 7</span><span class="evidence-badge measured" id="frontier-evidence-badge">measured</span></p>
         <h2>Cost-quality frontier</h2>
-        <span class="evidence-badge measured" id="frontier-evidence-badge">measured</span>
       </div>
       <p class="panel-desc">
         Cost per 1,000 complaints (log scale) vs macro-F1. Single tiers and router policies
@@ -81,12 +81,24 @@
       </p>
       <div id="frontier-banner-slot"></div>
 
-      <div id="frontier-claims" class="card-grid"></div>
+      <h3>Paired claims and their gates</h3>
+      <div id="frontier-claims"></div>
 
-      <div class="chart-wrap" id="frontier-chart-wrap" style="display:none;">
-        <svg id="frontier-svg" width="760" height="420" role="img" aria-label="Cost-quality frontier scatter plot"></svg>
+      <h3>The frontier</h3>
+      <figure class="figure figure--wide" id="frontier-chart-wrap" style="display:none;">
+        <div class="figure-body">
+          <svg id="frontier-svg" width="760" height="470" viewBox="0 0 760 470" role="img" aria-label="Cost-quality frontier scatter plot"></svg>
+        </div>
         <div class="chart-legend" id="frontier-legend"></div>
-      </div>
+        <figcaption class="figure-caption">
+          Each marker is one measured operating point, keyed by number to the list below and
+          numbered left to right by cost; whiskers are 95% bootstrap intervals on both axes.
+          Discs are single tiers, squares are router policies. Note the x-axis is log-scaled but
+          the measured points span less than one decade — total cost per 1,000 is dominated by
+          misroute and human-review terms, not by API price, so the tiers sit closer together
+          here than their per-call prices suggest. Click a marker or a key for its run receipt.
+        </figcaption>
+      </figure>
 
       <div class="panel-footer">
         Every number traces to results/runs.jsonl — append-only, committed. Tier B panels
@@ -98,8 +110,8 @@
     <!-- ================= 3. POLICY BUILDER ================= -->
     <section class="panel" id="panel-policy" data-panel="policy">
       <div class="panel-header">
+        <p class="panel-eyebrow"><span class="panel-num">03 / 7</span><span class="evidence-badge derived" id="policy-evidence-badge">derived / measured</span></p>
         <h2>Router policy builder</h2>
-        <span class="evidence-badge derived" id="policy-evidence-badge">derived / measured</span>
       </div>
       <p class="panel-desc">
         Client-side re-solve of expected cost/1k under the linear cost model, given each
@@ -109,7 +121,7 @@
       <div id="policy-banner-slot"></div>
 
       <div id="policy-body" style="display:none;">
-        <div class="card" style="margin-bottom:14px;">
+        <div class="card" style="margin-bottom:26px;">
           <div class="slider-row">
             <label for="slider-misroute">c_misroute ($/misroute)</label>
             <input type="range" id="slider-misroute" min="0" max="30" step="0.5">
@@ -133,7 +145,7 @@
           <button type="button" id="policy-reset-btn">reset to defaults</button>
         </div>
 
-        <div id="policy-tau-readout" class="card" style="margin-bottom:14px;"></div>
+        <div id="policy-tau-readout" class="card" style="margin-bottom:26px;"></div>
 
         <div id="policy-list"></div>
 
@@ -150,8 +162,8 @@
     <!-- ================= 4. DRIFT ================= -->
     <section class="panel" id="panel-drift" data-panel="drift">
       <div class="panel-header">
+        <p class="panel-eyebrow"><span class="panel-num">04 / 7</span><span class="evidence-badge measured" id="drift-evidence-badge">measured</span></p>
         <h2>Drift timeline</h2>
-        <span class="evidence-badge measured" id="drift-evidence-badge">measured</span>
       </div>
       <p class="panel-desc">
         Macro-F1 and escalation rate over yearly test slices, 2022 → 2026, with annotated
@@ -161,16 +173,30 @@
 
       <div id="drift-body" style="display:none;">
         <h3>Macro-F1 over time</h3>
-        <div class="chart-wrap">
-          <svg id="drift-f1-svg" width="760" height="320" role="img" aria-label="Macro-F1 over time by arm"></svg>
-        </div>
-        <div class="chart-legend" id="drift-f1-legend"></div>
+        <figure class="figure figure--wide">
+          <div class="figure-body">
+            <svg id="drift-f1-svg" width="760" height="360" viewBox="0 0 760 360" role="img" aria-label="Macro-F1 over time by arm"></svg>
+          </div>
+          <div class="chart-legend" id="drift-f1-legend"></div>
+          <figcaption class="figure-caption">
+            The y-axis is cropped to the measured range rather than fixed at 0–1: on a full-range
+            axis every arm collapses into the top fifth of the plot and the drift is invisible.
+            Read the slopes against the tick values, not against the frame. Dashed rules mark
+            annotated events.
+          </figcaption>
+        </figure>
 
         <h3>Escalation rate over time</h3>
-        <div class="chart-wrap">
-          <svg id="drift-esc-svg" width="760" height="220" role="img" aria-label="Escalation rate over time"></svg>
-        </div>
-        <div class="chart-legend" id="drift-esc-legend"></div>
+        <figure class="figure figure--wide">
+          <div class="figure-body">
+            <svg id="drift-esc-svg" width="760" height="260" viewBox="0 0 760 260" role="img" aria-label="Escalation rate over time"></svg>
+          </div>
+          <div class="chart-legend" id="drift-esc-legend"></div>
+          <figcaption class="figure-caption">
+            Share of complaints each router arm hands to a more expensive tier or to a human.
+            Rising escalation is the router absorbing drift by buying help.
+          </figcaption>
+        </figure>
       </div>
 
       <div class="panel-footer">
@@ -183,8 +209,8 @@
     <!-- ================= 5. CALIBRATION ================= -->
     <section class="panel" id="panel-calibration" data-panel="calibration">
       <div class="panel-header">
+        <p class="panel-eyebrow"><span class="panel-num">05 / 7</span><span class="evidence-badge measured" id="calibration-evidence-badge">measured</span></p>
         <h2>Calibration</h2>
-        <span class="evidence-badge measured" id="calibration-evidence-badge">measured</span>
       </div>
       <p class="panel-desc">
         Reliability diagrams (15 equal-width confidence bins) per exhibit, with ECE / Brier
@@ -206,15 +232,15 @@
     <!-- ================= 6. RECEIPTS ================= -->
     <section class="panel" id="panel-receipts" data-panel="receipts">
       <div class="panel-header">
+        <p class="panel-eyebrow"><span class="panel-num">06 / 7</span><span class="evidence-badge measured" id="receipts-evidence-badge">measured</span></p>
         <h2>Receipts / all runs</h2>
-        <span class="evidence-badge measured" id="receipts-evidence-badge">measured</span>
       </div>
       <p class="panel-desc">
         Every run logged to results/runs.jsonl. Click a row to open the receipts drawer.
       </p>
       <div id="receipts-banner-slot"></div>
 
-      <div class="table-wrap" id="receipts-table-wrap" style="display:none; max-height: 70vh; overflow-y:auto;">
+      <div class="table-wrap" id="receipts-table-wrap" style="display:none;">
         <table id="receipts-table">
           <thead>
             <tr>
@@ -241,8 +267,8 @@
     <!-- ================= 7. CASE STUDY ================= -->
     <section class="panel" id="panel-casestudy" data-panel="casestudy">
       <div class="panel-header">
+        <p class="panel-eyebrow"><span class="panel-num">07 / 7</span><span class="evidence-badge measured" id="casestudy-evidence-badge">measured</span></p>
         <h2 id="casestudy-title">Case study</h2>
-        <span class="evidence-badge measured" id="casestudy-evidence-badge">measured</span>
       </div>
       <p class="panel-desc" id="casestudy-source-note"></p>
       <div id="casestudy-banner-slot"></div>
@@ -262,7 +288,7 @@
 <!-- ================= RECEIPTS DRAWER (global, opens from any run-id chip) ================= -->
 <div class="drawer-overlay" id="drawer-overlay"></div>
 <aside class="drawer" id="drawer" aria-label="Receipts drawer">
-  <button type="button" class="drawer-close" id="drawer-close-btn">close ✕</button>
+  <button type="button" class="drawer-close" id="drawer-close-btn">close</button>
   <h3 id="drawer-title">run</h3>
   <div id="drawer-body"></div>
 </aside>
