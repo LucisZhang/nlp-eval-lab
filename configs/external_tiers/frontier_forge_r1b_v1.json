@@ -1,0 +1,109 @@
+{
+  "exports": {
+    "bf16": {
+      "dtype": "bfloat16",
+      "method": "peft_merge_and_unload",
+      "path": "checkpoints/full/r1b/trl/s0/export/merged_bf16",
+      "sha256": "7cf43a2905513f61797b78b7e3fd7ebdacd1cba4fc89abea9ce209401e6e6435"
+    },
+    "bf16_mtp_preserved": {
+      "dtype": "bfloat16",
+      "method": "peft_merge_plus_base_mtp_weight_preservation",
+      "path": "checkpoints/full/r1b/trl/s0/export/merged_bf16_mtp_preserved",
+      "sha256": "7878b55f6fe6a9ecb12b9504b1a88d7bc6fef7ba72d91289b6e8d694f6bc75ce"
+    },
+    "gptq_int4": {
+      "calibration_rows": 128,
+      "group_size": 128,
+      "method": "gptq_int4",
+      "path": "checkpoints/full/r1b/trl/s0/export/gptq_int4",
+      "sha256": "c99b42cf0e062cc75f2df8588725d0c29383666f3db0c1ae837ce15bfe6d39d2"
+    },
+    "preserved_mtp": {
+      "bundle_sha256": "47f6645d9a1d677c89450c45be7df2c7c4cea6b3dd6a60992dc48a82f92a7716",
+      "source": "exact byte ranges from fixed-revision base checkpoint shards",
+      "weight_key_count": 15,
+      "weight_keys": [
+        "mtp.fc.weight",
+        "mtp.layers.0.input_layernorm.weight",
+        "mtp.layers.0.mlp.down_proj.weight",
+        "mtp.layers.0.mlp.gate_proj.weight",
+        "mtp.layers.0.mlp.up_proj.weight",
+        "mtp.layers.0.post_attention_layernorm.weight",
+        "mtp.layers.0.self_attn.k_norm.weight",
+        "mtp.layers.0.self_attn.k_proj.weight",
+        "mtp.layers.0.self_attn.o_proj.weight",
+        "mtp.layers.0.self_attn.q_norm.weight",
+        "mtp.layers.0.self_attn.q_proj.weight",
+        "mtp.layers.0.self_attn.v_proj.weight",
+        "mtp.norm.weight",
+        "mtp.pre_fc_norm_embedding.weight",
+        "mtp.pre_fc_norm_hidden.weight"
+      ]
+    },
+    "source_adapter": {
+      "mtp_weight_keys": [],
+      "path": "checkpoints/full/r1b/trl/s0/adapter",
+      "weights_path": "checkpoints/full/r1b/trl/s0/adapter/adapter_model.safetensors",
+      "weights_sha256": "740b0f8384c77818a6cbd2e4c0d0c15d720d682d0419700ccd8ef188f7033105"
+    }
+  },
+  "integration_contract": {
+    "status": "scenario-only-without-joint-cal-predictions",
+    "terminal_cost_per_request_usd_conservative": 2.020464579395035e-05,
+    "terminal_failure_rate_for_cal_scenario": 0.050000000000000044,
+    "threshold_input": "committed nlp-eval-lab CAL risk-coverage table",
+    "warning": "R1b consumes source_product/source_issue/source_company under input contract v2 and solves structured ticket/action policy, whereas the upstream cascade predicts the product class from narrative text. This handoff does not establish R1b as a leakage-free replacement classifier and contains no joint per-row CAL predictions. Any re-optimized threshold is an explicitly labeled scenario, not a certified cascade result."
+  },
+  "quality": {
+    "ci95": [
+      0.986,
+      0.9945
+    ],
+    "gpu_hours": 15.235833333333334,
+    "paired_delta_vs_r1": {
+      "bootstrap_resamples": 1000,
+      "ci95": [
+        0.306,
+        0.345
+      ],
+      "from": "r1",
+      "from_backend": "trl",
+      "from_seed": 0,
+      "mean_task_success_delta": 0.327,
+      "paired_rows": 2000,
+      "status": "complete",
+      "to": "r1b",
+      "to_backend": "trl",
+      "to_seed": 0
+    },
+    "run_id": "r1b_sft_rule_20k_s0",
+    "statement": "Scaling free rule labels from 1,450 to 20,000 raised frozen-eval task success from 66.35% to 99.05%: +32.70 percentage points, paired 95% CI [30.60, 34.50], using 15.236 measured RTX 4090 GPU-hours ($4.571).",
+    "task_success": 0.9905,
+    "usd": 4.57075
+  },
+  "schema_version": "frontier-forge-cascade-handoff-v1",
+  "service_profile": {
+    "arrival_rate_qps": 4.0,
+    "artifact_sha256": "7878b55f6fe6a9ecb12b9504b1a88d7bc6fef7ba72d91289b6e8d694f6bc75ce",
+    "cost_per_1k_successful_tasks_usd": 0.02020464579395035,
+    "e2e_p50_s": 1.0630011539906263,
+    "e2e_p95_s": 1.3112133152782917,
+    "label": "R1b BF16 + native MTP",
+    "output_tokens_per_s": 320.62280336427636,
+    "precision": "bfloat16",
+    "requests": 20,
+    "run_id": "phase4_spec_decode_r1b_bf16_native_mtp",
+    "stable": true,
+    "task_success": 0.95,
+    "ttft_p50_s": 0.19990521483123302,
+    "vram_peak_mib": 21587.0
+  },
+  "shared_frozen_cal": {
+    "membership": "exact nlp-eval-lab CAL membership",
+    "rows": 86972,
+    "source_split_sha256": "d7c24d6db05f337ac3fca1922b16c4324775e2007833af1eae684ddc37533c94"
+  },
+  "source_manifest_sha256": "0b91f0a2974305afb8a7c291b959b2deb44a87d2ad366f660519f337e5e9fe18",
+  "source_repository": "https://github.com/LucisZhang/frontier-forge"
+}

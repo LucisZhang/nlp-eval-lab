@@ -1,4 +1,4 @@
-.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier tier-b-frontier prior-shift prior-shift-paired oov perturb perturb-tier-c perturb-report drift-charts demo-data demo-live reproduce-headline
+.PHONY: setup test lint data snapshot ingest taxonomy dedup splits datasheet tier-a tier-b-data tier-b-bundle tier-c-prompt tier-c-exemplars-verify tier-c-smoke preds risk-coverage cost-model thresholds router-sim frontier tier-b-frontier frontier-forge-scenario prior-shift prior-shift-paired oov perturb perturb-tier-c perturb-report drift-charts demo-data demo-live reproduce-headline
 
 setup:
 	uv sync --frozen
@@ -152,6 +152,14 @@ tier-b-frontier:
 	uv run python -m triage_lab.threshold_opt --derivation v2-isocal --cost-config $(COST_MODEL_V2)
 	uv run python -m triage_lab.router_sim --op-version v2-isocal --cost-config $(COST_MODEL_V2)
 	uv run python -m triage_lab.frontier --op-version v2-isocal --cost-config $(COST_MODEL_V2)
+
+# External Frontier Forge R1b terminal-tier scenario. This re-prices the committed CAL
+# risk-coverage grid and verifies the committed result byte-for-byte. It makes no model
+# calls, opens no TEST artifact, and never appends to results/runs.jsonl. The output is
+# explicitly non-certified because R1b has a different task/input contract and there are
+# no joint per-row CAL predictions.
+frontier-forge-scenario:
+	uv run python -m triage_lab.frontier_forge_tier
 
 # Prior-shift decomposition (Phase 5 task 2): how much of each tier's yearly macro-F1 drop
 # vs 2023 is the class-mix change alone (Path P reweighted-F1 counterfactual, primary) vs
