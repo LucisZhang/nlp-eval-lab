@@ -28,6 +28,18 @@ Two results worth the click:
 - **The certified router claim** (paired bootstrap, n=104,443): *"At significantly LOWER cost than the all-linear policy (paired cost delta $-120.58/1k [-131.04, -110.24]), the a_to_b router raises system macro-F1 by +0.0370 [0.0337, 0.0402]."* Both intervals exclude zero.
 - **The pre-registered surprise:** under the frozen training protocol, the 66M-parameter DistilBERT beats all three ModernBERT-base seeds (per-seed paired deltas −0.0072 to −0.0088, every CI excluding zero, McNemar p ≤ 6.3e-08). The deployment model *is* the accuracy headline — a protocol-scoped claim, logged as such.
 
+**External forged-tier scenario (CAL only; not a new headline).** A hash-pinned handoff
+from `frontier-forge` adds its R1b native-MTP service point as a hypothetical terminal arm
+and re-prices all 512 committed Tier A CAL risk thresholds. Under the point assumption
+that R1b's observed 1/20 serving failure rate transfers to this different task, the grid
+selects τ=0.8483569229, keeps 32.52% in Tier A, and models **$254.68/1k**. That number is
+not certified and is not comparable to the TEST-IID router headline: R1b consumes source
+metadata and solves structured action policy rather than narrative-only product
+classification, no joint per-row CAL predictions exist, and the within-task 95% Wilson
+interval for 1/20 failures alone moves the selected coverage from 3.33% to 73.21%. The
+existing A→B2 headline remains unchanged. Reproduce: `make frontier-forge-scenario`; see
+[`results/external_tiers/frontier_forge_r1b_cal_scenario.json`](results/external_tiers/frontier_forge_r1b_cal_scenario.json).
+
 ## Architecture
 
 ```mermaid

@@ -2375,3 +2375,37 @@ reported runs. Every portfolio-bound number carries its reproduction command
   make reproduce-headline                                        # the real thing (~13 h measured)
   uv run pytest tests/test_reproduce_headline.py -q
   ```
+
+## 2026-08-19 — External Frontier Forge R1b tier: CAL cost scenario only ($0, no new runs)
+
+- **Hypothesis / requested integration:** add the measured Frontier Forge R1b native-MTP
+  service point as a terminal cascade tier, re-optimize the Tier A threshold on the frozen
+  CAL membership, and update the cost story without touching frozen splits or the
+  append-only run ledger.
+- **Contract audit:** the upstream handoff is SHA-256 pinned at `5038a91a…` and agrees with
+  the Tier A CAL artifact on 86,972 rows and split hash `d7c24d6…`. It also proves why a
+  certified model integration is not yet available: R1b sees `source_product`,
+  `source_issue`, and `source_company` and predicts structured action policy; this lab
+  predicts product class from narrative. There are no joint per-row R1b CAL predictions.
+- **Scenario method:** retain the committed 512-point Tier A risk-coverage table. Above
+  each τ, charge Tier A's measured CAL errors at the existing estimated $6 misroute cost;
+  below τ, charge R1b's measured 4-QPS compute cost ($0.0202046/1k successful tasks) plus
+  an expected misroute using the observed 1/20 serving failure rate. Add the coverage-zero
+  endpoint; select the lowest modeled cost, breaking ties toward more Tier A coverage.
+- **Result:** τ=0.8483569229, Tier A coverage 0.3251851170, R1b escalation 0.6748148830,
+  modeled total $254.6818/1k (Tier-A-only $995.4238; R1b-only $300.0202). This is a CAL
+  cross-task scenario, **NOT CERTIFIED**, carries no TEST result or macro-F1 claim, and
+  does not replace the A→B2 headline. Even the within-task Wilson 95% interval for the
+  1/20 service failures (0.0089–0.2361) moves selected Tier A coverage 0.0333–0.7321 and
+  modeled cost $52.57–$740.56/1k; cross-task uncertainty is larger and unquantified.
+- **Ledger/split discipline:** `results/runs.jsonl` remains untouched; no data or split is
+  written; the calculation reads one committed CAL risk curve, the existing hashed cost
+  config, and the vendored handoff. The result is a separate deterministic derivation.
+- **Verdict:** SCENARIO RETAINED / CERTIFICATION BLOCKED until a narrative-only adapter
+  produces joint per-row CAL predictions, thresholds are fit on CAL, and the resulting
+  policy receives its once-only TEST evaluation.
+- **Reproduce:**
+  ```
+  make frontier-forge-scenario
+  uv run pytest tests/test_frontier_forge_tier.py -q
+  ```

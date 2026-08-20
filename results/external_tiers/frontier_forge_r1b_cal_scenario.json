@@ -1,0 +1,135 @@
+{
+  "claim_gate": {
+    "certified": false,
+    "reasons": [
+      "Frontier Forge R1b solves structured ticket/action policy with source metadata; it is not a narrative-only product classifier.",
+      "No joint per-row Frontier Forge predictions exist on this CAL split.",
+      "The terminal failure rate is transferred from only 20 serving requests on a different task contract.",
+      "The threshold is selected and priced on CAL only; no TEST result is produced."
+    ],
+    "replaces_existing_headline": false
+  },
+  "frontier_forge_assumption": {
+    "artifact_sha256": "7878b55f6fe6a9ecb12b9504b1a88d7bc6fef7ba72d91289b6e8d694f6bc75ce",
+    "observed_failures": 1,
+    "observed_successes": 19,
+    "quality_run_id": "r1b_sft_rule_20k_s0",
+    "serving_requests": 20,
+    "serving_run_id": "phase4_spec_decode_r1b_bf16_native_mtp",
+    "terminal_cost_evidence": "measured throughput at 4 QPS x owner-supplied GPU-hour rate",
+    "terminal_cost_per_request_usd": 2.02046e-05,
+    "terminal_failure_rate": 0.05,
+    "transfer_warning": "R1b consumes source_product/source_issue/source_company under input contract v2 and solves structured ticket/action policy, whereas the upstream cascade predicts the product class from narrative text. This handoff does not establish R1b as a leakage-free replacement classifier and contains no joint per-row CAL predictions. Any re-optimized threshold is an explicitly labeled scenario, not a certified cascade result.",
+    "within_task_wilson95_failure_rate": [
+      0.0088814488,
+      0.2361311934
+    ]
+  },
+  "headline": "CAL-only cross-task scenario: the committed 512-point Tier A risk grid selects tau=0.8483569229, answers 32.52% in Tier A, and models $254.68/1k. This is not a classifier result or a certified cascade claim.",
+  "inputs": {
+    "cost_config": {
+      "c_misroute_evidence_class": "estimated",
+      "c_misroute_usd": 6.0,
+      "path": "configs/cost_model_v2.yaml",
+      "sha256": "2c969255c03b315d9755078f77693e308a9864e40e3ebb4a1d31f9ffe5bcb417",
+      "version": "v2"
+    },
+    "frontier_forge_handoff": {
+      "path": "configs/external_tiers/frontier_forge_r1b_v1.json",
+      "sha256": "5038a91ab883116ad8607bf442e0e73016d1fb42ef44623c37593a2a90253b0b",
+      "source_manifest_sha256": "0b91f0a2974305afb8a7c291b959b2deb44a87d2ad366f660519f337e5e9fe18",
+      "source_repository": "https://github.com/LucisZhang/frontier-forge"
+    },
+    "tier_a_cal_risk_curve": {
+      "n_examples": 86972,
+      "path": "results/risk_coverage/40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc.json",
+      "run_id": "40513354503c8e8cec48666e2f62bb1e0cb5c04352f8c87965caf8b0c3cab0fc",
+      "sha256": "12eb80ab36dc3b0e311a1b4f2d4af66b66ad020c7b3afbf4c99beb3e815bab57",
+      "split_sha256": "d7c24d6db05f337ac3fca1922b16c4324775e2007833af1eae684ddc37533c94"
+    }
+  },
+  "optimization": {
+    "candidate_count": 513,
+    "domain": "CAL only",
+    "failure_rate_sensitivity": [
+      {
+        "assumed_terminal_failure_rate": 0.0088814488,
+        "cost_per_1k_usd": 52.5704685272,
+        "label": "service_wilson95_low",
+        "selected_tau": 0.9436689044,
+        "tier_a_coverage": 0.0332635791
+      },
+      {
+        "assumed_terminal_failure_rate": 0.05,
+        "cost_per_1k_usd": 254.6818034616,
+        "label": "observed_point",
+        "selected_tau": 0.8483569229,
+        "tier_a_coverage": 0.325185117
+      },
+      {
+        "assumed_terminal_failure_rate": 0.2361311934,
+        "cost_per_1k_usd": 740.5585939635,
+        "label": "service_wilson95_high",
+        "selected_tau": 0.6117952677,
+        "tier_a_coverage": 0.7320631928
+      }
+    ],
+    "formula": "1000 * (tier_a_errors + expected_frontier_forge_failures) / n * c_misroute + 1000 * n_escalated / n * frontier_forge_cost_per_request",
+    "grid": "coverage-zero endpoint plus the committed downsampled Tier A risk-coverage thresholds",
+    "references": {
+      "frontier_forge_only": {
+        "cost_per_1k": {
+          "frontier_forge_compute_usd": 0.0202046458,
+          "frontier_forge_misroute_usd": 300.0,
+          "tier_a_misroute_usd": 0.0,
+          "total_usd": 300.0202046458
+        },
+        "expected_frontier_forge_failures": 4348.6,
+        "frontier_forge_escalation_rate": 1.0,
+        "n_answered_tier_a": 0,
+        "n_escalated_frontier_forge": 86972,
+        "tau": null,
+        "tier_a_coverage": 0.0,
+        "tier_a_errors": 0,
+        "tier_a_selective_risk": null
+      },
+      "selected_minus_frontier_forge_only_usd_per_1k": -45.3384011842,
+      "selected_minus_tier_a_only_usd_per_1k": -740.7420110994,
+      "tier_a_only": {
+        "cost_per_1k": {
+          "frontier_forge_compute_usd": 0.0,
+          "frontier_forge_misroute_usd": 0.0,
+          "tier_a_misroute_usd": 995.423814561,
+          "total_usd": 995.423814561
+        },
+        "expected_frontier_forge_failures": 0.0,
+        "frontier_forge_escalation_rate": 0.0,
+        "n_answered_tier_a": 86972,
+        "n_escalated_frontier_forge": 0,
+        "tau": 0.1885425581,
+        "tier_a_coverage": 1.0,
+        "tier_a_errors": 14429,
+        "tier_a_selective_risk": 0.1659039691
+      }
+    },
+    "selected": {
+      "cost_per_1k": {
+        "frontier_forge_compute_usd": 0.0136343957,
+        "frontier_forge_misroute_usd": 202.4444648853,
+        "tier_a_misroute_usd": 52.2237041807,
+        "total_usd": 254.6818034616
+      },
+      "expected_frontier_forge_failures": 2934.5,
+      "frontier_forge_escalation_rate": 0.674814883,
+      "n_answered_tier_a": 28282,
+      "n_escalated_frontier_forge": 58690,
+      "tau": 0.8483569229,
+      "tier_a_coverage": 0.325185117,
+      "tier_a_errors": 757,
+      "tier_a_selective_risk": 0.026766141
+    },
+    "tie_break": "lowest modeled cost, then largest Tier A coverage"
+  },
+  "schema_version": "frontier-forge-cal-scenario-v1",
+  "status": "scenario_only_not_certified"
+}
